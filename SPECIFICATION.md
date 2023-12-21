@@ -31,4 +31,4 @@ The format description describes the semantics of the particles.
 ## Frame data
 The frame data is a raw consecutive list of frames each of which is a list of consecutive particles as described in the format description header segment. The number of particles is determined by the size of the frame in bytes divided by the size of a single particle as described in the format description header segment.
 
-Padding within and between particles is only allowed to the extent as it is specified in the format description header segment. Padding between frames is not allowed.
+Padding within and between particles is only allowed to the extent as it is specified in the format description header segment. Padding between frames is not allowed unless the particle format specifies padding at the end of each particle. 
