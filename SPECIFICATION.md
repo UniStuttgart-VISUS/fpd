@@ -13,7 +13,6 @@
 
 ## Magic ID
 The magic identifier for a flexible particle data file, which must be the sequence "FPD" of upper case ASCII characters.
-The magic identifier for a flexible particle data file, which must be the sequence "FPD" of upper case ASCII characters.
 
 ## Header segment
 Each header segment starts with an `uint32` header of its own. The lower 24 bits (0xFFFFFF) hold the size of the segment in bytes. The upper eight bits (0xFF000000) identify one of the following segment types. The segment type enumeration of the reference implementation is defined such that it can be directly `or`ed with the size of the segment. 
