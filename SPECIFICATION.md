@@ -28,6 +28,12 @@ This segment is mandatory.
 
 The format description describes the semantics of the particles.
 
+| Type   | Description                                                                                |
+|--------|--------------------------------------------------------------------------------------------|
+| uint64 | The semantic of the element, which can be one of the built-in `semantic`s or a custom one. |
+| format | The format of the the element, which must be one of the enumerated `format`s.              |
+| uint16 |
+| uint16 |
 
 ## Frame data
 The frame data is a raw consequtive list of frames each of which is a list of consecutive particles as described in the format description header segment. The number of particles is determined by the size of the frame in bytes divided by the size of a single particle as described in the format description header segment.
