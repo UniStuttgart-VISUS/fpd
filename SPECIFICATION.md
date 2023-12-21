@@ -15,12 +15,12 @@
 The magic identifier for a flexible particle data file, which must be the sequence "FPD" of upper case ASCII characters.
 
 ## Header segment
-Each header segment starts with an `uint32` header of its own. The lower 24 bits (0xFFFFFF) hold the size of the segment in bytes. The upper eight bits (0xFF000000) identify one of the following segment types. The segment type enumeration of the reference implementation is defined such that it can be directly `or`ed with the size of the segment. 
+Each header segment starts with an `uint32` header of its own. The lower 24 bits (0xFFFFFF) hold the size of the segment, excluding the initial `uint32` header, in bytes. The upper eight bits (0xFF000000) identify one of the following segment types. The segment type enumeration of the reference implementation is defined such that it can be directly `or`ed with the size of the segment. 
 
 ### Frame table (0x01)
 This segment is mandatory.
 
-The frame table segment holds the absolute offsets (`SEEK_SET`) of all frames in the file. Each offset is represented as `uint64`.
+The frame table segment holds the absolute offsets (`SEEK_SET`) of all frames in the file. Each offset is represented as `uint64`. The number of frames can be computed by dividing the size of this header by the size of `uint64`.
 
 ### Format description (0x02)
 This segment is mandatory.
