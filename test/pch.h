@@ -14,3 +14,4 @@
 #include "fpd/format_traits.h"
 #include "fpd/literal.h"
 #include "fpd/semantic.h"
+#include "fpd/swap_bytes.h"
