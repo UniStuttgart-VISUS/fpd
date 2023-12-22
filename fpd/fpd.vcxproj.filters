@@ -36,5 +36,22 @@
     <ClInclude Include="fpd\annotations.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fpd\description_element.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fpd\format_description.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fpd\convert.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="fpd\semantic.inl">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="fpd\convert.inl">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

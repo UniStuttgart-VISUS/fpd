@@ -24,5 +24,12 @@ namespace fpd {
             Assert::IsTrue(std::uint64_t(semantic::user_defined) > std::uint64_t(semantic::radius), L"user_defined > radius", LINE_INFO());
             Assert::IsTrue(std::uint64_t(semantic::user_defined) > std::uint64_t(semantic::velocity), L"user_defined > velocity", LINE_INFO());
         }
+
+
+        TEST_METHOD(to_string) {
+            Assert::AreEqual(std::string("position"), fpd::to_string<char>(semantic::position), L"semantic::position", LINE_INFO());
+            Assert::AreEqual(std::wstring(L"radius"), fpd::to_string<wchar_t>(semantic::radius), L"semantic::radius", LINE_INFO());
+            Assert::AreEqual(std::wstring(L""), fpd::to_string<wchar_t>(semantic::user_defined), L"semantic::user_defined", LINE_INFO());
+        }
     };
 }
