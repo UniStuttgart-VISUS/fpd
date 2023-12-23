@@ -37,7 +37,9 @@ namespace detail {
             return n;
         }
 
-        static _Ret_maybenull_z_ constexpr const char_type *select(
+        _When_((n == nullptr) || (w == nullptr), _Ret_maybenull_z_)
+        _When_((n != nullptr) && (w != nullptr), _Ret_valid_)
+        static constexpr const char_type *select(
                 _In_opt_z_ const char *n,
                 _In_opt_z_ const wchar_t *w) noexcept {
             return n;
@@ -55,7 +57,9 @@ namespace detail {
             return w;
         }
 
-        static _Ret_maybenull_z_ constexpr const char_type *select(
+        _When_((n == nullptr) || (w == nullptr), _Ret_maybenull_z_)
+        _When_((n != nullptr) && (w != nullptr), _Ret_valid_)
+        static constexpr const char_type *select(
                 _In_opt_z_ const char *n,
                 _In_opt_z_ const wchar_t *w) noexcept {
             return w;

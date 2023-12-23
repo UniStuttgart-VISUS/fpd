@@ -7,8 +7,10 @@
 #pragma once
 
 #include <cinttypes>
+#include <string>
 
-#include "fpd/abi.h"
+#include "fpd/annotations.h"
+#include "fpd/literal.h"
 
 
 FPD_NAMESPACE_BEGIN
@@ -65,4 +67,17 @@ enum class semantic : std::uint64_t {
     user_defined = 0x100000000
 };
 
+
+/// <summary>
+/// Answer a human-readable version of the given <paramref name="semantic" />.
+/// </summary>
+/// <typeparam name="TChar">The character type of the string to create.
+/// </typeparam>
+/// <param name="semantic">The semantic to convert to a string.</param>
+/// <returns>The string representation of the given semantic.</returns>
+template<class TChar>
+std::basic_string<TChar> to_string(_In_ const semantic semantic);
+
 FPD_NAMESPACE_END
+
+#include "fpd/semantic.inl"
