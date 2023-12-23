@@ -24,6 +24,9 @@
     <ClCompile Include="test_semantic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="test_format_traits.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">

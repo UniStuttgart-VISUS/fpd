@@ -167,6 +167,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="test_endian.cpp" />
+    <ClCompile Include="test_format_traits.cpp" />
     <ClCompile Include="test_semantic.cpp" />
   </ItemGroup>
   <ItemGroup>

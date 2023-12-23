@@ -33,13 +33,13 @@ namespace detail {
         typedef char char_type;
 
         static constexpr char_type select(_In_ const char n,
-                _In_ const wchar_t w) {
+                _In_ const wchar_t w) noexcept {
             return n;
         }
 
         static _Ret_maybenull_z_ constexpr const char_type *select(
                 _In_opt_z_ const char *n,
-                _In_opt_z_ const wchar_t *w) {
+                _In_opt_z_ const wchar_t *w) noexcept {
             return n;
         }
     };
@@ -51,13 +51,13 @@ namespace detail {
         typedef wchar_t char_type;
 
         static constexpr char_type select(_In_ const char n,
-                _In_ const wchar_t w) {
+                _In_ const wchar_t w) noexcept {
             return w;
         }
 
         static _Ret_maybenull_z_ constexpr const char_type *select(
                 _In_opt_z_ const char *n,
-                _In_opt_z_ const wchar_t *w) {
+                _In_opt_z_ const wchar_t *w) noexcept {
             return w;
         }
     };
@@ -70,4 +70,6 @@ FPD_NAMESPACE_END
 /// Generates a literal string <paramref name="l" />, which is either ASCII or
 /// Unicode depending on the template parameter <paramref name="T" />.
 /// </summary>
-#define ESS_TPL_LITERAL(T, l) fpd::detail::literal_selector<T>::select(l, L##l)
+/// <param name="T">The type of the character to select.</param>
+/// <param name="l">The string to be selected.</param>
+#define FPD_TPL_LITERAL(T, l) fpd::detail::literal_selector<T>::select(l, L##l)

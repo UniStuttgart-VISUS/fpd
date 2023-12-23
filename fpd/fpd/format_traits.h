@@ -13,21 +13,42 @@
 #endif /* defined(_WIN32) */
 
 #include "fpd/format.h"
+#include "fpd/literal.h"
 
 
 FPD_NAMESPACE_BEGIN
 
 /// <summary>
-/// 
+/// A template that allows for retrieving compile-time information
+/// about a <see cref="format" />.
 /// </summary>
 /// <typeparam name="Format">The format to reflect on.</typeparam>
 template<format Format> struct format_forward_traits { };
+
+/// <summary>
+/// A template that allows for retrieving the <paramref name="format" />
+/// of a type at compile time.
+/// </summary>
+/// <typeparam name="TFormat">The type to reflect on.</typeparam>
+template<class TFormat> struct format_reverse_traits { };
 
 
 #define _SPECIALISE_FWD_SCALAR_TRAITS(f, t)\
 template<> struct format_forward_traits<format::f##x> {\
     typedef t type;\
     static constexpr const format format = format::f##x;\
+    template<class TChar>\
+    static inline constexpr const TChar *name(void) noexcept {\
+        return FPD_TPL_LITERAL(TChar, #f##"x");\
+    }\
+};\
+template<> struct format_reverse_traits<t> {\
+    typedef t type;\
+    static constexpr const format format = format::f##x;\
+    template<class TChar>\
+    static inline constexpr const TChar *name(void) noexcept {\
+        return FPD_TPL_LITERAL(TChar, #f##"x");\
+    }\
 }
 
 
@@ -35,6 +56,18 @@ template<> struct format_forward_traits<format::f##x> {\
 template<> struct format_forward_traits<format::f##s> {\
     typedef std::array<t, d> type;\
     static constexpr const format format = format::f##s;\
+    template<class TChar>\
+    static inline constexpr const TChar *name(void) noexcept {\
+        return FPD_TPL_LITERAL(TChar, #f#s); \
+    }\
+};\
+template<> struct format_reverse_traits<std::array<t, d>> {\
+    typedef std::array<t, d> type;\
+    static constexpr const format format = format::f##s;\
+    template<class TChar>\
+    static inline constexpr const TChar *name(void) noexcept {\
+        return FPD_TPL_LITERAL(TChar, #f#s); \
+    }\
 }
 
 
