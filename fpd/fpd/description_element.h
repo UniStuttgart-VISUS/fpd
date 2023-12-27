@@ -6,8 +6,10 @@
 
 #pragma once
 
+#include <stdexcept>
 #include <string>
 
+#include "fpd/annotations.h"
 #include "fpd/format_traits.h"
 #include "fpd/semantic.h"
 
@@ -41,6 +43,29 @@ public:
     /// The type of a string.
     /// </summary>
     typedef std::basic_string<char_type> string_type;
+
+    /// <summary>
+    /// Initialises a new instance.
+    /// </summary>
+    /// <param name=""></param>
+    inline description_element(void) : _format(format_type::unknown),
+        _offset(0), _semantic(semantic_type::unknown), _size(0) { }
+
+    /// <summary>
+    /// Initialises a new instance.
+    /// </summary>
+    /// <param name="semantic">The semantic of the element.</param>
+    /// <param name="semantic_name">The human-readable description of
+    /// the semantic.</param>
+    /// <param name="format">The format used to store the element.</param>
+    /// <param name="offset">The offset of the element from the begin of
+    /// the stream.</param>
+    /// <param name="size">The size of the element in bytes.</param>
+    description_element(_In_ const semantic_type semantic,
+        _In_ const string_type &semantic_name,
+        _In_ const format_type format,
+        _In_ const std::uint16_t offset,
+        _In_ const std::uint16_t size);
 
     /// <summary>
     /// Gets the format of the element described by this object.
@@ -98,3 +123,5 @@ private:
 };
 
 FPD_NAMESPACE_END
+
+#include "fpd/description_element.inl"

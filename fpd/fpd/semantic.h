@@ -18,7 +18,18 @@ FPD_NAMESPACE_BEGIN
 /// <summary>
 /// Defines possible semantics of a vector or scalar.
 /// </summary>
+/// <remarks>
+/// <para>Do not forget to update <see cref="semantics" /> below when adding
+/// new elements to this enumeration.</para>
+/// <para>Do not forget to update <see cref="to_string" /> belwo when adding
+/// new elements to this enumeration.</para>
+/// </remarks>
 enum class semantic : std::uint64_t {
+
+    /// <summary>
+    /// The data has no semantic, which means that it can be discarded.
+    /// </summary>
+    unknown = 0x00000000,
 
     /// <summary>
     /// Identifies the position of a particle in 3D space.
@@ -69,6 +80,25 @@ enum class semantic : std::uint64_t {
 
 
 /// <summary>
+/// A compile-time list of semantics.
+/// </summary>
+/// <typeparam name="Semantics">The semantics in the list.</typeparam>
+template<semantic... Semantics> struct semantic_list final { };
+
+
+/// <summary>
+/// A compile-time list of all built-in semantics.
+/// </summary>
+typedef semantic_list<
+    semantic::unknown,
+    semantic::position,
+    semantic::position_radius,
+    semantic::intensity,
+    semantic::colour,
+    semantic::velocity> semantics;
+
+
+/// <summary>
 /// Answer a human-readable version of the given <paramref name="semantic" />.
 /// </summary>
 /// <typeparam name="TChar">The character type of the string to create.
@@ -76,7 +106,7 @@ enum class semantic : std::uint64_t {
 /// <param name="semantic">The semantic to convert to a string.</param>
 /// <returns>The string representation of the given semantic.</returns>
 template<class TChar>
-std::basic_string<TChar> to_string(_In_ const semantic semantic);
+const TChar *const to_string(_In_ const semantic semantic);
 
 FPD_NAMESPACE_END
 

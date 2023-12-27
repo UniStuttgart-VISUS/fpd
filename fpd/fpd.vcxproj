@@ -157,6 +157,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\convert.inl" />
+    <None Include="fpd\description_element.inl" />
     <None Include="fpd\semantic.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

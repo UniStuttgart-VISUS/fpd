@@ -8,12 +8,13 @@
 /*
  * FPD_NAMESPACE::to_string
  */
-template<class TChar> std::basic_string<TChar> FPD_NAMESPACE::to_string(
+template<class TChar> const TChar *const FPD_NAMESPACE::to_string(
         _In_ const semantic semantic) {
 #define _FPD_SEM_TO_STR(s) case FPD_NAMESPACE::semantic::s:\
-    return ESS_TPL_LITERAL(TChar, #s)
+    return FPD_TPL_LITERAL(TChar, #s)
 
     switch (semantic) {
+        _FPD_SEM_TO_STR(unknown);
         _FPD_SEM_TO_STR(position);
         _FPD_SEM_TO_STR(radius);
         _FPD_SEM_TO_STR(position_radius);
@@ -22,7 +23,7 @@ template<class TChar> std::basic_string<TChar> FPD_NAMESPACE::to_string(
         _FPD_SEM_TO_STR(velocity);
 
         default:
-            return ESS_TPL_LITERAL(TChar, "");
+            return FPD_TPL_LITERAL(TChar, "");
     }
 
 #undef _FPD_SEM_TO_STR

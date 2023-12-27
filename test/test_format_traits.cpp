@@ -75,5 +75,13 @@ namespace fpd {
             Assert::AreEqual(int(format::int8xyzw), int(format_reverse_traits<std::array<std::int8_t, 4>>::format), L"int8xyzw", LINE_INFO());
             Assert::AreEqual(int(format::uint8xyzw), int(format_reverse_traits<std::array<std::uint8_t, 4>>::format), L"uint8xyzw", LINE_INFO());
         }
+
+        TEST_METHOD(test_to_string) {
+            Assert::AreEqual(L"int8x", to_string<wchar_t>(format::int8x), L"int8x", LINE_INFO());
+            Assert::AreEqual("int8x", to_string<char>(format::int8), L"int8", LINE_INFO());
+            Assert::ExpectException<std::logic_error>([](void) {
+                to_string<char>(static_cast<format>(UINT_MAX));
+            }, L"UINT_MAX", LINE_INFO());
+        }
     };
 }
