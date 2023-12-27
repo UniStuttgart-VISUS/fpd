@@ -9,6 +9,7 @@
 #include "fpd/convert.h"
 #include "fpd/endian.h"
 #include "fpd/description_element.h"
+#include "fpd/element_stream.h"
 #include "fpd/format.h"
 #include "fpd/format_description.h"
 #include "fpd/format_traits.h"

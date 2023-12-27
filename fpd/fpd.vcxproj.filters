@@ -51,6 +51,9 @@
     <ClInclude Include="fpd\type_size.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fpd\element_stream.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\semantic.inl">
@@ -60,6 +63,9 @@
       <Filter>Header Files</Filter>
     </None>
     <None Include="fpd\description_element.inl">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="fpd\element_stream.inl">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>
