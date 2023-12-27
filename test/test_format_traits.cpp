@@ -83,5 +83,14 @@ namespace fpd {
                 to_string<char>(static_cast<format>(UINT_MAX));
             }, L"UINT_MAX", LINE_INFO());
         }
+
+        TEST_METHOD(test_to_size) {
+            Assert::AreEqual(std::size_t(1), to_size(format::int8x), L"int8x", LINE_INFO());
+            Assert::AreEqual(std::size_t(1), to_size(format::int8), L"int8", LINE_INFO());
+            Assert::AreEqual(std::size_t(0), to_size(format::unknown), L"unknown", LINE_INFO());
+            Assert::ExpectException<std::logic_error>([](void) {
+                to_string<char>(static_cast<format>(UINT_MAX));
+            }, L"UINT_MAX", LINE_INFO());
+        }
     };
 }

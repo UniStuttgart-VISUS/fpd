@@ -8,6 +8,7 @@
 
 #include <cinttypes>
 #include <string>
+#include <type_traits>
 
 #include "fpd/annotations.h"
 #include "fpd/literal.h"
@@ -107,6 +108,19 @@ typedef semantic_list<
 /// <returns>The string representation of the given semantic.</returns>
 template<class TChar>
 const TChar *const to_string(_In_ const semantic semantic);
+
+
+/// <summary>
+/// Creates the <paramref name="index" />th user-defined semantic.
+/// </summary>
+/// <param name="index">The zero-based index of a user-defined semantic.</param>
+/// <returns>The requested user-defined semantic.</returns>
+constexpr semantic user_defined_semantic(_In_ const std::uint32_t index) {
+    typedef std::underlying_type<semantic>::type int_type;
+    return static_cast<semantic>(
+        static_cast<int_type>(semantic::user_defined)
+        + static_cast<int_type>(index));
+}
 
 FPD_NAMESPACE_END
 

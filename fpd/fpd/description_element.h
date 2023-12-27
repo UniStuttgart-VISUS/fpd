@@ -61,8 +61,32 @@ public:
     /// <param name="offset">The offset of the element from the begin of
     /// the stream.</param>
     /// <param name="size">The size of the element in bytes.</param>
+    /// <exception cref="std::invalid_argument">If an empty
+    /// <paramref name="semantic_name" /> was provided for a user-defined
+    /// semantic, or if <paramref name="format" /> is
+    /// <see cref="format::unknown" /> and no non-zero <paramref name="size" />
+    /// was specified.</exception>
     description_element(_In_ const semantic_type semantic,
-        _In_ const string_type &semantic_name,
+        _In_ const string_type& semantic_name,
+        _In_ const format_type format,
+        _In_ const std::uint16_t offset,
+        _In_ const std::uint16_t size);
+
+    /// <summary>
+    /// Initialises a new instance for a built-in semantic.
+    /// </summary>
+    /// <param name="semantic">The semantic of the element, which cannot be a
+    /// user-defined semantic.</param>
+    /// <param name="format">The format used to store the element.</param>
+    /// <param name="offset">The offset of the element from the begin of
+    /// the stream.</param>
+    /// <param name="size">The size of the element in bytes.</param>
+    /// <exception cref="std::invalid_argument">If an empty
+    /// <paramref name="semantic_name" /> was provided for a user-defined
+    /// semantic, or if <paramref name="format" /> is
+    /// <see cref="format::unknown" /> and no non-zero <paramref name="size" />
+    /// was specified.</exception>
+    description_element(_In_ const semantic_type semantic,
         _In_ const format_type format,
         _In_ const std::uint16_t offset,
         _In_ const std::uint16_t size);

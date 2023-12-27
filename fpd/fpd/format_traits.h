@@ -16,6 +16,7 @@
 
 #include "fpd/format.h"
 #include "fpd/literal.h"
+#include "fpd/type_size.h"
 
 
 FPD_NAMESPACE_BEGIN
@@ -79,7 +80,7 @@ _SPECIALISE_VEC_FMT_TRAITS(f, xyz, t, 3);\
 _SPECIALISE_VEC_FMT_TRAITS(f, xyzw, t, 4)
 
 
-_SPECIALISE_SCALAR_FMT_TRAITS(unknown, void *);
+_SPECIALISE_SCALAR_FMT_TRAITS(unknown, void);
 _SPECIALISE_FMT_TRAITS(int8, std::int8_t);
 _SPECIALISE_FMT_TRAITS(uint8, std::uint8_t);
 _SPECIALISE_FMT_TRAITS(int16, std::int16_t);
@@ -99,6 +100,24 @@ _SPECIALISE_FMT_TRAITS(float64, double);
 
 namespace detail {
 
+    inline std::size_t to_size(_In_ const format_list<>, _In_ const format) {
+        throw std::logic_error("The size of the specified format could not be "
+            "derived. Please ensure that the format is a valid enumeration "
+            "member and that all enumeration members are registered in the "
+            "formats list.");
+    }
+
+    template<format Format, format... Formats>
+    inline std::size_t to_size(
+            _In_ const format_list<Format, Formats...>,
+            _In_ const format format) {
+        if (format == Format) {
+            return type_size<format_forward_traits<Format>::type>::value;
+        } else {
+            return to_size(format_list<Formats...>(), format);
+        }
+    }
+
     template<class TChar, format Format, format... Formats>
     inline const TChar *const to_string(
             _In_ const format_list<Format, Formats...>,
@@ -110,8 +129,7 @@ namespace detail {
         }
     }
 
-    template<class TChar>
-    inline const TChar *const to_string(
+    template<class TChar> inline const TChar *const to_string(
             _In_ const format_list<>,
             _In_ const format) {
         throw std::logic_error("The specified format could not be converted to "
@@ -124,12 +142,28 @@ namespace detail {
 
 
 /// <summary>
+/// Answer the size in bytes of the given <paramref name="format" />.
+/// </summary>
+/// <param name="format">The format to get the size of.</param>
+/// <returns>The size of the forma in bytes.</returns>
+/// <exception cref="std::logic_error">If an invalid <paramref name="format" />
+/// was provided or if the type traits have not been setup properly. The latter
+/// is a bug in the implementation of the library.</exception>
+inline std::size_t to_size(_In_ const format format) {
+    return detail::to_size(formats(), format);
+}
+
+
+/// <summary>
 /// Answer a human-readable version of the given <paramref name="format" />.
 /// </summary>
 /// <typeparam name="TChar">The character type of the string to create.
 /// </typeparam>
 /// <param name="format">The format to convert to a string.</param>
 /// <returns>The string representation of the given format.</returns>
+/// <exception cref="std::logic_error">If an invalid <paramref name="format" />
+/// was provided or if the type traits have not been setup properly. The latter
+/// is a bug in the implementation of the library.</exception>
 template<class TChar>
 inline const TChar *const to_string(_In_ const format format) {
     return detail::to_string<TChar>(formats(), format);

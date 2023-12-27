@@ -15,3 +15,4 @@
 #include "fpd/literal.h"
 #include "fpd/semantic.h"
 #include "fpd/swap_bytes.h"
+#include "fpd/type_size.h"
