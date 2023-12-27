@@ -21,7 +21,7 @@ FPD_NAMESPACE_BEGIN
 /// <remarks>
 /// <para>Do not forget to update <see cref="semantics" /> below when adding
 /// new elements to this enumeration.</para>
-/// <para>Do not forget to update <see cref="to_string" /> belwo when adding
+/// <para>Do not forget to update <see cref="to_string" /> below when adding
 /// new elements to this enumeration.</para>
 /// </remarks>
 enum class semantic : std::uint64_t {
