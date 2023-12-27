@@ -62,11 +62,16 @@ public:
     /// <summary>
     /// In-place constructs a new element at the end of the group.
     /// </summary>
-    /// <param name="semantic"></param>
-    /// <param name="semantic_name"></param>
-    /// <param name="format"></param>
-    /// <param name="offset"></param>
-    /// <param name="size"></param>
+    /// <param name="semantic">The semantic of the element to be added.</param>
+    /// <param name="semantic_name">The human-readable name of the semantic to
+    /// be added. This can be <c>nullptr</c> if the <paramref name="semantic" />
+    /// is a built-in one.</param>
+    /// <param name="format">The format of the element.</param>
+    /// <param name="offset">The offset of the element from the begin of the
+    /// group. This can be zero if the element starts immediately after the
+    /// previous one without any padding.</param>
+    /// <param name="size">The size of the element. This can be zero if the
+    /// <paramref name="format" /> is one with a known size.</param>
     /// <param name="eval_offset">If <c>true</c>, add an explicit offset to the
     /// element based on the current content of the group.</param>
     inline void add(_In_ const semantic_type semantic,

@@ -10,16 +10,16 @@
  */
 template<class TChar>
 std::uint16_t FPD_NAMESPACE::element_group<TChar>::size(void) const noexcept {
-    auto retval = this->_elements.empty()
-        ? static_cast<std::uint16_t>(0)
-        : this->_elements.back().offset();
+    auto retval = static_cast<std::uint16_t>(0);
     auto i = this->_elements.empty()
         ? this->_elements.size()
         : this->_elements.size() - 1;
 
     // Search the first element with an explicit offset.
     while ((i > 0) && (retval == 0)) {
-        retval = this->_elements[i--].offset();
+        if ((retval = this->_elements[i].offset()) == 0) {
+            --i;
+        }
     }
 
     // Accumulate the sizes of the elements.
