@@ -11,14 +11,14 @@
 #include <string>
 #include <vector>
 
-#include "fpd/description_element.h"
+#include "fpd/element.h"
 
 
 FPD_NAMESPACE_BEGIN
 
 /// <summary>
 /// A element group is part of a <see cref="format_description" /> and holds
-/// all <see cref="description_elements" /> that are consecutively stored in
+/// all <see cref="element" />s that are consecutively stored in
 /// the file (array of structures).
 /// </summary>
 /// <typeparam name="TChar">The type of a character in a string.</typeparam>
@@ -34,30 +34,23 @@ public:
     /// <summary>
     /// The type of a description element.
     /// </summary>
-    typedef description_element<char_type> element_type;
+    typedef element<char_type> element_type;
 
     /// <summary>
     /// The type used to define the format of an element.
     /// </summary>
-    typedef FPD_NAMESPACE::format format_type;
+    typedef typename element_type::format_type format_type;
+
+    /// <summary>
+    /// The type of a compatible element initialiser that can be used to
+    /// construct elements from an initialiser lsit.
+    /// </summary>
+    typedef typename element_type::initialiser_type initialiser_type;
 
     /// <summary>
     /// The type used to describe the semantic of an element.
     /// </summary>
-    typedef FPD_NAMESPACE::semantic semantic_type;
-
-    /// <summary>
-    /// Adds the given element to the end of the group and potentially evaluates
-    /// its offset from the begin of the group.
-    /// </summary>
-    /// <param name="element">The element to be added.</param>
-    /// <param name="eval_offset">If <c>true</c>, add an explicit offset to the
-    /// element based on the current content of the group.</param>
-    inline void add(_In_ const element_type& element,
-            _In_ const bool eval_offset = false) {
-        this->add(element.semantic(), element.semantic_name().c_str(),
-            element.format(), element.offset(), element.size(), eval_offset);
-    }
+    typedef typename element_type::semantic_type semantic_type;
 
     /// <summary>
     /// In-place constructs a new element at the end of the group.
@@ -75,19 +68,49 @@ public:
     /// <param name="eval_offset">If <c>true</c>, add an explicit offset to the
     /// element based on the current content of the group.</param>
     inline void add(_In_ const semantic_type semantic,
-            _In_ const char_type *semantic_name,
+            _In_opt_z_ const char_type *semantic_name,
             _In_ const format_type format,
             _In_ const std::uint16_t offset = 0,
             _In_ const std::uint16_t size = 0,
             _In_ const bool eval_offset = false) {
-        static const auto empty_string = FPD_TPL_LITERAL(TChar, "");
         this->_elements.emplace_back(semantic,
-            (semantic_name != nullptr) ? semantic_name : empty_string,
+            semantic_name,
             format,
             ((offset > 0) || !eval_offset) ? offset: this->size(),
             size);
         assert(this->_elements.back().size() > 0);
     }
+
+    /// <summary>
+    /// In-place constructs a new element with built-in semantic at the end of
+    /// the group.
+    /// </summary>
+    /// <param name="semantic">The semantic of the element to be added.</param>
+    /// <param name="format">The format of the element.</param>
+    /// <param name="offset">The offset of the element from the begin of the
+    /// group. This can be zero if the element starts immediately after the
+    /// previous one without any padding.</param>
+    /// <param name="size">The size of the element. This can be zero if the
+    /// <paramref name="format" /> is one with a known size.</param>
+    /// <param name="eval_offset">If <c>true</c>, add an explicit offset to the
+    /// element based on the current content of the group.</param>
+    inline void add(_In_ const semantic_type semantic,
+            _In_ const format_type format,
+            _In_ const std::uint16_t offset = 0,
+            _In_ const std::uint16_t size = 0,
+            _In_ const bool eval_offset = false) {
+        this->add(semantic, nullptr, offset, size, eval_offset);
+    }
+
+    /// <summary>
+    /// Adds a new element with data from the given initialiser at the end of
+    /// the group.
+    /// </summary>
+    /// <param name="initialiser">The initialiser to provide the data.</param>
+    /// <param name="eval_offset">If <c>true</c>, add an explicit offset to the
+    /// element based on the current content of the group.</param>
+    void add(_In_ const initialiser_type& initialiser,
+        _In_ const bool eval_offset = false);
 
     /// <summary>
     /// Moves the given element to the end of the group.

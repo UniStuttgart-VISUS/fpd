@@ -146,21 +146,24 @@
     <ClInclude Include="fpd\abi.h" />
     <ClInclude Include="fpd\annotations.h" />
     <ClInclude Include="fpd\convert.h" />
-    <ClInclude Include="fpd\description_element.h" />
+    <ClInclude Include="fpd\element.h" />
     <ClInclude Include="fpd\element_group.h" />
+    <ClInclude Include="fpd\element_initialiser.h" />
     <ClInclude Include="fpd\endian.h" />
     <ClInclude Include="fpd\format.h" />
     <ClInclude Include="fpd\format_description.h" />
     <ClInclude Include="fpd\format_traits.h" />
     <ClInclude Include="fpd\literal.h" />
+    <ClInclude Include="fpd\null_coalesce.h" />
     <ClInclude Include="fpd\semantic.h" />
     <ClInclude Include="fpd\swap_bytes.h" />
     <ClInclude Include="fpd\type_size.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\convert.inl" />
-    <None Include="fpd\description_element.inl" />
+    <None Include="fpd\element.inl" />
     <None Include="fpd\element_group.inl" />
+    <None Include="fpd\format_description.inl" />
     <None Include="fpd\semantic.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

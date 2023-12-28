@@ -30,10 +30,13 @@
     <ClCompile Include="test_type_size.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="test_description_element.cpp">
+    <ClCompile Include="test_element.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="test_element_group.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test_format_description.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -6,6 +6,17 @@
 
 
 /*
+ * FPD_NAMESPACE::element_group<TChar>::add
+ */
+template<class TChar>
+inline void FPD_NAMESPACE::element_group<TChar>::add(
+        _In_ const initialiser_type& initialiser, _In_ const bool eval_offset) {
+    const auto offset = eval_offset ? this->size() : 0;
+    this->_elements.emplace_back(initialiser, offset);
+}
+
+
+/*
  * FPD_NAMESPACE::element_group<TChar>::size
  */
 template<class TChar>

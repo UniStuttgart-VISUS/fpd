@@ -36,7 +36,7 @@
     <ClInclude Include="fpd\annotations.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="fpd\description_element.h">
+    <ClInclude Include="fpd\element.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="fpd\format_description.h">
@@ -54,6 +54,12 @@
     <ClInclude Include="fpd\element_group.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fpd\element_initialiser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fpd\null_coalesce.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\semantic.inl">
@@ -62,10 +68,13 @@
     <None Include="fpd\convert.inl">
       <Filter>Header Files</Filter>
     </None>
-    <None Include="fpd\description_element.inl">
+    <None Include="fpd\element.inl">
       <Filter>Header Files</Filter>
     </None>
     <None Include="fpd\element_group.inl">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="fpd\format_description.inl">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>

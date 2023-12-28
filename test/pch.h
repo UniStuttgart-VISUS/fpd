@@ -7,9 +7,9 @@
 #pragma once
 
 #include "fpd/convert.h"
-#include "fpd/endian.h"
-#include "fpd/description_element.h"
+#include "fpd/element.h"
 #include "fpd/element_group.h"
+#include "fpd/endian.h"
 #include "fpd/format.h"
 #include "fpd/format_description.h"
 #include "fpd/format_traits.h"
