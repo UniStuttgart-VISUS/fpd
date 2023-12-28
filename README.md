@@ -18,6 +18,7 @@ While FPD only allows for a single type of particle in a file, it allows users t
 Modern (NVMe) drives are designed to allow for efficiently processing a deep read queue. In order to leverage this feature, FPD minimises the number of read-to-read dependencies by keeping all meta data in a single block at the begin of the file. At most two reads are required to ingest all ofthe meta data.
 
 ### Store the data as they are required on the GPU
+Just as the particle lists in MMLPD are designed to match OpenGL immediate mode APIs, the flexible particle format of FPD is designed to match how Direct3D 11, Direct3D 12 and Vulkan work. The elements of the particle description can be mapped to [D3D11_INPUT_ELEMENT_DESC](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/ns-d3d11-d3d11_input_element_desc) or [VkVertexInputAttributeDescription](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkVertexInputAttributeDescription.html) to describe the data to the graphics API. The particles match this layout and can simply be copied into the buffers of the graphics API.
 
 ### Allow for spatially organised data
 
