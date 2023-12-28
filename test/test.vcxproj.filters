@@ -39,6 +39,9 @@
     <ClCompile Include="test_format_description.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="test_meta_data.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">

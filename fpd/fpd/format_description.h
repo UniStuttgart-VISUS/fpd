@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <numeric>
+
 #include "fpd/element_group.h"
 
 
@@ -137,12 +139,43 @@ public:
     }
 
     /// <summary>
+    /// Answer the overall size of a particle in bytes.
+    /// </summary>
+    /// <remarks>
+    /// Please note that particles may not be laid out contiguously in memory,
+    /// but this overall size returned by the method may be split into
+    /// multiple streams (struct of arrays). However, this size can be used to
+    /// compute the number of particles in a frame from the offsets in the
+    /// <see cref="meta_data::frame_table" />.
+    /// </remarks>
+    /// <returns>The overall bytes allocate per particle.</returns>
+    inline std::size_t size(void) const noexcept {
+        return std::accumulate(
+            this->_groups.begin(),
+            this->_groups.end(),
+            static_cast<std::size_t>(0),
+            [](const std::size_t s, const group_type& g) {
+                return s + g.size();
+            });
+    }
+
+    /// <summary>
     /// Provides access to the <paramref name="i" />th group of elements.
     /// </summary>
     /// <param name="i">The zero-based index of the group to retrieve.
     /// </param>
     /// <returns>The <paramref name="i" />th group.</returns>
     inline const group_type& operator [](_In_ const std::size_t i) const {
+        return this->_groups[i];
+    }
+
+    /// <summary>
+    /// Provides access to the <paramref name="i" />th group of elements.
+    /// </summary>
+    /// <param name="i">The zero-based index of the group to retrieve.
+    /// </param>
+    /// <returns>The <paramref name="i" />th group.</returns>
+    inline const group_type& operator ()(_In_ const std::size_t i) const {
         return this->_groups[i];
     }
 

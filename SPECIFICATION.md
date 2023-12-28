@@ -39,8 +39,13 @@ The format description describes the semantics and layout of the particles. A fo
 | uint16 | Offset of the element within the stream, in bytes. If zero, the element will be assumed to start directly after its predecessor. |
 | uint16 | The size of the element in bytes. If zero, the `format` will be used to determine the size.                                      |
 
-### Custom semantic description (0x03)
+### User-defined semantic description (0x03)
 This segment is optional any only present if any of the format descriptions uses a custom semantic.
+
+All strings in this segment are null-terminated UTF-16 strings. For each user-defined semantic used in the format description, there must be a matching entry in this array.
+
+### File description (0x04)
+This segment is optional and holds a single UTF-16 string with a human-readable description of the contents of the file.
 
 
 ## Frame data

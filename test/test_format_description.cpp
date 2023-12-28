@@ -135,6 +135,8 @@ namespace fpd {
             Assert::AreEqual(int(user_defined_semantic(1)), int(fd(1, 2).semantic()), L"semantic@1, 2", LINE_INFO());
             Assert::AreEqual(std::wstring(L"horst"), fd(1, 2).semantic_name(), L"semantic_name@1, 2", LINE_INFO());
             Assert::AreEqual(sizeof(std::int32_t), std::size_t(fd(1, 2).size()), L"size@1, 2", LINE_INFO());
+
+            Assert::AreEqual(4 * sizeof(float) + 4 + sizeof(float) + sizeof(std::int32_t), fd.size(), L"Total size", LINE_INFO());
         }
     };
 }
