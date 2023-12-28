@@ -26,5 +26,34 @@ namespace fpd {
             Assert::AreEqual(std::uint8_t(0), md.version().first, L"version", LINE_INFO());
             Assert::AreEqual(std::uint8_t(0), md.version().second, L"version", LINE_INFO());
         }
+
+        TEST_METHOD(check_header_size) {
+            Assert::ExpectException<std::invalid_argument>([](void) {
+                meta_data<char>::check_header_size(nullptr, meta_data<char>::fixed_header_size);
+            }, L"invalid data pointer", LINE_INFO());
+
+            Assert::ExpectException<std::invalid_argument>([](void) {
+                std::array<std::uint8_t, 1> data;
+                meta_data<char>::check_header_size(data.data(), data.size());
+            }, L"Too few data", LINE_INFO());
+
+            Assert::ExpectException<std::invalid_argument>([](void) {
+                std::array<std::uint8_t, meta_data<char>::fixed_header_size> data;
+                ::memset(data.data(), 0, data.size());
+                meta_data<char>::check_header_size(data.data(), data.size());
+            }, L"Invalid header", LINE_INFO());
+
+            {
+                std::array<std::uint8_t, meta_data<char>::fixed_header_size> data;
+                data[0] = 'F';
+                data[1] = 'P';
+                data[2] = 'D';
+                data[3] = FPD_ABI_MAJOR;
+                data[4] = FPD_ABI_MINOR;
+                *reinterpret_cast<endian *>(data.data() + 5) = endian::system;
+                *reinterpret_cast<std::uint32_t *>(data.data() + 5 + sizeof(endian)) = 42;
+                Assert::AreEqual(std::uint32_t(42), meta_data<char>::check_header_size(data.data(), data.size()));
+            }
+        }
     };
 }

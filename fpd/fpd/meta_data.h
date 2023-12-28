@@ -10,6 +10,7 @@
 #include "fpd/endian.h"
 #include "fpd/format_description.h"
 #include "fpd/header_segment.h"
+#include "fpd/swap_bytes.h"
 
 
 FPD_NAMESPACE_BEGIN
@@ -64,6 +65,25 @@ public:
     typedef std::pair<std::uint8_t, std::uint8_t> version_type;
 
     /// <summary>
+    /// Checks whether <paramref name="data" /> designates a valid FPD header
+    /// and, in case of success, returns the overall size of the header
+    /// segments.
+    /// </summary>
+    /// <param name="data">A pointer to the begin of the file header.</param>
+    /// <param name="cnt">The length of the file header in bytes. As of now,
+    /// the caller must provide at least <see cref="fixed_header_size" /> bytes
+    /// of data for the method to succeed.</param>
+    /// <returns>The size of the header segments following the file header,
+    /// in bytes. This might include data already passed to the method.
+    /// </returns>
+    /// <exception cref="std::invalid_argument">If <pararmef name="data" /> is
+    /// <c>nullptr</c>, or if <paramref name="cnt" /> does not contain
+    /// sufficient header data, or if the given data are obviously invalid.
+    /// </exception>
+    static std::size_t check_header_size(_In_ const void *data,
+        _In_ const std::size_t cnt);
+
+    /// <summary>
     /// Parses the meta data from the given header block.
     /// </summary>
     /// <param name="data">A pointer to the begin of the file header.</param>
@@ -73,6 +93,16 @@ public:
     /// <c>nullptr</c>, or if <paramref name="cnt" /> does not comprise a full
     /// FPD header, or if the given data are obviously invalid.</exception>
     static meta_data parse(_In_ const void *data, _In_ const std::size_t cnt);
+
+    /// <summary>
+    /// The size if the fixed file header, which is the minimum of data that
+    /// needs to be provided to <see cref="check_header_size" />.
+    /// </summary>
+    static constexpr const std::size_t fixed_header_size
+        = 3 * sizeof(char)
+        + 2 * sizeof(std::uint8_t)
+        + sizeof(endian_type)
+        + sizeof(std::uint32_t);
 
     /// <summary>
     /// Initialises a new instance.

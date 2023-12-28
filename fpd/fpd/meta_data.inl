@@ -6,13 +6,60 @@
 
 
 /*
+ * FPD_NAMESPACE::meta_data<TChar>::check_header_size
+ */
+template<class TChar>
+std::size_t FPD_NAMESPACE::meta_data<TChar>::check_header_size(
+        _In_ const void *data, _In_ const std::size_t cnt) {
+    if (data == nullptr) {
+        throw std::invalid_argument("The header data must be valid.");
+    }
+    if (cnt < fixed_header_size) {
+        throw std::invalid_argument("The provided header data are not "
+            "large enough to determine the overall header size.");
+    }
+
+    // Check for the magic cookie and skip the version as we are not interested
+    // in it at this point.
+    const auto bytes = static_cast<const std::uint8_t *>(data);
+    if ((bytes[0] != 'F') || (bytes[1] != 'P') || (bytes[2] != 'D')) {
+        throw std::invalid_argument("The provided header data does "
+            "not start with the FPD magic cookie.");
+    }
+
+    // Determine the endian, which we need to potentially swap the number
+    // we return.
+    const auto file_endian = *reinterpret_cast<const endian_type *>(bytes + 5);
+
+    // Determine the overall size of the header. If necessary, swap its byte
+    // order to obtain something the caller can use.
+    auto retval = *reinterpret_cast<const std::uint32_t *>(bytes
+        + 3 * sizeof(char) + 2 * sizeof(std::uint8_t) + sizeof(file_endian));
+    if (file_endian != endian::system) {
+        retval = swap_bytes(retval);
+    }
+
+    return retval;
+}
+
+
+/*
  * FPD_NAMESPACE::meta_data meta_data<TChar>::parse
  */
 template<class TChar>
-FPD_NAMESPACE::meta_data meta_data<TChar>::parse(
+FPD_NAMESPACE::meta_data<TChar> FPD_NAMESPACE::meta_data<TChar>::parse(
         _In_ const void *data, _In_ const std::size_t cnt) {
+    const auto segments_size = check_header_size(data, cnt);
     throw "TODO";
 }
+
+
+/*
+ * FPD_NAMESPACE::meta_data<TChar>::fixed_header_size
+ */
+template<class TChar>
+std::size_t FPD_NAMESPACE::meta_data<TChar>::fixed_header_size;
+
 
 /*
  * FPD_NAMESPACE::meta_data<TChar>::meta_data
