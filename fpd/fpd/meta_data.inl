@@ -6,6 +6,15 @@
 
 
 /*
+ * FPD_NAMESPACE::meta_data meta_data<TChar>::parse
+ */
+template<class TChar>
+FPD_NAMESPACE::meta_data meta_data<TChar>::parse(
+        _In_ const void *data, _In_ const std::size_t cnt) {
+    throw "TODO";
+}
+
+/*
  * FPD_NAMESPACE::meta_data<TChar>::meta_data
  */
 template<class TChar>

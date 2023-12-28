@@ -64,6 +64,17 @@ public:
     typedef std::pair<std::uint8_t, std::uint8_t> version_type;
 
     /// <summary>
+    /// Parses the meta data from the given header block.
+    /// </summary>
+    /// <param name="data">A pointer to the begin of the file header.</param>
+    /// <param name="cnt">The length of the file header in bytes.</param>
+    /// <returns>The meta data parsed from the given bytes.</returns>
+    /// <exception cref="std::invalid_argument">If <pararmef name="data" /> is
+    /// <c>nullptr</c>, or if <paramref name="cnt" /> does not comprise a full
+    /// FPD header, or if the given data are obviously invalid.</exception>
+    static meta_data parse(_In_ const void *data, _In_ const std::size_t cnt);
+
+    /// <summary>
     /// Initialises a new instance.
     /// </summary>
     meta_data(void) noexcept;
@@ -82,6 +93,20 @@ public:
     /// <returns>The size of the FPD file in bytes.</returns>
     inline size_type file_size(void) const noexcept {
         return this->_file_size;
+    }
+
+    /// <summary>
+    /// Sets the overall size of the FPD file described by these meta data.
+    /// </summary>
+    /// <remarks>
+    /// This information cannot be parsed from the file itself, but must be
+    /// determined externally and set manually.
+    /// </remarks>
+    /// <param name="file_size">The file size in bytes.</param>
+    /// <returns><c>*this</c>.</returns>
+    inline meta_data& file_size(_In_ const size_type file_size) noexcept {
+        this->_file_size = file_size;
+        return *this;
     }
 
     /// <summary>
