@@ -6,9 +6,7 @@
 
 #pragma once
 
-#include <cinttypes>
-
-#include "fpd/abi.h"
+#include "fpd/swap_bytes.h"
 
 
 FPD_NAMESPACE_BEGIN
@@ -22,19 +20,19 @@ enum class endian : std::uint16_t {
     /// The endian is unknown, which usually means that the library will be
     /// unable to process data.
     /// </summary>
-    undefined = 0,
+    undefined = 0x000,
 
     /// <summary>
     /// Little endian representation with least significant byte coming
     /// first in memory.
     /// </summary>
-    little = 0x0102,
+    little = 0x0201,
 
     /// <summary>
     /// Big endian representation with most significant byte coming first in
     /// memory.
     /// </summary>
-    big = 0x0201,
+    big = 0x0102,
 
     /// <summary>
     /// Endian of the system the code is running on.
@@ -42,5 +40,93 @@ enum class endian : std::uint16_t {
     system = '\1\2'
 
 };
+
+
+/// <summary>
+/// Swaps the byte order of <paramref name="value" /> if
+/// <paramref name="endian" /> is valid and not equal to
+/// <paramref name="system" />.
+/// </summary>
+/// <typeparam name="TValue">The type of the value to be swapped, which must
+/// be a type for which an implementation of <see cref="swap_bytes" />
+/// exists.</typeparam>
+/// <param name="value">The value to be swapped.</param>
+/// <param name="endian">The reference endian, which determines whether the
+/// bytes will be swapped (if this value is not <see cref="endian::system" />)
+/// or not (if this value is <see cref="endian::undefined" /> or
+/// not <see cref="endian::system" />).</param>
+/// <returns>The potentially swapped value.</returns>
+template<class TValue>
+TValue swap_endian(_In_ const TValue value, _In_ const endian endian) noexcept {
+    if ((endian != endian::undefined) && (endian != endian::system)) {
+        return swap_bytes(value);
+    } else {
+        return value;
+    }
+}
+
+
+/// <summary>
+/// Swaps the byte order of <paramref name="cnt" /> values at
+/// <paramref name="src" /> if <paramref name="endian" /> is valid and not equal
+/// to <paramref name="system" />.
+/// </summary>
+/// <remarks>
+/// It is strongly recommended to use the in-place variant for large amounts of
+/// data as this does not do anything if the byte order is already as expected.
+/// </remarks>
+/// <typeparam name="TValue">The type of the value to be swapped, which must
+/// be a type for which an implementation of <see cref="swap_bytes" />
+/// exists.</typeparam>
+/// <param name="dst">A pointer to a buffer of <paramref name="cnt" />
+/// elements to receive the swapped bytes. If no endian conversion is necessary,
+/// this will receive a <see cref="memcpy" /> of <paramref name="src" />.
+/// </param>
+/// <param name="src">A pointer to a buffer of <paramref name="cnt" />
+/// elements to swap the bytes of.</param>
+/// <param name="cnt">The number of values to swap.</param>
+/// <param name="endian">The reference endian, which determines whether the
+/// bytes will be swapped (if this value is not <see cref="endian::system" />)
+/// or not (if this value is <see cref="endian::undefined" /> or
+/// not <see cref="endian::system" />).</param>
+template<class TValue> void swap_endian(_Out_writes_(cnt) TValue *dst,
+        _In_reads_(cnt) const TValue *src,
+        _In_ const std::size_t cnt,
+        _In_ const endian endian) noexcept {
+    if ((endian != endian::undefined) && (endian != endian::system)) {
+        swap_bytes(dst, src, cnt);
+    } else {
+        ::memcpy(dst, src, cnt * sizeof(TValue));
+    }
+}
+
+
+/// <summary>
+/// Swaps the byte order of <paramref name="cnt" /> <paramref name="values" />
+/// in place if <paramref name="endian" /> is valid and not equal to
+/// <paramref name="system" />.
+/// </summary>
+/// <remarks>
+/// This function does nothing if <paramref name="endian" /> is
+/// <see cref="endian::system" />.
+/// </remarks>
+/// <typeparam name="TValue">The type of the value to be swapped, which must
+/// be a type for which an implementation of <see cref="swap_bytes" />
+/// exists.</typeparam>
+/// <param name="values">An array of <paramref name="cnt" /> values to swap
+/// the byte order of. If no conversion is required, this array will
+/// remain untouched.</param>
+/// <param name="cnt">The number of values to swap.</param>
+/// <param name="endian">The reference endian, which determines whether the
+/// bytes will be swapped (if this value is not <see cref="endian::system" />)
+/// or not (if this value is <see cref="endian::undefined" /> or
+/// not <see cref="endian::system" />).</param>
+template<class TValue> void swap_endian(_Inout_updates_(cnt) TValue *values,
+        _In_ const std::size_t cnt,
+        _In_ const endian endian) noexcept {
+    if ((endian != endian::undefined) && (endian != endian::system)) {
+        swap_bytes(values, cnt);
+    }
+}
 
 FPD_NAMESPACE_END

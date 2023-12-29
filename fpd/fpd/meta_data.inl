@@ -33,11 +33,10 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::check_header_size(
 
     // Determine the overall size of the header. If necessary, swap its byte
     // order to obtain something the caller can use.
-    auto retval = *reinterpret_cast<const std::uint32_t *>(bytes
-        + 3 * sizeof(char) + 2 * sizeof(std::uint8_t) + sizeof(file_endian));
-    if (file_endian != endian::system) {
-        retval = swap_bytes(retval);
-    }
+    const auto retval = swap_endian(*reinterpret_cast<const std::uint32_t *>(
+        bytes + 3 * sizeof(char) + 2 * sizeof(std::uint8_t)
+        + sizeof(file_endian)),
+        file_endian);
 
     return retval;
 }

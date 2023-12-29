@@ -17,6 +17,26 @@
 FPD_NAMESPACE_BEGIN
 
 /// <summary>
+/// Does nothing to <paramref name="v" />.
+/// </summary>
+/// <param name="v">The value to swap the byte order of.</param>
+/// <returns><paramref name="v" />.</returns>
+inline constexpr std::uint8_t swap_bytes(_In_ const std::uint8_t v) noexcept {
+    return v;
+}
+
+
+/// <summary>
+/// Does nothing to <paramref name="v" />.
+/// </summary>
+/// <param name="v">The value to swap the byte order of.</param>
+/// <returns><paramref name="v" />.</returns>
+inline constexpr std::int8_t swap_bytes(_In_ const std::int8_t v) noexcept {
+    return v;
+}
+
+
+/// <summary>
 /// Swaps the byte order of a <see cref="std::uint16_t" />.
 /// </summary>
 /// <param name="v">The value to swap the byte order of.</param>
@@ -44,7 +64,7 @@ inline constexpr std::int16_t swap_bytes(_In_ const std::int16_t v) noexcept {
 inline constexpr std::uint32_t swap_bytes(_In_ const std::uint32_t v) noexcept {
     return ((v & 0xFF000000) >> 24)
         | ((v & 0x00FF0000) >> 8)
-        | ((v & 0x0000F00) << 8)
+        | ((v & 0x0000FF00) << 8)
         | ((v & 0x000000FF) << 24);
 }
 
