@@ -149,6 +149,7 @@
     <ClInclude Include="fpd\element.h" />
     <ClInclude Include="fpd\element_group.h" />
     <ClInclude Include="fpd\element_initialiser.h" />
+    <ClInclude Include="fpd\code_page.h" />
     <ClInclude Include="fpd\endian.h" />
     <ClInclude Include="fpd\format.h" />
     <ClInclude Include="fpd\format_description.h" />

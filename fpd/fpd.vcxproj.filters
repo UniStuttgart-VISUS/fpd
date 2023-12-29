@@ -66,6 +66,9 @@
     <ClInclude Include="fpd\header_segment.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fpd\code_page.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\semantic.inl">
