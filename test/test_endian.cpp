@@ -21,8 +21,8 @@ namespace fpd {
 
         TEST_METHOD(swap8) {
             const std::uint8_t expected = 42;
-            Assert::AreEqual(expected, swap_endian(expected, endian::little), L"little uint8_t", LINE_INFO());
-            Assert::AreEqual(expected, swap_endian(expected, endian::big), L"big uint8_t", LINE_INFO());
+            Assert::AreEqual(expected, swap_endian(expected, endian::little), L"little single", LINE_INFO());
+            Assert::AreEqual(expected, swap_endian(expected, endian::big), L"big single", LINE_INFO());
 
             std::array<std::uint8_t, 42> input;
             std::fill(input.begin(), input.end(), expected);
@@ -32,22 +32,22 @@ namespace fpd {
 
             swap_endian(output.data(), input.data(), input.size(), endian::little);
             for (std::size_t i = 0; i < output.size(); ++i) {
-                Assert::AreEqual(input[i], output[i], L"little uint8_t copy", LINE_INFO());
+                Assert::AreEqual(input[i], output[i], L"little copy", LINE_INFO());
             }
 
             swap_endian(output.data(), input.data(), input.size(), endian::big);
             for (std::size_t i = 0; i < output.size(); ++i) {
-                Assert::AreEqual(input[i], output[i], L"big uint8_t copy", LINE_INFO());
+                Assert::AreEqual(input[i], output[i], L"big copy", LINE_INFO());
             }
 
             swap_endian(input.data(), input.size(), endian::little);
             for (std::size_t i = 0; i < output.size(); ++i) {
-                Assert::AreEqual(output[i], input[i], L"little uint8_t in-place", LINE_INFO());
+                Assert::AreEqual(output[i], input[i], L"little in-place", LINE_INFO());
             }
 
             swap_endian(input.data(), input.size(), endian::big);
             for (std::size_t i = 0; i < output.size(); ++i) {
-                Assert::AreEqual(output[i], input[i], L"big uint8_t in-place", LINE_INFO());
+                Assert::AreEqual(output[i], input[i], L"big in-place", LINE_INFO());
             }
         }
 
@@ -63,45 +63,38 @@ namespace fpd {
             swapped.value = system.value;
             std::reverse(swapped.bytes, swapped.bytes + std::size(swapped.bytes));
 
-            if (endian::system == endian::little) {
-                Assert::AreEqual(int(system.value), int(swap_endian(system.value, endian::little)), L"little uint16_t", LINE_INFO());
-                Assert::AreEqual(int(swapped.value), int(swap_endian(system.value, endian::big)), L"big uint16_t", LINE_INFO());
+            const auto big = int((endian::system == endian::little) ? swapped.value : system.value);
+            const auto little = int((endian::system == endian::little) ? system.value : swapped.value);
 
-                std::array<decltype(swapped.value), 42> input;
-                std::fill(input.begin(), input.end(), system.value);
-                std::array<decltype(swapped.value), 42> output;
+            Assert::AreEqual(little, int(swap_endian(system.value, endian::little)), L"little single", LINE_INFO());
+            Assert::AreEqual(big, int(swap_endian(system.value, endian::big)), L"big single", LINE_INFO());
 
-                std::fill(output.begin(), output.end(), static_cast<decltype(swapped.value)>(0));
-                swap_endian(output.data(), input.data(), input.size(), endian::little);
-                for (std::size_t i = 0; i < output.size(); ++i) {
-                    Assert::AreEqual(int(system.value), int(output[i]), L"little uint16_t copy", LINE_INFO());
-                }
+            std::array<decltype(swapped.value), 42> input;
+            std::fill(input.begin(), input.end(), system.value);
+            std::array<decltype(swapped.value), 42> output;
 
-                std::fill(output.begin(), output.end(), static_cast<decltype(swapped.value)>(0));
-                swap_endian(output.data(), input.data(), input.size(), endian::big);
-                for (std::size_t i = 0; i < output.size(); ++i) {
-                    Assert::AreEqual(int(swapped.value), int(output[i]), L"big uint16_t copy", LINE_INFO());
-                }
+            std::fill(output.begin(), output.end(), static_cast<decltype(swapped.value)>(0));
+            swap_endian(output.data(), input.data(), input.size(), endian::little);
+            for (std::size_t i = 0; i < output.size(); ++i) {
+                Assert::AreEqual(little, int(output[i]), L"little copy", LINE_INFO());
+            }
 
-            } else {
-                Assert::AreEqual(int(swapped.value), int(swap_endian(system.value, endian::little)), L"little uint16_t", LINE_INFO());
-                Assert::AreEqual(int(system.value), int(swap_endian(system.value, endian::big)), L"big uint16_t", LINE_INFO());
+            std::fill(output.begin(), output.end(), static_cast<decltype(swapped.value)>(0));
+            swap_endian(output.data(), input.data(), input.size(), endian::big);
+            for (std::size_t i = 0; i < output.size(); ++i) {
+                Assert::AreEqual(big, int(output[i]), L"big copy", LINE_INFO());
+            }
 
-                std::array<decltype(swapped.value), 42> input;
-                std::fill(input.begin(), input.end(), system.value);
-                std::array<decltype(swapped.value), 42> output;
+            std::fill(output.begin(), output.end(), system.value);
+            swap_endian(output.data(), output.size(), endian::little);
+            for (std::size_t i = 0; i < output.size(); ++i) {
+                Assert::AreEqual(little, int(output[i]), L"little in-place", LINE_INFO());
+            }
 
-                std::fill(output.begin(), output.end(), static_cast<decltype(swapped.value)>(0));
-                swap_endian(output.data(), input.data(), input.size(), endian::little);
-                for (std::size_t i = 0; i < output.size(); ++i) {
-                    Assert::AreEqual(int(swapped.value), int(output[i]), L"little uint16_t copy", LINE_INFO());
-                }
-
-                std::fill(output.begin(), output.end(), static_cast<decltype(swapped.value)>(0));
-                swap_endian(output.data(), input.data(), input.size(), endian::big);
-                for (std::size_t i = 0; i < output.size(); ++i) {
-                    Assert::AreEqual(int(system.value), int(output[i]), L"big uint16_t copy", LINE_INFO());
-                }
+            std::fill(output.begin(), output.end(), system.value);
+            swap_endian(output.data(), output.size(), endian::big);
+            for (std::size_t i = 0; i < output.size(); ++i) {
+                Assert::AreEqual(big, int(output[i]), L"big in-place", LINE_INFO());
             }
         }
 
@@ -119,12 +112,38 @@ namespace fpd {
             swapped.value = system.value;
             std::reverse(swapped.bytes, swapped.bytes + std::size(swapped.bytes));
 
-            if (endian::system == endian::little) {
-                Assert::AreEqual(int(system.value), int(swap_endian(system.value, endian::little)), L"little uint32_t", LINE_INFO());
-                Assert::AreEqual(int(swapped.value), int(swap_endian(system.value, endian::big)), L"big uint32_t", LINE_INFO());
-            } else {
-                Assert::AreEqual(int(swapped.value), int(swap_endian(system.value, endian::little)), L"little uint32_t", LINE_INFO());
-                Assert::AreEqual(int(system.value), int(swap_endian(system.value, endian::big)), L"big uint32_t", LINE_INFO());
+            const auto big = (endian::system == endian::little) ? swapped.value : system.value;
+            const auto little = (endian::system == endian::little) ? system.value : swapped.value;
+
+            Assert::AreEqual(little, swap_endian(system.value, endian::little), L"little single", LINE_INFO());
+            Assert::AreEqual(big, swap_endian(system.value, endian::big), L"big single", LINE_INFO());
+
+            std::array<decltype(swapped.value), 42> input;
+            std::fill(input.begin(), input.end(), system.value);
+            std::array<decltype(swapped.value), 42> output;
+
+            std::fill(output.begin(), output.end(), static_cast<decltype(swapped.value)>(0));
+            swap_endian(output.data(), input.data(), input.size(), endian::little);
+            for (std::size_t i = 0; i < output.size(); ++i) {
+                Assert::AreEqual(little, output[i], L"little copy", LINE_INFO());
+            }
+
+            std::fill(output.begin(), output.end(), static_cast<decltype(swapped.value)>(0));
+            swap_endian(output.data(), input.data(), input.size(), endian::big);
+            for (std::size_t i = 0; i < output.size(); ++i) {
+                Assert::AreEqual(big, output[i], L"big copy", LINE_INFO());
+            }
+
+            std::fill(output.begin(), output.end(), system.value);
+            swap_endian(output.data(), output.size(), endian::little);
+            for (std::size_t i = 0; i < output.size(); ++i) {
+                Assert::AreEqual(little, output[i], L"little in-place", LINE_INFO());
+            }
+
+            std::fill(output.begin(), output.end(), system.value);
+            swap_endian(output.data(), output.size(), endian::big);
+            for (std::size_t i = 0; i < output.size(); ++i) {
+                Assert::AreEqual(big, output[i], L"big in-place", LINE_INFO());
             }
         }
 
@@ -146,12 +165,38 @@ namespace fpd {
             swapped.value = system.value;
             std::reverse(swapped.bytes, swapped.bytes + std::size(swapped.bytes));
 
-            if (endian::system == endian::little) {
-                Assert::AreEqual(int(system.value), int(swap_endian(system.value, endian::little)), L"little uint64_t", LINE_INFO());
-                Assert::AreEqual(int(swapped.value), int(swap_endian(system.value, endian::big)), L"big uint64_t", LINE_INFO());
-            } else {
-                Assert::AreEqual(int(swapped.value), int(swap_endian(system.value, endian::little)), L"little uint64_t", LINE_INFO());
-                Assert::AreEqual(int(system.value), int(swap_endian(system.value, endian::big)), L"big uint64_t", LINE_INFO());
+            const auto big = (endian::system == endian::little) ? swapped.value : system.value;
+            const auto little = (endian::system == endian::little) ? system.value : swapped.value;
+
+            Assert::AreEqual(little, swap_endian(system.value, endian::little), L"little single", LINE_INFO());
+            Assert::AreEqual(big, swap_endian(system.value, endian::big), L"big single", LINE_INFO());
+
+            std::array<decltype(swapped.value), 42> input;
+            std::fill(input.begin(), input.end(), system.value);
+            std::array<decltype(swapped.value), 42> output;
+
+            std::fill(output.begin(), output.end(), static_cast<decltype(swapped.value)>(0));
+            swap_endian(output.data(), input.data(), input.size(), endian::little);
+            for (std::size_t i = 0; i < output.size(); ++i) {
+                Assert::AreEqual(little, output[i], L"little copy", LINE_INFO());
+            }
+
+            std::fill(output.begin(), output.end(), static_cast<decltype(swapped.value)>(0));
+            swap_endian(output.data(), input.data(), input.size(), endian::big);
+            for (std::size_t i = 0; i < output.size(); ++i) {
+                Assert::AreEqual(big, output[i], L"big copy", LINE_INFO());
+            }
+
+            std::fill(output.begin(), output.end(), system.value);
+            swap_endian(output.data(), output.size(), endian::little);
+            for (std::size_t i = 0; i < output.size(); ++i) {
+                Assert::AreEqual(little, output[i], L"little in-place", LINE_INFO());
+            }
+
+            std::fill(output.begin(), output.end(), system.value);
+            swap_endian(output.data(), output.size(), endian::big);
+            for (std::size_t i = 0; i < output.size(); ++i) {
+                Assert::AreEqual(big, output[i], L"big in-place", LINE_INFO());
             }
         }
     };
