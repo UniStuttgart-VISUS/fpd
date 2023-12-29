@@ -6,6 +6,10 @@
 
 #pragma once
 
+#include <algorithm>
+
+#include "CppUnitTest.h"
+
 #include "fpd/convert.h"
 #include "fpd/element.h"
 #include "fpd/element_group.h"
@@ -19,3 +23,6 @@
 #include "fpd/semantic.h"
 #include "fpd/swap_bytes.h"
 #include "fpd/type_size.h"
+
+
+using namespace Microsoft::VisualStudio::CppUnitTestFramework;

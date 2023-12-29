@@ -162,7 +162,6 @@ namespace detail {
         assert(dst != nullptr);
         assert(src != nullptr);
         // Loop unrolling using Duff's device.
-        auto c = values;
         auto i = (cnt + 7) / 8;
 
         switch (cnt % 8) {

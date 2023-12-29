@@ -108,7 +108,8 @@ template<class TValue> void swap_endian(_Out_writes_(cnt) TValue *dst,
 /// </summary>
 /// <remarks>
 /// This function does nothing if <paramref name="endian" /> is
-/// <see cref="endian::system" />.
+/// <see cref="endian::system" /> (or if it is <see cref="endian::undefined" />,
+/// which should never be the case).
 /// </remarks>
 /// <typeparam name="TValue">The type of the value to be swapped, which must
 /// be a type for which an implementation of <see cref="swap_bytes" />
