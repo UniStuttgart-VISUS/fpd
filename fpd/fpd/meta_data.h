@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "fpd/annotations.h"
+#include "fpd/bounding_box.h"
 #include "fpd/endian.h"
 #include "fpd/format_description.h"
 #include "fpd/header_segment.h"

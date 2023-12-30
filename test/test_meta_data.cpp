@@ -53,7 +53,7 @@ namespace fpd {
                 data[4] = FPD_ABI_MINOR;
                 *reinterpret_cast<endian *>(data.data() + 5) = endian::system;
                 *reinterpret_cast<std::uint32_t *>(data.data() + 5 + sizeof(endian)) = 42;
-                Assert::AreEqual(std::uint32_t(42), meta_data<char>::check_header_size(md, data.data(), data.size()));
+                Assert::AreEqual(std::size_t(42), meta_data<char>::check_header_size(md, data.data(), data.size()), L"Correct segments size", LINE_INFO());
                 Assert::AreEqual(std::uint8_t(FPD_ABI_MAJOR), md.version().first, L"major version", LINE_INFO());
                 Assert::AreEqual(std::uint8_t(FPD_ABI_MINOR), md.version().second, L"minor version", LINE_INFO());
             }

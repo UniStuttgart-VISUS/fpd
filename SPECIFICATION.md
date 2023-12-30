@@ -31,13 +31,13 @@ This segment is mandatory.
 
 The format description describes the semantics and layout of the particles. A format description comprises one or more elements of the following format:
 
-| Type   | Description                                                                                                                      |
-|--------|----------------------------------------------------------------------------------------------------------------------------------|
-| uint64 | The semantic of the element, which can be one of the built-in `semantic`s or a custom one.                                       |
-| format | The format of the the element, which must be one of the enumerated `format`s.                                                    |
-| uint16 | The zero-based index of the stream to which the element belongs to.                                                              |
-| uint16 | Offset of the element within the stream, in bytes. If zero, the element will be assumed to start directly after its predecessor. |
-| uint16 | The size of the element in bytes. If zero, the `format` will be used to determine the size.                                      |
+| Type   | Length  | Description                                                                                                                      |
+|--------|---------|----------------------------------------------------------------------------------------------------------------------------------|
+| uint64 | 8 Bytes | The semantic of the element, which can be one of the built-in `semantic`s or a custom one.                                       |
+| format | 4 Bytes | The format of the the element, which must be one of the enumerated `format`s.                                                    |
+| uint16 | 2 Bytes | The zero-based index of the stream to which the element belongs to.                                                              |
+| uint16 | 2 Bytes | Offset of the element within the stream, in bytes. If zero, the element will be assumed to start directly after its predecessor. |
+| uint16 | 2 Bytes | The size of the element in bytes. If zero, the `format` will be used to determine the size.                                      |
 
 ### User-defined semantic description (0x03)
 This segment is optional any only present if any of the format descriptions uses a custom semantic.
@@ -45,7 +45,20 @@ This segment is optional any only present if any of the format descriptions uses
 All strings in this segment are null-terminated UTF-16 strings. For each user-defined semantic used in the format description, there must be a matching entry in this array.
 
 ### File description (0x04)
-This segment is optional and holds a single UTF-16 string with a human-readable description of the contents of the file.
+This segment is optional.
+
+This segments holds a single UTF-16 string with a human-readable description of the contents of the file. The string may not be null-terminated, but end just at the border of the segment.
+
+### Bounding box (0x05)
+This segment is optional.
+
+This segment specifies the axis-aligned bounding box of the data over all frames and optionally a bounding box for each frame. The presence of per-frame bounding boxes can be determined by checking the size of the segment.
+
+The segment starts with the `format` (4 bytes) of the bounding box. This must be a scalar format (one element), typically, it is `format::float32`.
+
+At least one bounding box covering all frames of the file must be present in the previously specified format. The bounding box comprises six elements of the previously specified format specifying the minimum x, minimum y and minimum z position followed by the maximum x, maximum y and maximum z position. The minimum and maximum positions shall account for the radius of the particles in the data set.
+
+If per-frame bounding boxes are included, one for each frame must follow in the same format as for the global one. It is erroneous to specify more than one bounding box, but less than (# of frames + 1) ones.
 
 
 ## Frame data

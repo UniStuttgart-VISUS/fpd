@@ -69,6 +69,12 @@
     <ClInclude Include="fpd\code_page.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fpd\bounding_box.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fpd\type_components.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\semantic.inl">
@@ -87,6 +93,9 @@
       <Filter>Header Files</Filter>
     </None>
     <None Include="fpd\meta_data.inl">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="fpd\bounding_box.inl">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>

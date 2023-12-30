@@ -47,7 +47,13 @@ enum class header_segment : std::uint32_t {
     /// The description segment holds a single UTF-16 string that holds optional
     /// human-readable information about the data in the file.
     /// </summary>
-    description = 0x04 << 24
+    description = 0x04 << 24,
+
+    /// <summary>
+    /// The bounding box segment holds the global bounding box and potentially
+    /// additional per-frame bounding boxes.
+    /// </summary>
+    bounding_box = 0x05 << 25,
 };
 
 FPD_NAMESPACE_END

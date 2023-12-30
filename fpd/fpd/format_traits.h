@@ -16,6 +16,7 @@
 
 #include "fpd/format.h"
 #include "fpd/literal.h"
+#include "fpd/type_components.h"
 #include "fpd/type_size.h"
 
 
@@ -100,6 +101,22 @@ _SPECIALISE_FMT_TRAITS(float64, double);
 
 namespace detail {
 
+    inline constexpr std::size_t to_components(_In_ const format_list<>,
+            _In_ const format) noexcept {
+        return 0;
+    }
+
+    template<format Format, format... Formats>
+    inline std::size_t to_components(
+            _In_ const format_list<Format, Formats...>,
+            _In_ const format format) {
+        if (format == Format) {
+            return type_components<format_forward_traits<Format>::type>::value;
+        } else {
+            return to_components(format_list<Formats...>(), format);
+        }
+    }
+
     inline std::size_t to_size(_In_ const format_list<>, _In_ const format) {
         throw std::logic_error("The size of the specified format could not be "
             "derived. Please ensure that the format is a valid enumeration "
@@ -139,6 +156,17 @@ namespace detail {
     }
 
 } /* namespace detail */
+
+
+/// <summary>
+/// Answer the number of components the given format has.
+/// </summary>
+/// <param name="format">The format to determine the number of components
+/// of.</param>
+/// <returns>The number of components used by the given format.</returns>
+inline std::size_t to_components(_In_ const format format) noexcept {
+    return detail::to_components(formats(), format);
+}
 
 
 /// <summary>

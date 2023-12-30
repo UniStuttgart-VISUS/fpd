@@ -10,6 +10,7 @@
 
 #include "CppUnitTest.h"
 
+#include "fpd/bounding_box.h"
 #include "fpd/code_page.h"
 #include "fpd/convert.h"
 #include "fpd/element.h"
