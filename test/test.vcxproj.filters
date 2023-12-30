@@ -42,6 +42,9 @@
     <ClCompile Include="test_meta_data.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="test_swap_bytes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">

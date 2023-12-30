@@ -69,6 +69,8 @@ public:
     /// and, in case of success, returns the overall size of the header
     /// segments.
     /// </summary>
+    /// <param name="output">Receives the file version and the endian parsed
+    /// from the <paramref name="data" />.</param>
     /// <param name="data">A pointer to the begin of the file header.</param>
     /// <param name="cnt">The length of the file header in bytes. As of now,
     /// the caller must provide at least <see cref="fixed_header_size" /> bytes
@@ -80,7 +82,24 @@ public:
     /// <c>nullptr</c>, or if <paramref name="cnt" /> does not contain
     /// sufficient header data, or if the given data are obviously invalid.
     /// </exception>
-    static std::size_t check_header_size(_In_ const void *data,
+    static std::size_t check_header_size(_Out_ meta_data& output,
+        _In_ const void *data,
+        _In_ const std::size_t cnt);
+
+    /// <summary>
+    /// Parses the header segments starting at <paramref name="data" /> using
+    /// the file information provided in <paramref name="meta_data" />.
+    /// </summary>
+    /// <param name="meta_data">The static metadata (file version and endian)
+    /// as obtained by <see cref="check_header_size" />. On exit, this object
+    /// has received all header segments the parser understands.</param>
+    /// <param name="data">A pointer to the flexible header segments.</param>
+    /// <param name="cnt">The number of bytes in <paramref name="data" />, which
+    /// form the header segments. This must the amount of bytes returned by
+    /// <see cref="check_header_size" />. Note that <paramref name="cnt" /> must
+    /// not exceed the actual number of bytes in header segments!</param>
+    /// <returns><paramref name="meta_data" />.</returns>
+    static meta_data& parse(_Inout_ meta_data& meta_data, _In_ const void *data,
         _In_ const std::size_t cnt);
 
     /// <summary>

@@ -26,22 +26,26 @@ namespace fpd {
 
         TEST_METHOD(check_header_size) {
             Assert::ExpectException<std::invalid_argument>([](void) {
-                meta_data<char>::check_header_size(nullptr, meta_data<char>::fixed_header_size);
+                meta_data<char> dummy;
+                meta_data<char>::check_header_size(dummy, nullptr, meta_data<char>::fixed_header_size);
             }, L"invalid data pointer", LINE_INFO());
 
             Assert::ExpectException<std::invalid_argument>([](void) {
                 std::array<std::uint8_t, 1> data;
-                meta_data<char>::check_header_size(data.data(), data.size());
+                meta_data<char> dummy;
+                meta_data<char>::check_header_size(dummy, data.data(), data.size());
             }, L"Too few data", LINE_INFO());
 
             Assert::ExpectException<std::invalid_argument>([](void) {
                 std::array<std::uint8_t, meta_data<char>::fixed_header_size> data;
+                meta_data<char> dummy;
                 ::memset(data.data(), 0, data.size());
-                meta_data<char>::check_header_size(data.data(), data.size());
+                meta_data<char>::check_header_size(dummy, data.data(), data.size());
             }, L"Invalid header", LINE_INFO());
 
             {
                 std::array<std::uint8_t, meta_data<char>::fixed_header_size> data;
+                meta_data<char> md;
                 data[0] = 'F';
                 data[1] = 'P';
                 data[2] = 'D';
@@ -49,7 +53,9 @@ namespace fpd {
                 data[4] = FPD_ABI_MINOR;
                 *reinterpret_cast<endian *>(data.data() + 5) = endian::system;
                 *reinterpret_cast<std::uint32_t *>(data.data() + 5 + sizeof(endian)) = 42;
-                Assert::AreEqual(std::uint32_t(42), meta_data<char>::check_header_size(data.data(), data.size()));
+                Assert::AreEqual(std::uint32_t(42), meta_data<char>::check_header_size(md, data.data(), data.size()));
+                Assert::AreEqual(std::uint8_t(FPD_ABI_MAJOR), md.version().first, L"major version", LINE_INFO());
+                Assert::AreEqual(std::uint8_t(FPD_ABI_MINOR), md.version().second, L"minor version", LINE_INFO());
             }
         }
     };

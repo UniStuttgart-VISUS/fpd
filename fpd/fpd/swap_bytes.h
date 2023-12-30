@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <cinttypes>
 #include <memory>
@@ -149,40 +150,98 @@ namespace detail {
     /// Loops over <paramref name="cnt" /> <paramref name="src" /> of the
     /// numeric type <typeparamref name="TValue" /> and swaps their byte order.
     /// </summary>
+    /// <remarks>
+    /// This implementation uses Duff's device for partially unrolling the loop.
+    /// </remarks>
     /// <typeparam name="TValue">The type of the numbers to swap.</typeparam>
     /// <param name="dst">A pointer to a buffer of <paramref name="cnt" />
     /// elements to receive the swapped bytes.</param>
     /// <param name="src">A pointer to a buffer of <paramref name="cnt" />
     /// elements to swap the bytes of.</param>
     /// <param name="cnt">The number of values to swap.</param>
-    template<class TValue> void swap_bytes_basic(
+    template<class TValue> void swap_bytes_duff(
             _Out_writes_(cnt) TValue *dst,
             _In_reads_(cnt) const TValue *src,
             _In_ const std::size_t cnt) {
         assert(dst != nullptr);
         assert(src != nullptr);
-        // Loop unrolling using Duff's device.
         auto i = (cnt + 7) / 8;
 
         switch (cnt % 8) {
             case 0:
                 do {
                     *dst++ = swap_bytes(*src++);
-                    case 7:
-                        *dst++ = swap_bytes(*src++);
-                    case 6:
-                        *dst++ = swap_bytes(*src++);
-                    case 5:
-                        *dst++ = swap_bytes(*src++);
-                    case 4:
-                        *dst++ = swap_bytes(*src++);
-                    case 3:
-                        *dst++ = swap_bytes(*src++);
-                    case 2:
-                        *dst++ = swap_bytes(*src++);
-                    case 1:
-                        *dst++ = swap_bytes(*src++);
-                } while (--i > 0);
+                case 7:
+                    *dst++ = swap_bytes(*src++);
+                case 6:
+                    *dst++ = swap_bytes(*src++);
+                case 5:
+                    *dst++ = swap_bytes(*src++);
+                case 4:
+                    *dst++ = swap_bytes(*src++);
+                case 3:
+                    *dst++ = swap_bytes(*src++);
+                case 2:
+                    *dst++ = swap_bytes(*src++);
+                case 1:
+                    *dst++ = swap_bytes(*src++);
+            } while (--i > 0);
+        }
+    }
+
+    /// <summary>
+    /// Loops over <paramref name="cnt" /> elements of
+    /// <paramref name="size" /> bytes each spaced <paramref name="stride" />
+    /// bytes and swaps the order of the <paramref name="stride" /> bytes in
+    /// place.
+    /// </summary>
+    /// <remarks>
+    /// This implementation uses Duff's device for partially unrolling the loop.
+    /// </remarks>
+    /// <param name="values">A pointer to a buffer of <paramref name="cnt" />
+    /// elements of <paramref name="stride" /> bytes to be swapped.</param>
+    /// <param name="cnt">The number of values to swap.</param>
+    /// <param name="size">The number of bytes to reverse for each value.
+    /// </param>
+    /// <param name="stride">The number of bytes between values, which must be
+    /// at least size.</param>
+    inline void swap_bytes_duff(_Inout_updates_(cnt) void *values,
+            _In_ const std::size_t cnt,
+            _In_ const std::size_t size,
+            _In_ const std::size_t stride) {
+        assert(values != nullptr);
+        assert(stride >= size);
+        auto v = static_cast<std::uint8_t *>(values);
+        auto n = v;
+        auto i = (cnt + 7) / 8;
+
+        switch (cnt % 8) {
+            case 0:
+                do {
+                    std::reverse(v, v + size);
+                    v += stride;
+                case 7:
+                    std::reverse(v, v + size);
+                    v += stride;
+                case 6:
+                    std::reverse(v, v + size);
+                    v += stride;
+                case 5:
+                    std::reverse(v, v + size);
+                    v += stride;
+                case 4:
+                    std::reverse(v, v + size);
+                    v += stride;
+                case 3:
+                    v = v + stride;
+                    std::reverse(v, n);
+                case 2:
+                    std::reverse(v, v + size);
+                    v += stride;
+                case 1:
+                    std::reverse(v, v + size);
+                    v += stride;
+            } while (--i > 0);
         }
     }
 
@@ -235,7 +294,7 @@ template<class TValue> inline void swap_bytes(
         _Out_writes_(cnt) TValue *dst,
         _In_reads_(cnt) const TValue *src,
         _In_ const std::size_t cnt) {
-    detail::swap_bytes_basic(dst, src, cnt);
+    detail::swap_bytes_duff(dst, src, cnt);
 }
 
 
@@ -251,7 +310,45 @@ template<class TValue> inline void swap_bytes(
 template<class TValue> inline void swap_bytes(
         _Inout_updates_(cnt) TValue *values,
         _In_ const std::size_t cnt) {
-    detail::swap_bytes_basic(values, values, cnt);
+    detail::swap_bytes_duff(values, values, cnt);
+}
+
+
+/// <summary>
+/// Loops over <paramref name="cnt" /> elements of
+/// <paramref name="size" /> bytes each spaced <paramref name="stride" />
+/// bytes and swaps the order of the <paramref name="stride" /> bytes in
+/// place.
+/// </summary>
+/// <param name="values">A pointer to a buffer of <paramref name="cnt" />
+/// elements of <paramref name="stride" /> bytes to be swapped.</param>
+/// <param name="cnt">The number of values to swap.</param>
+/// <param name="size">The number of bytes to reverse for each value.
+/// </param>
+/// <param name="stride">The number of bytes between values, which must be
+/// at least size.</param>
+inline void swap_bytes(_Inout_updates_(cnt) void *values,
+        _In_ const std::size_t cnt,
+        _In_ const std::size_t size,
+        _In_ const std::size_t stride) {
+    detail::swap_bytes_duff(values, cnt, size, stride);
+}
+
+
+/// <summary>
+/// Loops over <paramref name="cnt" /> elements of
+/// <paramref name="stride" /> bytes each and swaps the order of the
+/// <paramref name="stride" /> bytes in place.
+/// </summary>
+/// <param name="values">A pointer to a buffer of <paramref name="cnt" />
+/// elements of <paramref name="stride" /> bytes to be swapped.</param>
+/// <param name="cnt">The number of values to swap.</param>
+/// <param name="stride">The number of bytes to reverse for each value.
+/// </param>
+inline void swap_bytes(_Inout_updates_(cnt) void *values,
+        _In_ const std::size_t cnt,
+        _In_ const std::size_t stride) {
+    detail::swap_bytes_duff(values, cnt, stride, stride);
 }
 
 FPD_NAMESPACE_END

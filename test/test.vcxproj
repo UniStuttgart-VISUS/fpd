@@ -173,6 +173,7 @@
     <ClCompile Include="test_format_traits.cpp" />
     <ClCompile Include="test_meta_data.cpp" />
     <ClCompile Include="test_semantic.cpp" />
+    <ClCompile Include="test_swap_bytes.cpp" />
     <ClCompile Include="test_type_size.cpp" />
   </ItemGroup>
   <ItemGroup>
