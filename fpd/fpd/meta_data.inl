@@ -233,8 +233,40 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_bounding_box(
         throw std::invalid_argument("The bounding boxes have already been "
             "parsed.");
     }
+    if (cnt < sizeof(format)) {
+        throw std::invalid_argument("The bounding boxes must contain a format "
+            "specification.")´;
+    }
 
-    throw "TODO";
+    // Determine the format of the bounding boxes and how big one is on disk.
+    const auto fmt = static_cast<format>(
+        swap_endian_as<std::underlying_type<format>::type>(data,
+        meta_data._endian));
+    const auto stride = 6 * to_size(fmt);
+
+    if (cnt < sizeof(format) + stride) {
+        throw std::invalid_argument("At least the global bounding box must be "
+            "provided in the bounding box header segment.");
+    }
+
+    // Read the global bounding box, which must always be present if the header
+    // segment exists.
+    auto cur = static_cast<const std::uint8_t *>(data);
+    const auto end = cur + cnt;
+    cur += sizeof(format);
+    meta_data._bounding_box = bounding_box(fmt, cur);
+    cur += stride;
+
+    // Read all optional per-frame bounding boxes.
+    if (((cur - end) % stride) != 0) {
+        throw std::invalid_argument("The bounding box header has an unexpected "
+            "size.");
+    }
+    meta_data._frame_bounding_boxes.reserve((end - cur) / stride);
+    while (cur < end) {
+        meta_data._frame_bounding_boxes.emplace_back(fmt, cur);
+        cur += stride;
+    }
 }
 
 
