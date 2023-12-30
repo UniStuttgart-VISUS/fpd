@@ -43,6 +43,21 @@ enum class endian : std::uint16_t {
 
 
 /// <summary>
+/// Answer wether the given <paramref name="endian" /> requires a byte-order
+/// conversion on the current system.
+/// </summary>
+/// <param name="endian">The reference endian, which determines whether the
+/// bytes must be swapped (if this value is not <see cref="endian::system" />)
+/// or not (if this value is <see cref="endian::undefined" /> or
+/// not <see cref="endian::system" />).</param>
+/// <returns><c>true</c> if an endian conversion is required, <c>false</c>
+/// otherwise.</returns>
+inline constexpr bool requires_conversion(_In_ const endian endian) noexcept {
+    return ((endian != endian::undefined) && (endian != endian::system));
+}
+
+
+/// <summary>
 /// Swaps the byte order of <paramref name="value" /> if
 /// <paramref name="endian" /> is valid and not equal to
 /// <paramref name="system" />.
@@ -58,7 +73,7 @@ enum class endian : std::uint16_t {
 /// <returns>The potentially swapped value.</returns>
 template<class TValue>
 TValue swap_endian(_In_ const TValue value, _In_ const endian endian) noexcept {
-    if ((endian != endian::undefined) && (endian != endian::system)) {
+    if (requires_conversion(endian)) {
         return swap_bytes(value);
     } else {
         return value;
@@ -93,7 +108,7 @@ template<class TValue> void swap_endian(_Out_writes_(cnt) TValue *dst,
         _In_reads_(cnt) const TValue *src,
         _In_ const std::size_t cnt,
         _In_ const endian endian) noexcept {
-    if ((endian != endian::undefined) && (endian != endian::system)) {
+    if (requires_conversion(endian)) {
         swap_bytes(dst, src, cnt);
     } else {
         ::memcpy(dst, src, cnt * sizeof(TValue));
@@ -125,9 +140,36 @@ template<class TValue> void swap_endian(_Out_writes_(cnt) TValue *dst,
 template<class TValue> void swap_endian(_Inout_updates_(cnt) TValue *values,
         _In_ const std::size_t cnt,
         _In_ const endian endian) noexcept {
-    if ((endian != endian::undefined) && (endian != endian::system)) {
+    if (requires_conversion(endian)) {
         swap_bytes(values, cnt);
     }
+}
+
+/// <summary>
+/// Interprets <paramref name="value" /> as <typeparamref name="TValue" /> and
+/// swaps its byte order if <paramref name="endian" /> is valid and not equal to
+/// <paramref name="system" />.
+/// </summary>
+/// <typeparam name="TValue">The type of the value to be swapped, which must
+/// be a type for which an implementation of <see cref="swap_bytes" />
+/// exists.</typeparam>
+/// <param name="value">A pointer to a variable of type
+/// <typeparamref name="TValue" />.</param>
+/// <param name="endian">The reference endian, which determines whether the
+/// bytes will be swapped (if this value is not <see cref="endian::system" />)
+/// or not (if this value is <see cref="endian::undefined" /> or
+/// not <see cref="endian::system" />).</param>
+/// <returns>The (potentially byte-swapped) value.</returns>
+template<class TValue>
+TValue swap_endian_as(_In_ const void *value, _In_ const endian endian) {
+    assert(value != nullptr);
+    auto retval = *static_cast<const TValue *>;
+
+    if (requires_conversion(endian)) {
+        retval = swap_bytes(retval);
+    }
+
+    return retval;
 }
 
 FPD_NAMESPACE_END

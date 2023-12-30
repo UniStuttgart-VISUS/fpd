@@ -250,6 +250,8 @@ private:
 
     std::vector<std::uint8_t> _values;
     format_type _format;
+
+    template<class T> friend class meta_data;
 };
 
 FPD_NAMESPACE_END

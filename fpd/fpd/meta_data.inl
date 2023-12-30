@@ -55,8 +55,48 @@ FPD_NAMESPACE::meta_data<TChar>& FPD_NAMESPACE::meta_data<TChar>::parse(
         _Inout_ meta_data& meta_data,
         _In_ const void *data,
         _In_ const std::size_t cnt) {
-    throw "TODO";
+    auto cur = static_cast<const std::uint8_t * >(data);
+    const auto end = cut + cnt;
+
+    while (cur + sizeof(header_segment_type) < end) {
+        // Interpret the 32-bit header of the header segment.
+        auto header = swap_endian_as<std::uint32_t>(cur, meta_data._endian);
+        cur += sizeof(header);
+
+        // Split the header_segments and the length of the segment.
+        constexpr const decltype(header) header_segment_mask = (0xFF << 24);
+        const auto segment = header_segment_mask & header;
+        const auto length = ~header_segment_mask & header;
+
+        // Parse the segment as the recognised type or ignore it allthogether.
+        switch (static_cast<header_segment>(segment)) {
+            case header_segment::frame_table:
+                parse_frame_table(meta_data, cur, length);
+                break;
+
+            case header_segment::format_description:
+                parse_format_description(meta_data, cur, length);
+                break;
+
+            case header_segment::user_semantics:
+                parse_user_semantics(meta_data, cur, length);
+                break;
+
+            case header_segment::description:
+                parse_description(meta_data, cur, length);
+                break;
+
+            case header_segment::bounding_box:
+                parse_bounding_box(meta_data, cur, length);
+                break;
+        }
+
+        cur += length;
+    }
+
+    return meta_data;
 }
+
 
 /*
  * FPD_NAMESPACE::meta_data meta_data<TChar>::parse
@@ -85,7 +125,7 @@ FPD_NAMESPACE::meta_data<TChar> FPD_NAMESPACE::meta_data<TChar>::parse(
  * FPD_NAMESPACE::meta_data<TChar>::fixed_header_size
  */
 template<class TChar>
-std::size_t FPD_NAMESPACE::meta_data<TChar>::fixed_header_size;
+const std::size_t FPD_NAMESPACE::meta_data<TChar>::fixed_header_size;
 
 
 /*
@@ -178,4 +218,96 @@ FPD_NAMESPACE::meta_data<TChar>::user_defined_semantic(
     }
 
     return this->_user_defined_semantics[i - f];
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data<TChar>::parse_bounding_box
+ */
+template<class TChar>
+void FPD_NAMESPACE::meta_data<TChar>::parse_bounding_box(
+        _Inout_ meta_data& meta_data,
+        _In_ const void *data,
+        _In_ const std::size_t cnt) {
+    if (meta_data._bounding_box || !meta_data._frame_bounding_boxes.empty()) {
+        throw std::invalid_argument("The bounding boxes have already been "
+            "parsed.");
+    }
+
+    throw "TODO";
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data<TChar>::parse_description
+ */
+template<class TChar>
+void FPD_NAMESPACE::meta_data<TChar>::parse_description(
+        _Inout_ meta_data& meta_data,
+        _In_ const void *data,
+        _In_ const std::size_t cnt) {
+    if ((cnt % sizeof(char16_t)) != 0) {
+        throw std::invalid_argument("The description has an unexpected size.");
+    }
+
+    throw "TODO";
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data<TChar>::parse_format_description
+ */
+template<class TChar>
+void FPD_NAMESPACE::meta_data<TChar>::parse_format_description(
+        _Inout_ meta_data& meta_data,
+        _In_ const void *data,
+        _In_ const std::size_t cnt) {
+    throw "TODO";
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data<TChar>::parse_frame_table
+ */
+template<class TChar>
+void FPD_NAMESPACE::meta_data<TChar>::parse_frame_table(
+        _Inout_ meta_data& meta_data,
+        _In_ const void *data,
+        _In_ const std::size_t cnt) {
+    if (!meta_data._frame_table.empty()) {
+        throw std::invalid_argument("The frame table has already been parsed.");
+    }
+    if ((cnt % sizeof(frame_table_type::value_type)) != 0) {
+        throw std::invalid_argument("The frame table has an unexpected size.");
+    }
+
+    auto b = reinterpret_cast<const frame_table_type::value_type *>(data);
+    auto e = reinterpret_cast<const frame_table_type::value_type *>(data + cnt);
+    meta_data._frame_table.reserve(e - b);
+    std::copy(b, e, std::back_inserter(meta_data._frame_table));
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data<TChar>::parse_user_semantics
+ */
+template<class TChar>
+void FPD_NAMESPACE::meta_data<TChar>::parse_user_semantics(
+        _Inout_ meta_data& meta_data,
+        _In_ const void *data,
+        _In_ const std::size_t cnt) {
+    if ((cnt % sizeof(char16_t)) != 0) {
+        throw std::invalid_argument("The table of user-semantics has an "
+            "unexpected size.");
+    }
+
+    auto cur = static_cast<const char16_t *>(data);
+    const auto end = cur + (cnt / sizeof(char16_t));
+
+    while (cur < end) {
+        auto next = cur;
+        while (*next++ != 0);
+        throw "TODO";
+        cur = next;
+    }
 }

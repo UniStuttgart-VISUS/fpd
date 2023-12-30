@@ -257,9 +257,27 @@ public:
 
 private:
 
+    static void parse_bounding_box(_Inout_ meta_data& meta_data,
+        _In_ const void *data, _In_ const std::size_t cnt);
+
+    static void parse_description(_Inout_ meta_data& meta_data,
+        _In_ const void *data, _In_ const std::size_t cnt);
+
+    static void parse_format_description(_Inout_ meta_data& meta_data,
+        _In_ const void *data, _In_ const std::size_t cnt);
+
+    static void parse_frame_table(_Inout_ meta_data& meta_data,
+        _In_ const void *data, _In_ const std::size_t cnt);
+
+    static void parse_user_semantics(_Inout_ meta_data& meta_data,
+        _In_ const void *data, _In_ const std::size_t cnt);
+
+    bounding_box _bounding_box;
+    string_type _description;
     endian_type _endian;
     size_type _file_size;
     format_description_type _format_description;
+    std::vector<bounding_box> _frame_bounding_boxes;
     frame_table_type _frame_table;
     std::vector<string_type> _user_defined_semantics;
     version_type _version;
