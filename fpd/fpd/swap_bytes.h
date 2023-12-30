@@ -201,7 +201,8 @@ namespace detail {
     /// <param name="values">A pointer to a buffer of <paramref name="cnt" />
     /// elements of <paramref name="stride" /> bytes to be swapped.</param>
     /// <param name="cnt">The number of values to swap.</param>
-    /// <param name="size">The number of bytes to reverse for each value.
+    /// <param name="size">The number of bytes to reverse for each value. This
+    /// must be more than one, because specifying one would have no effect.
     /// </param>
     /// <param name="stride">The number of bytes between values, which must be
     /// at least size.</param>
@@ -211,6 +212,7 @@ namespace detail {
             _In_ const std::size_t stride) {
         assert(values != nullptr);
         assert(stride >= size);
+        assert(stride > 1);
         auto v = static_cast<std::uint8_t *>(values);
         auto n = v;
         auto i = (cnt + 7) / 8;
@@ -233,8 +235,8 @@ namespace detail {
                     std::reverse(v, v + size);
                     v += stride;
                 case 3:
-                    v = v + stride;
-                    std::reverse(v, n);
+                    std::reverse(v, v + size);
+                    v += stride;
                 case 2:
                     std::reverse(v, v + size);
                     v += stride;
@@ -323,14 +325,15 @@ template<class TValue> inline void swap_bytes(
 /// <param name="values">A pointer to a buffer of <paramref name="cnt" />
 /// elements of <paramref name="stride" /> bytes to be swapped.</param>
 /// <param name="cnt">The number of values to swap.</param>
-/// <param name="size">The number of bytes to reverse for each value.
-/// </param>
+/// <param name="size">The number of bytes to reverse for each value, which
+/// must be more than one.</param>
 /// <param name="stride">The number of bytes between values, which must be
-/// at least size.</param>
+/// at least <paramref name="size" />..</param>
 inline void swap_bytes(_Inout_updates_(cnt) void *values,
         _In_ const std::size_t cnt,
         _In_ const std::size_t size,
         _In_ const std::size_t stride) {
+    assert(size > 1);
     detail::swap_bytes_duff(values, cnt, size, stride);
 }
 
@@ -343,11 +346,12 @@ inline void swap_bytes(_Inout_updates_(cnt) void *values,
 /// <param name="values">A pointer to a buffer of <paramref name="cnt" />
 /// elements of <paramref name="stride" /> bytes to be swapped.</param>
 /// <param name="cnt">The number of values to swap.</param>
-/// <param name="stride">The number of bytes to reverse for each value.
-/// </param>
+/// <param name="stride">The number of bytes to reverse for each value,
+/// which must be more than one.</param>
 inline void swap_bytes(_Inout_updates_(cnt) void *values,
         _In_ const std::size_t cnt,
         _In_ const std::size_t stride) {
+    assert(stride > 1);
     detail::swap_bytes_duff(values, cnt, stride, stride);
 }
 

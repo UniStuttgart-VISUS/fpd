@@ -230,7 +230,7 @@ public:
     }
 
     /// <summary>
-    /// Answer the specified <see cref="value" /> of the bounding box.
+    /// Answer the specified <see cref="value" />  of the bounding box.
     /// </summary>
     /// <param name="v">The value to retrieve.</param>
     /// <returns>A pointer to the begin of the requested coordinate,

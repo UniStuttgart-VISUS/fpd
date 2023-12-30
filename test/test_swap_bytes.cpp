@@ -336,5 +336,59 @@ namespace fpd {
                 Assert::AreEqual(swapped.value, data[i], L"bytes swapped", LINE_INFO());
             }
         }
+
+        TEST_METHOD(stream2) {
+            typedef std::uint16_t type;
+            std::array<type, 32> data;
+            std::iota(data.begin(), data.end(), std::uint16_t(UCHAR_MAX));
+
+            swap_bytes(data.data(), data.size(), sizeof(type));
+
+            for (std::size_t i = 1; i < data.size(); ++i) {
+                union {
+                    type value;
+                    std::uint8_t bytes[sizeof(type)];
+                } swapped { type(UCHAR_MAX + i) };
+                std::reverse(swapped.bytes, swapped.bytes + sizeof(type));
+
+                Assert::AreEqual(int(swapped.value), int(data[i]), L"bytes swapped", LINE_INFO());
+            }
+        }
+
+        TEST_METHOD(stream4) {
+            typedef std::uint32_t type;
+            std::array<type, 32> data;
+            std::iota(data.begin(), data.end(), std::uint32_t(USHRT_MAX));
+
+            swap_bytes(data.data(), data.size(), sizeof(type));
+
+            for (std::size_t i = 1; i < data.size(); ++i) {
+                union {
+                    type value;
+                    std::uint8_t bytes[sizeof(type)];
+                } swapped { type(USHRT_MAX + i) };
+                std::reverse(swapped.bytes, swapped.bytes + sizeof(type));
+
+                Assert::AreEqual(swapped.value, data[i], L"bytes swapped", LINE_INFO());
+            }
+        }
+
+        TEST_METHOD(stream8) {
+            typedef std::uint64_t type;
+            std::array<type, 32> data;
+            std::iota(data.begin(), data.end(), std::uint64_t(UINT_MAX));
+
+            swap_bytes(data.data(), data.size(), sizeof(type));
+
+            for (std::size_t i = 1; i < data.size(); ++i) {
+                union {
+                    type value;
+                    std::uint8_t bytes[sizeof(type)];
+                } swapped { type(UINT_MAX + i) };
+                std::reverse(swapped.bytes, swapped.bytes + sizeof(type));
+
+                Assert::AreEqual(swapped.value, data[i], L"bytes swapped", LINE_INFO());
+            }
+        }
     };
 }
