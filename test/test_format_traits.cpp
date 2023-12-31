@@ -89,5 +89,6 @@ namespace fpd {
                 to_string<char>(static_cast<format>(UINT_MAX));
             }, L"UINT_MAX", LINE_INFO());
         }
+
     };
 }

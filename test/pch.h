@@ -19,11 +19,13 @@
 #include "fpd/format.h"
 #include "fpd/format_description.h"
 #include "fpd/format_traits.h"
+#include "fpd/format_variant.h"
 #include "fpd/header_segment.h"
 #include "fpd/literal.h"
 #include "fpd/meta_data.h"
 #include "fpd/semantic.h"
 #include "fpd/swap_bytes.h"
+#include "fpd/type_list.h"
 #include "fpd/type_size.h"
 
 

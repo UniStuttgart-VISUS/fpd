@@ -17,6 +17,7 @@
 #include "fpd/format.h"
 #include "fpd/literal.h"
 #include "fpd/type_components.h"
+#include "fpd/type_list.h"
 #include "fpd/type_size.h"
 
 
@@ -101,6 +102,15 @@ _SPECIALISE_FMT_TRAITS(float64, double);
 
 namespace detail {
 
+    template<class TList> struct format_type_list;
+
+    template<format... Formats>
+    struct format_type_list<format_list<Formats ...>> final {
+        template<format F>
+        using traits = typename format_forward_traits<F>::type;
+        typedef type_list<traits<Formats>...> type;
+    };
+
     inline constexpr std::size_t to_components(_In_ const format_list<>,
             _In_ const format) noexcept {
         return 0;
@@ -156,6 +166,13 @@ namespace detail {
     }
 
 } /* namespace detail */
+
+
+/// <summary>
+/// A list of all the types that are represented by the <see cref="format" />s
+/// in the <see cref="formats" /> list.
+/// </summary>
+typedef detail::format_type_list<formats>::type format_types;
 
 
 /// <summary>
