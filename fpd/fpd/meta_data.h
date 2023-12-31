@@ -271,6 +271,9 @@ private:
     static void parse_frame_table(_Inout_ meta_data& meta_data,
         _In_ const void *data, _In_ const std::size_t cnt);
 
+    static void parse_global_particle_properties(_Inout_ meta_data& meta_data,
+        _In_ const void *data, _In_ const std::size_t cnt);
+
     static void parse_user_semantics(_Inout_ meta_data& meta_data,
         _In_ const void *data, _In_ const std::size_t cnt);
 

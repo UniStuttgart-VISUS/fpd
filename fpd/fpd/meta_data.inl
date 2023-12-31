@@ -89,6 +89,10 @@ FPD_NAMESPACE::meta_data<TChar>& FPD_NAMESPACE::meta_data<TChar>::parse(
             case header_segment::bounding_box:
                 parse_bounding_box(meta_data, cur, length);
                 break;
+
+            case header_sgement::global_particle_properties:
+                parse_global_particle_properties(meta_data, cur, length);
+                break;
         }
 
         cur += length;
@@ -317,6 +321,18 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_frame_table(
     auto e = reinterpret_cast<const frame_table_type::value_type *>(data + cnt);
     meta_data._frame_table.reserve(e - b);
     std::copy(b, e, std::back_inserter(meta_data._frame_table));
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data<TChar>::parse_global_particle_properties
+ */
+template<class TChar>
+void FPD_NAMESPACE::meta_data<TChar>::parse_global_particle_properties(
+        _Inout_ meta_data& meta_data,
+        _In_ const void *data,
+        _In_ const std::size_t cnt) {
+    throw "TODO";
 }
 
 

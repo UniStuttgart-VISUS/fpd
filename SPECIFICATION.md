@@ -60,6 +60,9 @@ At least one bounding box covering all frames of the file must be present in the
 
 If per-frame bounding boxes are included, one for each frame must follow in the same format as for the global one. It is erroneous to specify more than one bounding box, but less than (# of frames + 1) ones.
 
+### Global particle properties (0x06)
+This segment is optional.
+
 
 ## Frame data
 The frame data is a raw consecutive list of frames each of which is a list of consecutive particles as described in the format description header segment. The number of particles is determined by the size of the frame in bytes divided by the size of a single particle as described in the format description header segment.

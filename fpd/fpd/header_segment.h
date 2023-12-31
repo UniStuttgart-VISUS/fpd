@@ -54,6 +54,12 @@ enum class header_segment : std::uint32_t {
     /// additional per-frame bounding boxes.
     /// </summary>
     bounding_box = 0x05 << 25,
+
+    /// <summary>
+    /// The global particle properties segments holds a table of
+    /// <see cref="semantic" />s that are the same for all particles in the file.
+    /// </summary>
+    global_particle_properties = 0x06 << 25,
 };
 
 FPD_NAMESPACE_END
