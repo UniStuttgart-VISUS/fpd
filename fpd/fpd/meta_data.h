@@ -7,10 +7,12 @@
 #pragma once
 
 #include <cstdlib>
+#include <map>
 
 #include "fpd/bounding_box.h"
 #include "fpd/endian.h"
 #include "fpd/format_description.h"
+#include "fpd/format_variant.h"
 #include "fpd/header_segment.h"
 #include "fpd/swap_bytes.h"
 
@@ -34,6 +36,11 @@ public:
     /// The type used to specify the endian of the data.
     /// </summary>
     typedef FPD_NAMESPACE::endian endian_type;
+
+    /// <summary>
+    /// The type used to specify the format of data.
+    /// </summary>
+    typedef FPD_NAMESPACE::format format_type;
 
     /// <summary>
     /// The type of the particle format descriptor.
@@ -208,6 +215,16 @@ public:
     }
 
     /// <summary>
+    /// Gets the list of properties that apply to all particles and are not
+    /// specified on a per-particle basis.
+    /// </summary>
+    /// <returns>The list of global particle properties.</returns>
+    inline const std::map<semantic, format_variant>& global_particle_properties(
+            void) const noexcept {
+        return this->_global_particle_properties;
+    }
+
+    /// <summary>
     /// Answer the offset of the given element <paramref name="group" />
     /// from the begin of the given <paramref name="frame" />.
     /// </summary>
@@ -284,6 +301,7 @@ private:
     format_description_type _format_description;
     std::vector<bounding_box> _frame_bounding_boxes;
     frame_table_type _frame_table;
+    std::map<semantic, format_variant> _global_particle_properties;
     std::vector<string_type> _user_defined_semantics;
     version_type _version;
 };

@@ -31,13 +31,13 @@ This segment is mandatory.
 
 The format description describes the semantics and layout of the particles. A format description comprises one or more elements of the following format:
 
-| Type   | Length  | Description                                                                                                                      |
-|--------|---------|----------------------------------------------------------------------------------------------------------------------------------|
-| uint64 | 8 Bytes | The semantic of the element, which can be one of the built-in `semantic`s or a custom one.                                       |
-| format | 4 Bytes | The format of the the element, which must be one of the enumerated `format`s.                                                    |
-| uint16 | 2 Bytes | The zero-based index of the stream to which the element belongs to.                                                              |
-| uint16 | 2 Bytes | Offset of the element within the stream, in bytes. If zero, the element will be assumed to start directly after its predecessor. |
-| uint16 | 2 Bytes | The size of the element in bytes. If zero, the `format` will be used to determine the size.                                      |
+| Type     | Length  | Description                                                                                                                      |
+|----------|---------|----------------------------------------------------------------------------------------------------------------------------------|
+| semantic | 8 Bytes | The semantic of the element, which can be one of the built-in `semantic`s or a custom one.                                       |
+| format   | 4 Bytes | The format of the the element, which must be one of the enumerated `format`s.                                                    |
+| uint16   | 2 Bytes | The zero-based index of the stream to which the element belongs to.                                                              |
+| uint16   | 2 Bytes | Offset of the element within the stream, in bytes. If zero, the element will be assumed to start directly after its predecessor. |
+| uint16   | 2 Bytes | The size of the element in bytes. If zero, the `format` will be used to determine the size.                                      |
 
 ### User-defined semantic description (0x03)
 This segment is optional any only present if any of the format descriptions uses a custom semantic.
@@ -63,6 +63,15 @@ If per-frame bounding boxes are included, one for each frame must follow in the 
 ### Global particle properties (0x06)
 This segment is optional.
 
+This segment specifies properties that apply similarly to all particles. These properties must not be included in the per-particle format description.
+
+The global particles are specified as one or more structures of the following content:
+
+| Type     | Length   | Description                                                                                                                        |
+|----------|----------|------------------------------------------------------------------------------------------------------------------------------------|
+| semantic | 8 Bytes  | The semantic of the property, which can be one of the built-in `semantic`s or a custom one.                                        |
+| format   | 4 Bytes  | The format of the the property, which must be one of the enumerated `format`s.                                                     |
+| uint8    | Variable | The value of the property, which must be an element of the previous `format`. The size is dependent on the format of the property. |
 
 ## Frame data
 The frame data is a raw consecutive list of frames each of which is a list of consecutive particles as described in the format description header segment. The number of particles is determined by the size of the frame in bytes divided by the size of a single particle as described in the format description header segment.

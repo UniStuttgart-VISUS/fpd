@@ -332,7 +332,38 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_global_particle_properties(
         _Inout_ meta_data& meta_data,
         _In_ const void *data,
         _In_ const std::size_t cnt) {
-    throw "TODO";
+#define _FPD_THROW_IF_INCOMPLETE(req) \
+    if ((end - cur) < req) { \
+        throw std::invalid_argument("The global particle property "\
+        "header segment contains incomplete data."); \
+    }
+
+    if (!meta_data._global_particle_properties.empty()) {
+        throw std::invalid_argument("The list of global particle properties "
+            "has already been parsed.");
+    }
+
+    auto cur = static_cast<const std::uint8_t *>(data);
+    const auto end = cur + cnt;
+
+    while (cur < end) {
+        _FPD_THROW_IF_INCOMPLETE(sizeof(semantic_type));
+        const auto s = swap_endian_as<semantic_type>(cur, meta_data.endian);
+        cur += sizeof(s);
+
+        _FPD_THROW_IF_INCOMPLETE(sizeof(format_type));
+        const auto f = swap_endian_as<format_type>(cur, meta_data.endian);
+        cur += sizeof(f);
+
+        const auto cnt = to_size(f);
+        _FPD_THROW_IF_INCOMPLETE(cnt);
+        //meta_data._global_particle_properties[s] = format_variant()
+        throw "TODO";
+
+        cur += cnt;
+    }
+
+#undef _FPD_THROW_IF_INCOMPLETE
 }
 
 

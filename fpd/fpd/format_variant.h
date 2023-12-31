@@ -16,7 +16,6 @@
 
 FPD_NAMESPACE_BEGIN
 
-
 /// <summary>
 /// A variant type that can hold variables matching all of the given
 /// <typeparamref name="TFormatList" />.
@@ -25,6 +24,22 @@ FPD_NAMESPACE_BEGIN
 /// specifying all formats that can be stored in the variant.</typeparam>
 template<class Formats> class basic_format_variant;
 
+
+namespace detail {
+
+    template<class TValue> struct format_value_ctor final {
+        inline void operator ()(TValue& value) {
+            value = TValue();
+        }
+    };
+
+    template<class TValue> struct format_value_dtor final {
+        inline void operator ()(TValue& value) noexcept {
+            value.~TValue();
+        }
+    };
+
+} /* namespace detail */
 
 /// <summary>
 /// A variant type that can hold variables matching all of the given
@@ -65,6 +80,14 @@ public:
         : _format(format_type::unknown) { }
 
     /// <summary>
+    /// Initialises a new instance.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the value stored in the variant.
+    /// This must be one of the <see cref="format_types" />.</typeparam>
+    /// <param name="value">The initial value in the variant.</param>
+    template<class TValue> basic_format_variant(_In_ const TValue& value);
+
+    /// <summary>
     /// Clears the content of the variant to
     /// <see cref="format_type::unknown" />.
     /// </summary>
@@ -86,6 +109,18 @@ public:
     inline format_type format(void) const noexcept {
         return this->_format;
     }
+
+    ///// <summary>
+    ///// Invoke the given functor template for the type that is actually
+    ///// stored in the variant.
+    ///// </summary>
+    ///// <typeparam name="TFunction">The functor template, which must be
+    ///// supported for all the types that can be stored in the variant.
+    ///// </typeparam>
+    ///// <param name="func">The functor to invoke.</param>
+    ///// <returns></returns>
+    //template<template<class> class TFunction>
+    //const basic_format_variant& invoke(_In_ TFunction&& func) const;
 
     /// <summary>
     /// Answer the overall size of the variant in bytes.

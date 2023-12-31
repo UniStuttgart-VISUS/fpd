@@ -13,6 +13,20 @@ namespace fpd {
 
     public:
 
+        TEST_METHOD(ctor) {
+            {
+                format_variant v;
+                Assert::IsFalse(bool(v), L"initialised invalid", LINE_INFO());
+                Assert::AreEqual(int(v.format()), int(format::unknown), L"unknown", LINE_INFO());
+            }
+            {
+                format_variant v(std::int32_t(12));
+                Assert::IsTrue(bool(v), L"initialised valid", LINE_INFO());
+                Assert::AreEqual(int(v.format()), int(format::int32), L"int32", LINE_INFO());
+            }
+
+        }
+
         TEST_METHOD(size) {
             {
                 basic_format_variant<format_list<>> v;
