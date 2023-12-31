@@ -61,13 +61,23 @@ public:
     /// <summary>
     /// Initialises a new instance.
     /// </summary>
-    inline format_variant(void) noexcept : _format(format_type::unknown) { }
+    inline basic_format_variant(void) noexcept
+        : _format(format_type::unknown) { }
 
     /// <summary>
     /// Clears the content of the variant to
     /// <see cref="format_type::unknown" />.
     /// </summary>
     //void clear(void) noexcept;
+
+    /// <summary>
+    /// Answer a pointer to the data of the variant, or <c>nullptr</c> if the
+    /// variant does not contain valid data.
+    /// </summary>
+    /// <returns>A pointer to the data if these are valid.</returns>
+    inline _Ret_maybenull_ const void *data(void) const noexcept {
+        return static_cast<bool>(*this) ? this->_data.data() : nullptr;
+    }
 
     /// <summary>
     /// Answer the format of the data currently stored in the variant.
@@ -83,6 +93,16 @@ public:
     /// <returns>The size of the variant in bytes.</returns>
     inline constexpr std::size_t size(void) const noexcept {
         return this->_data.size();
+    }
+
+    /// <summary>
+    /// Answer whether the variant holds valid data.
+    /// </summary>
+    /// <returns><c>true</c> if the variant holds valid data,
+    /// <c>false</c> otherwise.</returns>
+    inline operator bool(void) const noexcept {
+        return ((this->_format != format_type::unknown)
+            && (this->_data.size() > 0));
     }
 
 private:
