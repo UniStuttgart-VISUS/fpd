@@ -282,11 +282,15 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_description(
         _Inout_ meta_data& meta_data,
         _In_ const void *data,
         _In_ const std::size_t cnt) {
+    if (!meta_data._description.empty()) {
+        throw std::invalid_argument("The file description has already been "
+            "parsed.");
+    }
     if ((cnt % sizeof(char16_t)) != 0) {
         throw std::invalid_argument("The description has an unexpected size.");
     }
 
-    throw "TODO";
+    meta_data._description = to_string(data, cnt);
 }
 
 
@@ -386,7 +390,44 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_user_semantics(
     while (cur < end) {
         auto next = cur;
         while (*next++ != 0);
-        throw "TODO";
+        meta_data._user_defined_semantics.push_back(
+            to_string(meta_data, cur, next));
         cur = next;
     }
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data<TChar>::to_string
+ */
+template<class TChar>
+typename FPD_NAMESPACE::meta_data<TChar>::string_type
+FPD_NAMESPACE::meta_data<TChar>::to_string(_In_ const meta_data& meta_data,
+        _In_ const char16_t *begin, _In_ const char16_t *end) {
+    assert(begin != nullptr);
+    assert(end != nullptr);
+    assert(end >= begin);
+    std::basic_string<char16_t> string;
+    string.resize(end - begin);
+
+    // Swap the endian according to what the meta data say.
+    swap_endian(string.data(), begin, string.size());
+
+    // Convert the character type or the meta data.
+    return convert_string<char_type>(string.data(), string.size(),
+        code_page::oem);
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data<TChar>::to_string
+ */
+template<class TChar>
+typename FPD_NAMESPACE::meta_data<TChar>::string_type
+FPD_NAMESPACE::meta_data<TChar>::to_string(_In_ const meta_data& meta_data,
+        _In_reads_(cnt) const void *data, _In_ const std::size_t cnt) {
+    assert(data != nullptr);
+    auto end = static_cast<std::uint8_t>(data) + cnt;
+    return to_string(static_cast<const char16_t *>(data),
+        reinterpret_cast<const char16_t *>(end));
 }

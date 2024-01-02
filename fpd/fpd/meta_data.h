@@ -294,6 +294,12 @@ private:
     static void parse_user_semantics(_Inout_ meta_data& meta_data,
         _In_ const void *data, _In_ const std::size_t cnt);
 
+    static string_type to_string(_In_ const meta_data& meta_data,
+        _In_ const char16_t *begin, _In_ const char16_t *end);
+
+    static string_type to_string(_In_ const meta_data& meta_data,
+        _In_reads_(cnt) const void *data, _In_ const std::size_t cnt);
+
     bounding_box _bounding_box;
     string_type _description;
     endian_type _endian;
