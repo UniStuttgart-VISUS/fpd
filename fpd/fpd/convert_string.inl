@@ -1,21 +1,67 @@
-﻿// <copyright file="convert.inl" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+﻿// <copyright file="convert_string.inl" company="Visualisierungsinstitut der Universität Stuttgart">
+// Copyright © 2023 - 2024 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
 
 /*
- * FPD_NAMESPACE::convert
+ * FPD_NAMESPACE::convert_string
  */
-inline std::size_t FPD_NAMESPACE::convert(
+inline std::size_t FPD_NAMESPACE::convert_string(
+        _Out_writes_to_opt_(cnt_dst, return) char16_t *dst,
+        _In_ std::size_t cnt_dst,
+        _In_reads_or_z_(cnt_src) const char *src,
+        _In_ const std::ptrdiff_t cnt_src,
+        _In_ const code_page code_page) {
+#if defined(_WIN32)
+    static_assert(sizeof(wchar_t) == sizeof(char16_t), "wchar_t is UTF-16.");
+    return convert_string(reinterpret_cast<wchar_t *>(dst), cnt_dst,
+        src, cnt_src, code_page);
+#else /* defined(_WIN32) */
+    UErrorCode status = U_ZERO_ERROR;
+
+    // Create a converter for the code page specified by the caller.
+    std::unique_ptr<UConverter, decltype(&::ucnv_close)> conv(
+        ::ucnv_open(code_page, &status), ::ucnv_close);
+    if (U_FAILURE(status)) {
+        throw std::system_error(status, detail::icu_category());
+    }
+
+    // Perform the conversion.
+    icu::UnicodeString unicode(src, s, conv.get(), status);
+    if (U_FAILURE(status)) {
+        throw std::system_error(status, detail::icu_category());
+    }
+
+    // Extract the characters to the caller's buffer.
+    auto retval = unicode.extract(reinterpret_cast<Char16Ptr>(dst),
+        static_cast<std::int32_t>(cnt_dst), status);
+    switch (status) {
+        case U_ZERO_ERROR:
+        case U_BUFFER_OVERFLOW_ERROR:
+            break;
+
+        default:
+            throw std::system_error(status, detail::icu_category());
+    }
+
+    return retval;
+#endif /* defined(_WIN32) */
+}
+
+
+/*
+ * FPD_NAMESPACE::convert_string
+ */
+inline std::size_t FPD_NAMESPACE::convert_string(
         _Out_writes_to_opt_(cnt_dst, return) wchar_t *dst,
         _In_ std::size_t cnt_dst,
         _In_reads_or_z_(cnt_src) const char *src,
         _In_ const std::ptrdiff_t cnt_src,
         _In_ const code_page code_page) {
     if (src == nullptr) {
-        throw std::invalid_argument("The string to be converted cannot be "
+        throw std::invalid_argument("The string to be converter cannot be "
             "null.");
     }
 
@@ -88,9 +134,9 @@ inline std::size_t FPD_NAMESPACE::convert(
 
 
 /*
- * FPD_NAMESPACE::convert
+ * FPD_NAMESPACE::convert_string
  */
-inline std::size_t FPD_NAMESPACE::convert(
+inline std::size_t FPD_NAMESPACE::convert_string(
         _Out_writes_to_opt_(cnt_dst, return) char *dst,
         _In_ std::size_t cnt_dst,
         _In_reads_or_z_(cnt_src) const wchar_t *src,
@@ -151,7 +197,7 @@ inline std::size_t FPD_NAMESPACE::convert(
     }
 
     // Create a converter for the code page specified by the caller.
-    std::unique_ptr<UConverter, decltype(&::ucnv_close)> conv(
+    std::unique_ptr<Uconverter, decltype(&::ucnv_close)> conv(
         ::ucnv_open(code_page, &status), ::ucnv_close);
     if (U_FAILURE(status)) {
         throw std::system_error(status, detail::icu_category());

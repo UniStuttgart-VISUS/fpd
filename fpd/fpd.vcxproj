@@ -146,7 +146,7 @@
     <ClInclude Include="fpd\abi.h" />
     <ClInclude Include="fpd\annotations.h" />
     <ClInclude Include="fpd\bounding_box.h" />
-    <ClInclude Include="fpd\convert.h" />
+    <ClInclude Include="fpd\convert_string.h" />
     <ClInclude Include="fpd\element.h" />
     <ClInclude Include="fpd\element_group.h" />
     <ClInclude Include="fpd\element_initialiser.h" />
@@ -157,6 +157,7 @@
     <ClInclude Include="fpd\format_traits.h" />
     <ClInclude Include="fpd\format_variant.h" />
     <ClInclude Include="fpd\header_segment.h" />
+    <ClInclude Include="fpd\icu_category.h" />
     <ClInclude Include="fpd\literal.h" />
     <ClInclude Include="fpd\meta_data.h" />
     <ClInclude Include="fpd\null_coalesce.h" />
@@ -170,7 +171,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\bounding_box.inl" />
-    <None Include="fpd\convert.inl" />
+    <None Include="fpd\convert_string.inl" />
     <None Include="fpd\element.inl" />
     <None Include="fpd\element_group.inl" />
     <None Include="fpd\format_description.inl" />

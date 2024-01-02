@@ -12,7 +12,7 @@
 
 #include "fpd/bounding_box.h"
 #include "fpd/code_page.h"
-#include "fpd/convert.h"
+#include "fpd/convert_string.h"
 #include "fpd/element.h"
 #include "fpd/element_group.h"
 #include "fpd/endian.h"

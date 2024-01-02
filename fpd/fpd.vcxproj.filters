@@ -42,7 +42,7 @@
     <ClInclude Include="fpd\format_description.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="fpd\convert.h">
+    <ClInclude Include="fpd\convert_string.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="fpd\swap_bytes.h">
@@ -87,12 +87,15 @@
     <ClInclude Include="fpd\posix_io.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fpd\icu_category.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\semantic.inl">
       <Filter>Header Files</Filter>
     </None>
-    <None Include="fpd\convert.inl">
+    <None Include="fpd\convert_string.inl">
       <Filter>Header Files</Filter>
     </None>
     <None Include="fpd\element.inl">
