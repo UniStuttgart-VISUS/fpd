@@ -16,6 +16,20 @@
 The magic identifier for a flexible particle data file, which must be the sequence "FPD" of upper case ASCII characters.
 
 
+## File version
+The file version determines which implementations are able to interpret the data in the file.
+
+All changes to the specification must make sure that all readers sharing the same major version can at least interpret the contents of a file without bailing out. This means that the major version must be incremented whenever something is removed or the interpretation of existing bytes is changed. On the flipside, all implementations must make sure that they are able to ignore optional data they do not understand.
+
+
+## Byte order marker
+The two bytes 0x01 and 0x02 at this position determine how the endian of all subsequent data must be interpreted.
+
+
+## Flexible header size
+This `uint32` determines how many bytes all of the following header segments comprise in total. It can be used to read up to the end of all headers.
+
+
 ## Header segment
 Each header segment starts with an `uint32` header of its own. The lower 24 bits (0xFFFFFF) hold the size of the segment, excluding the initial `uint32` header, in bytes. The upper eight bits (0xFF000000) identify one of the following segment types. Note that the header must be interpreted as `uint32` according to the byte order previously specified. It is wrong to first read one byte to determine the type and then three bytes to determine the size.
 

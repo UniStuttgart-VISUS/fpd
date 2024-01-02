@@ -23,10 +23,12 @@
 #include "fpd/header_segment.h"
 #include "fpd/literal.h"
 #include "fpd/meta_data.h"
+#include "fpd/posix_io.h"
 #include "fpd/semantic.h"
 #include "fpd/swap_bytes.h"
 #include "fpd/type_list.h"
 #include "fpd/type_size.h"
+#include "fpd/win32_io.h"
 
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;

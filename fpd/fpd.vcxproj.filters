@@ -81,6 +81,12 @@
     <ClInclude Include="fpd\format_variant.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fpd\win32_io.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fpd\posix_io.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\semantic.inl">

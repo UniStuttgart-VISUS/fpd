@@ -160,11 +160,13 @@
     <ClInclude Include="fpd\literal.h" />
     <ClInclude Include="fpd\meta_data.h" />
     <ClInclude Include="fpd\null_coalesce.h" />
+    <ClInclude Include="fpd\posix_io.h" />
     <ClInclude Include="fpd\semantic.h" />
     <ClInclude Include="fpd\swap_bytes.h" />
     <ClInclude Include="fpd\type_components.h" />
     <ClInclude Include="fpd\type_list.h" />
     <ClInclude Include="fpd\type_size.h" />
+    <ClInclude Include="fpd\win32_io.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\bounding_box.inl" />
