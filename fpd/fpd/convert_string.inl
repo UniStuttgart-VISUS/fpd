@@ -219,3 +219,29 @@ inline std::size_t FPD_NAMESPACE::convert_string(
     return retval;
 #endif /* defined(_WIN32) */
 }
+
+
+/*
+ * FPD_NAMESPACE::convert_string
+ */
+template<class TChar>
+std::size_t FPD_NAMESPACE::convert_string(
+        _Out_writes_to_opt_(cnt_dst, return) TChar *dst,
+        _In_ const std::size_t cnt_dst,
+        _In_reads_or_z_(cnt_src) const TChar *src,
+        _In_ std::size_t cnt_src,
+        _In_ const code_page code_page) {
+    if (src == nullptr) {
+        throw std::invalid_argument("The string to convert cannot be null.");
+    }
+
+    if (cnt_src == 0) {
+        cnt_src = std::char_traits<TChar>::length(src) + 1;
+    }
+
+    if (dst != nullptr) {
+        ::memcpy(dst, src, (std::min)(cnt_dst, cnt_src));
+    }
+
+    return cnt_src;
+}

@@ -57,6 +57,9 @@
     <ClCompile Include="test_io.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="test_convert_string.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
