@@ -171,6 +171,36 @@ inline std::basic_string<TDstChar> convert_string(
         buffer.data() + cnt - 1);
 }
 
+/// <summary>
+/// Convert between STL strings.
+/// </summary>
+/// <typeparam name="TDstChar">The type of the target characters.</typeparam>
+/// <typeparam name="TSrcChar">The type of the source caracters.</typeparam>
+/// <typeparam name="TSrcTraits">The character traits of the source string.
+/// </typeparam>
+/// <typeparam name="TSrcAlloc">The allocator of the source string.</typeparam>
+/// <param name="src">The source string.</param>
+/// <param name="cnt_src">The length of the source string, which can be -1 for
+/// using the size of the string object.</param>
+/// <param name="code_page">The code page of the MBCS string.</param>
+/// <returns>The converted string.</returns>
+template<class TDstChar, class TSrcChar, class TSrcTraits, class TSrcAlloc>
+inline std::basic_string<TDstChar> convert_string(
+        _In_ const std::basic_string<TSrcChar, TSrcTraits, TSrcAlloc>& src,
+        _In_ const std::size_t cnt_src,
+        _In_ const std::size_t code_page) {
+    assert(cnt_src <= src.size());
+    std::vector<TDstChar> buffer(convert_string(
+        static_cast<TDstChar *>(nullptr), 0,
+        src.data(), (cnt_src < 0) ? src.size() : cnt_src,
+        code_page));
+    auto cnt = convert_string(buffer.data(), buffer.size(),
+        src.data(), (cnt_src < 0) ? src.size() : cnt_src,
+        code_page);
+    return std::basic_string<TDstChar>(buffer.data(),
+        buffer.data() + cnt - 1);
+}
+
 FPD_NAMESPACE_END
 
 #include "fpd/convert_string.inl"
