@@ -33,7 +33,8 @@ public:
     /// Initialises a new instance from an existing file handle.
     /// </summary>
     /// <param name="handle">The handle to move into the new instance.</param>
-    inline win32_io(_Inout_ handle_type&& handle) noexcept : _handle(handle) {
+    explicit inline win32_io(_Inout_ handle_type&& handle) noexcept
+            : _handle(handle) {
         handle = INVALID_HANDLE_VALUE;
     }
 

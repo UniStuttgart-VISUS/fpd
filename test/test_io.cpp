@@ -31,6 +31,7 @@ namespace fpd {
 
                 win32_io io(path, GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
                 Assert::IsTrue(::strlen(expected) <= io.write(0, expected, ::strlen(expected)), L"write", LINE_INFO());
+                ::ZeroMemory(actual, sizeof(actual));
                 Assert::IsTrue(::strlen(expected) <= io.read(actual, ::strlen(expected), 0), L"read", LINE_INFO());
                 Assert::AreEqual(actual, expected, L"roundtrip", LINE_INFO());
             }
@@ -49,6 +50,7 @@ namespace fpd {
 
                 win32_io io(path, GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
                 Assert::IsTrue(::strlen(expected) <= io.write(0, expected, ::strlen(expected)), L"write", LINE_INFO());
+                ::ZeroMemory(actual, sizeof(actual));
                 Assert::IsTrue(::strlen(expected) <= io.read(actual, ::strlen(expected), 0), L"read", LINE_INFO());
                 Assert::AreEqual(actual, expected, L"roundtrip", LINE_INFO());
             }
