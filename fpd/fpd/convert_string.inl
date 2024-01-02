@@ -9,6 +9,94 @@
  * FPD_NAMESPACE::convert_string
  */
 inline std::size_t FPD_NAMESPACE::convert_string(
+        _Out_writes_to_opt_(cnt_dst, return) wchar_t *dst,
+        _In_ std::size_t cnt_dst,
+        _In_reads_or_z_(cnt_src) const char16_t *src,
+        _In_ const std::ptrdiff_t cnt_src,
+        _In_ const code_page code_page) {
+    if (src == nullptr) {
+        throw std::invalid_argument("The string to be converted cannot be "
+            "null.");
+    }
+
+#if defined(_WIN32)
+    static_assert(sizeof(wchar_t) == sizeof(char16_t), "wchar_t is UTF-16.");
+    return convert_string(dst, cnt_dst,
+        reinterpret_cast<const wchar_t *>(src), cnt_src,
+        code_page);
+
+#elif defined(ICU_FOUND)
+    static_assert(sizeof(wchar_t) == sizeof(UChar32), "wchar_t is UTF-32.");
+    icu::UnicodeString unicode(src);
+    UErrorCode status = U_ZERO_ERROR;
+
+    // Convert from UTF-16 to UTF-32.
+    auto retval = unicode.toUTF32(reinterpret_cast<UChar32 *>(dst),
+        static_cast<std::int32_t>(cnt_dst), status);
+    switch (status) {
+        case U_ZERO_ERROR:
+        case U_BUFFER_OVERFLOW_ERROR:
+            break;
+
+        default:
+            throw std::system_error(status, detail::icu_category());
+    }
+
+    return retval;
+#else /* defined(_WIN32) */
+#error "libicu is required on non-Windows systems."
+#endif /* defined(_WIN32) */
+}
+
+
+/*
+ * FPD_NAMESPACE::convert_string
+ */
+inline std::size_t FPD_NAMESPACE::convert_string(
+        _Out_writes_to_opt_(cnt_dst, return) char16_t *dst,
+        _In_ std::size_t cnt_dst,
+        _In_reads_or_z_(cnt_src) const wchar_t *src,
+        _In_ const std::ptrdiff_t cnt_src,
+        _In_ const code_page code_page) {
+    if (src == nullptr) {
+        throw std::invalid_argument("The string to be converted cannot be "
+            "null.");
+    }
+
+#if defined(_WIN32)
+    static_assert(sizeof(wchar_t) == sizeof(char16_t), "wchar_t is UTF-16.");
+    return convert_string(reinterpret_cast<wchar_t *>(dst), cnt_dst,
+        src, cnt_src,
+        code_page);
+
+#elif defined(ICU_FOUND)
+    // Convert to UTF-16 via construction.
+    icu::UnicodeString unicode(src);
+    UErrorCode status = U_ZERO_ERROR;
+
+    // Extract the UTF-16 characters to the caller's buffer.
+    auto retval = unicode.extract(reinterpret_cast<Char16Ptr>(dst),
+        static_cast<std::int32_t>(cnt_dst), status);
+    switch (status) {
+        case U_ZERO_ERROR:
+        case U_BUFFER_OVERFLOW_ERROR:
+            break;
+
+        default:
+            throw std::system_error(status, detail::icu_category());
+    }
+
+    return retval;
+#else /* defined(_WIN32) */
+#error "libicu is required on non-Windows systems."
+#endif /* defined(_WIN32) */
+}
+
+
+/*
+ * FPD_NAMESPACE::convert_string
+ */
+inline std::size_t FPD_NAMESPACE::convert_string(
         _Out_writes_to_opt_(cnt_dst, return) char16_t *dst,
         _In_ std::size_t cnt_dst,
         _In_reads_or_z_(cnt_src) const char *src,
@@ -18,7 +106,8 @@ inline std::size_t FPD_NAMESPACE::convert_string(
     static_assert(sizeof(wchar_t) == sizeof(char16_t), "wchar_t is UTF-16.");
     return convert_string(reinterpret_cast<wchar_t *>(dst), cnt_dst,
         src, cnt_src, code_page);
-#else /* defined(_WIN32) */
+
+#elif defined(ICU_FOUND)
     UErrorCode status = U_ZERO_ERROR;
 
     // Create a converter for the code page specified by the caller.
@@ -47,6 +136,8 @@ inline std::size_t FPD_NAMESPACE::convert_string(
     }
 
     return retval;
+#else /* defined(_WIN32) */
+#error "libicu is required on non-Windows systems."
 #endif /* defined(_WIN32) */
 }
 
@@ -61,7 +152,7 @@ inline std::size_t FPD_NAMESPACE::convert_string(
         _In_ const std::ptrdiff_t cnt_src,
         _In_ const code_page code_page) {
     if (src == nullptr) {
-        throw std::invalid_argument("The string to be converter cannot be "
+        throw std::invalid_argument("The string to be converted cannot be "
             "null.");
     }
 
@@ -89,7 +180,7 @@ inline std::size_t FPD_NAMESPACE::convert_string(
         throw std::system_error(ERROR_NOACCESS, std::system_category());
     }
 
-#else /* defined(_WIN32) */
+#elif defined(ICU_FOUND)
     UErrorCode status = U_ZERO_ERROR;
 
     // Create a converter for the code page specified by the caller.
@@ -129,6 +220,60 @@ inline std::size_t FPD_NAMESPACE::convert_string(
     }
 
     return retval;
+#else /* defined(_WIN32) */
+#error "libicu is required on non-Windows systems."
+#endif /* defined(_WIN32) */
+}
+
+
+/*
+ * FPD_NAMESPACE::convert_string
+ */
+inline std::size_t FPD_NAMESPACE::convert_string(
+        _Out_writes_to_opt_(cnt_dst, return) char *dst,
+        _In_ std::size_t cnt_dst,
+        _In_reads_or_z_(cnt_src) const char16_t *src,
+        _In_ const std::ptrdiff_t cnt_src,
+        _In_ const code_page code_page) {
+    if (src == nullptr) {
+        throw std::invalid_argument("The string to be converted cannot be "
+            "null.");
+    }
+
+    const auto s = static_cast<int>(cnt_src);
+
+#if defined(_WIN32)
+    static_assert(sizeof(wchar_t) == sizeof(char16_t), "wchar_t is UTF-16.");
+    return convert_string(dst, cnt_dst,
+        reinterpret_cast<const wchar_t *>(src), cnt_src,
+        code_page);
+
+#elif defined(ICU_FOUND)
+    icu::UnicodeString unicode(src);
+    UErrorCode status = U_ZERO_ERROR;
+
+    // Create a converter for the code page specified by the caller.
+    std::unique_ptr<UConverter, decltype(&::ucnv_close)> conv(
+        ::ucnv_open(code_page, &status), ::ucnv_close);
+    if (U_FAILURE(status)) {
+        throw std::system_error(status, detail::icu_category());
+    }
+
+    // Extract using the converter.
+    auto retval = unicode.extract(dst, static_cast<std::int32_t>(cnt_dst),
+        conv.get(), status);
+    switch (status) {
+        case U_ZERO_ERROR:
+        case U_BUFFER_OVERFLOW_ERROR:
+            break;
+
+        default:
+            throw std::system_error(status, detail::icu_category());
+    }
+
+    return retval;
+#else /* defined(_WIN32) */
+#error "libicu is required on non-Windows systems."
 #endif /* defined(_WIN32) */
 }
 
@@ -150,7 +295,7 @@ inline std::size_t FPD_NAMESPACE::convert_string(
     const auto s = static_cast<int>(cnt_src);
 
 #if defined(_WIN32)
-    _try{
+    _try {
         if (dst == nullptr) {
             // Make sure that the output buffer size is zero if the output
             // buffer is invalid, such that we get the required buffer size.
@@ -185,7 +330,8 @@ inline std::size_t FPD_NAMESPACE::convert_string(
         throw std::system_error(ERROR_NOACCESS, std::system_category());
     }
 
-#else /* defined(_WIN32) */
+#elif defined(ICU_FOUND)
+    static_assert(sizeof(wchar_t) == sizeof(UChar32), "wchar_t is UTF-32.");
     UErrorCode status = U_ZERO_ERROR;
 
     // Create a UnicodeString, which we can subsequently convert to whatever
@@ -197,14 +343,13 @@ inline std::size_t FPD_NAMESPACE::convert_string(
     }
 
     // Create a converter for the code page specified by the caller.
-    std::unique_ptr<Uconverter, decltype(&::ucnv_close)> conv(
+    std::unique_ptr<UConverter, decltype(&::ucnv_close)> conv(
         ::ucnv_open(code_page, &status), ::ucnv_close);
     if (U_FAILURE(status)) {
         throw std::system_error(status, detail::icu_category());
     }
 
-    // As for the opposite direction, we need to pay for an intermediate
-    // conversion to get from UTF-32 to the specified code page.
+    // Extract using the converter
     auto retval = unicode.extract(dst, static_cast<std::int32_t>(cnt_dst),
         conv.get(), status);
     switch (status) {
@@ -217,6 +362,8 @@ inline std::size_t FPD_NAMESPACE::convert_string(
     }
 
     return retval;
+#else /* defined(_WIN32) */
+#error "libicu is required on non-Windows systems."
 #endif /* defined(_WIN32) */
 }
 
@@ -229,18 +376,21 @@ std::size_t FPD_NAMESPACE::convert_string(
         _Out_writes_to_opt_(cnt_dst, return) TChar *dst,
         _In_ const std::size_t cnt_dst,
         _In_reads_or_z_(cnt_src) const TChar *src,
-        _In_ std::size_t cnt_src,
+        _In_ std::ptrdiff_t cnt_src,
         _In_ const code_page code_page) {
     if (src == nullptr) {
-        throw std::invalid_argument("The string to convert cannot be null.");
+        throw std::invalid_argument("The string to be converted cannot be "
+            "null.");
     }
 
-    if (cnt_src == 0) {
+    if (cnt_src < 0) {
         cnt_src = std::char_traits<TChar>::length(src) + 1;
     }
 
     if (dst != nullptr) {
-        ::memcpy(dst, src, (std::min)(cnt_dst, cnt_src));
+        assert(cnt_src >= 0);
+        const auto cnt = (std::min)(cnt_dst, static_cast<std::size_t>(cnt_src));
+        ::memcpy(dst, src, cnt * sizeof(TChar));
     }
 
     return cnt_src;

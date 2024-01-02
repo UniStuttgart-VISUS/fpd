@@ -99,5 +99,30 @@ namespace fpd {
                 });
             }
         }
+
+        TEST_METHOD(char162wchar) {
+            const auto cp = code_page::oem;
+            typedef char16_t src_type;
+            typedef wchar_t dst_type;
+
+            {
+                const std::basic_string<dst_type> expected = L"input";
+                const auto input = u"input";
+                Assert::AreEqual(expected, convert_string<dst_type>(input, -1, cp), L"standard input", LINE_INFO());
+            }
+
+            {
+                const std::basic_string<dst_type> expected = L"";
+                const auto input = L"";
+                Assert::AreEqual(expected, convert_string<dst_type>(input, -1, cp), L"empty conversion", LINE_INFO());
+            }
+
+            {
+                const auto input = static_cast<src_type *>(nullptr);
+                Assert::ExpectException<std::invalid_argument>([&input, cp](void) {
+                    convert_string<dst_type>(input, -1, cp), L"nullptr conversion", LINE_INFO();
+                });
+            }
+        }
     };
 }
