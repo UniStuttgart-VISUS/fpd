@@ -56,19 +56,19 @@ namespace fpd {
 
             {
                 int i = 41;
-                invoke(&inc_container::inc_sfx, &c, i);
+                FPD_NAMESPACE::invoke(&inc_container::inc_sfx, &c, i);
                 Assert::AreEqual(42, i, L"instance from pointer", LINE_INFO());
             }
 
             {
                 int i = 41;
-                invoke(&inc_container::inc_sfx, c, i);
+                FPD_NAMESPACE::invoke(&inc_container::inc_sfx, c, i);
                 Assert::AreEqual(42, i, L"instance from reference", LINE_INFO());
             }
 
             {
                 int i = 41;
-                invoke(&inc_container::inc_sfx, std::ref(c), i);
+                FPD_NAMESPACE::invoke(&inc_container::inc_sfx, std::ref(c), i);
                 Assert::AreEqual(42, i, L"instance from reference_wrapper", LINE_INFO());
             }
         }
