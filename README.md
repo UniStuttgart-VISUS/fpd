@@ -2,7 +2,7 @@
 The flexible particle data (FPD) format replaces the previously used MegaMol particle list data (MMPLD) in [TRRojan](https://github.com/UniStuttgart-VISUS/trrojan) as input of particle data. This repository holds the C++ reference implementation for processing files of this format.
 
 ## Design goals
-FPD has been designed to address several shortcomings of the MMPLD format in context of [TRRojan](https://github.com/UniStuttgart-VISUS/trrojan). The following sections detail the design goals of this new format.
+FPD has been designed to address several shortcomings of the MMPLD format in context of TRRojan. The following sections detail the design goals of this new format.
 
 ### Keep everything together
 FPD keeps all data in one file as MMPLD does. If you copy the FPD file, you have everything, the meta data describing the particles and the particle data itself.
@@ -21,6 +21,7 @@ Modern (NVMe) drives are designed to allow for efficiently processing a deep rea
 Just as the particle lists in MMLPD are designed to match OpenGL immediate mode APIs, the flexible particle format of FPD is designed to match how Direct3D 11, Direct3D 12 and Vulkan work. The elements of the particle description can be mapped to [D3D11_INPUT_ELEMENT_DESC](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/ns-d3d11-d3d11_input_element_desc) or [VkVertexInputAttributeDescription](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkVertexInputAttributeDescription.html) to describe the data to the graphics API. The particles match this layout and can simply be copied into the buffers of the graphics API.
 
 ### Allow for spatially organised data
+The file format allows for optionally attaching a spatial structure in its flexible header segments. This does, however, not change the layout of the data itself, which can always be rendered brute force.
 
 ### Allow for compression
-
+TRRojan supports DirectStorage with GDeflate wherefore FPD adds support for compressing frames.
