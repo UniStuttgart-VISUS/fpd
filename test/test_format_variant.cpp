@@ -55,5 +55,26 @@ namespace fpd {
             }
         }
 
+        TEST_METHOD(supports) {
+            {
+                basic_format_variant<format_list<>> v;
+                Assert::IsFalse(v.supports(format::float32), L"float32", LINE_INFO());
+                Assert::IsFalse(v.supports<format::float32>(), L"float32 comile time", LINE_INFO());
+                Assert::IsFalse(v.supports<float>(), L"float", LINE_INFO());
+            }
+
+            {
+                basic_format_variant<format_list<format::int32, format::float64>> v;
+
+                Assert::IsFalse(v.supports(format::float32), L"float32", LINE_INFO());
+                Assert::IsFalse(v.supports<format::float32>(), L"float32 comile time", LINE_INFO());
+                Assert::IsFalse(v.supports<float>(), L"float", LINE_INFO());
+
+                Assert::IsTrue(v.supports(format::int32), L"int32", LINE_INFO());
+                Assert::IsTrue(v.supports<format::int32>(), L"int32 comile time", LINE_INFO());
+                Assert::IsTrue(v.supports<int>(), L"int", LINE_INFO());
+            }
+        }
+
     };
 }

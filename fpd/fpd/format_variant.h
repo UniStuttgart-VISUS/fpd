@@ -11,6 +11,7 @@
 #include <stdexcept>
 
 #include "fpd/format_traits.h"
+#include "fpd/invoke.h"
 #include "fpd/type_list.h"
 
 
@@ -86,22 +87,13 @@ public:
     /// <typeparam name="TValue">The type of the value stored in the variant.
     /// This must be one of the <see cref="format_types" />.</typeparam>
     /// <param name="value">The initial value in the variant.</param>
-    template<class TValue> basic_format_variant(_In_ const TValue& value);
+    template<class TValue> basic_format_variant(_In_ TValue&& value);
 
     /// <summary>
     /// Clears the content of the variant to
     /// <see cref="format_type::unknown" />.
     /// </summary>
     //void clear(void) noexcept;
-
-    /// <summary>
-    /// Answer a pointer to the data of the variant, or <c>nullptr</c> if the
-    /// variant does not contain valid data.
-    /// </summary>
-    /// <returns>A pointer to the data if these are valid.</returns>
-    inline _Ret_maybenull_ const void *data(void) const noexcept {
-        return static_cast<bool>(*this) ? this->_data.data() : nullptr;
-    }
 
     /// <summary>
     /// Answer the format of the data currently stored in the variant.
@@ -124,11 +116,136 @@ public:
     //const basic_format_variant& invoke(_In_ TFunction&& func) const;
 
     /// <summary>
+    /// Gets the value of the variant, provided it has the specified format.
+    /// </summary>
+    /// <returns>The value of the variant.</returns>
+    /// <exception cref="std::logic_error">If <typeparamref name="Format" /> is
+    /// not the format of the current value in the variant.</exception>
+    template<format_type Format>
+    inline const typename format_forward_traits<Format>::type& get(void) const {
+        return this->get<typename format_forward_traits<Format>::type>();
+    }
+
+    /// <summary>
+    /// Gets the value of the variant, provided it has the specified format.
+    /// </summary>
+    /// <returns>The value of the variant.</returns>
+    /// <exception cref="std::logic_error">If <typeparamref name="Format" /> is
+    /// not the format of the current value in the variant.</exception>
+    template<format_type Format>
+    inline typename format_forward_traits<Format>::type& get(void) {
+        return this->get<typename format_forward_traits<Format>::type>();
+    }
+
+    /// <summary>
+    /// Gets the value of the variant, provided it has the specified type.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the value to retrieve, which must
+    /// be the type of the format currently stored in the variant.</typeparam>
+    /// <returns>The value of the variant.</returns>
+    /// <exception cref="std::logic_error">If <typeparamref name="TValue" /> is
+    /// not the type of the current value in the variant.</exception>
+    template<class TValue> const TValue& get(void) const;
+
+    /// <summary>
+    /// Gets the value of the variant, provided it has the specified type.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the value to retrieve, which must
+    /// be the type of the format currently stored in the variant.</typeparam>
+    /// <returns>The value of the variant.</returns>
+    /// <exception cref="std::logic_error">If <typeparamref name="TValue" /> is
+    /// not the type of the current value in the variant.</exception>
+    template<class TValue> TValue& get(void);
+
+    /// <summary>
     /// Answer the overall size of the variant in bytes.
     /// </summary>
     /// <returns>The size of the variant in bytes.</returns>
     inline constexpr std::size_t size(void) const noexcept {
         return this->_data.size();
+    }
+
+    /// <summary>
+    /// Answer whether <paramref name="format" /> is a supported format in
+    /// the variant.
+    /// </summary>
+    /// <param name="format">The format to be tested.</param>
+    /// <returns><c>true</c> if <paramref name="format" /> is among the formats
+    /// supported by the variant, <c>false</c> otherwise.</returns>
+    inline constexpr bool supports(
+            _In_ const format_type format) const noexcept {
+        return in_format_list(formats(), format);
+    }
+
+    /// <summary>
+    /// Answer whether the specified format is supported by the variant.
+    /// </summary>
+    /// <typeparam name="Format">The format to be tested.</typeparam>
+    /// <returns><c>true</c> if values of <typeparamref name="Format" /> can
+    /// be stored in the variant, <c>false</c> otherwise.</returns>
+    template<format_type Format>
+    inline constexpr bool supports(void) const noexcept {
+        return in_format_list(formats(), Format);
+    }
+
+    /// <summary>
+    /// Answer whether the specified type is supported by the variant.
+    /// </summary>
+    /// <typeparam name="TValue">The type to be tested.</typeparam>
+    /// <returns><c>true</c> if values of <typeparamref name="TValue" /> can
+    /// be stored in the variant, <c>false</c> otherwise.</returns>
+    template<class TValue>
+    inline constexpr bool supports(void) const noexcept {
+        return in_format_list(formats(), format_reverse_traits<TValue>::format);
+    }
+
+    /// <summary>
+    /// Gets the value of the variant, provided it has the specified format.
+    /// </summary>
+    /// <returns>The value of the variant, or <c>nullptr</c> if the value does
+    /// not have the requested format.</returns>
+    template<format_type Format>
+    inline const typename format_forward_traits<Format>::type *get(
+            void) const noexcept {
+        return this->try_get<typename format_forward_traits<Format>::type>();
+    }
+
+    /// <summary>
+    /// Gets the value of the variant, provided it has the specified format.
+    /// </summary>
+    /// <returns>The value of the variant, or <c>nullptr</c> if the value does
+    /// not have the requested format.</returns>
+    template<format_type Format>
+    inline typename format_forward_traits<Format>::type *get(void) noexcept {
+        return this->try_get<typename format_forward_traits<Format>::type>();
+    }
+
+    /// <summary>
+    /// Gets the value of the variant, provided it has the specified type.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the value to retrieve, which must
+    /// be the type of the format currently stored in the variant.</typeparam>
+    /// <returns>The value of the variant, or <c>nullptr</c> if the value does
+    /// not have the requested type.</returns>
+    template<class TValue> inline const TValue *try_get(void) const noexcept {
+        auto retval = static_cast<bool>(*this) ? this->_data.data() : nullptr;
+        return (format_reverse_traits<TValue>::format == this->_format)
+            ? reinterpret_cast<const TValue *>(retval)
+            : nullptr;
+    }
+
+    /// <summary>
+    /// Gets the value of the variant, provided it has the specified type.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the value to retrieve, which must
+    /// be the type of the format currently stored in the variant.</typeparam>
+    /// <returns>The value of the variant, or <c>nullptr</c> if the value does
+    /// not have the requested type.</returns>
+    template<class TValue> inline TValue *try_get(void) noexcept {
+        auto retval = static_cast<bool>(*this) ? this->_data.data() : nullptr;
+        return (format_reverse_traits<TValue>::format == this->_format)
+            ? reinterpret_cast<TValue *>(retval)
+            : nullptr;
     }
 
     /// <summary>
@@ -142,6 +259,25 @@ public:
     }
 
 private:
+
+    static constexpr inline bool in_format_list(_In_ const format_list<>,
+            _In_ const format_type) noexcept {
+        return false;
+    }
+
+    template<format_type Format, format_type... Formats>
+    static constexpr inline bool in_format_list(
+            _In_ const format_list<Format, Formats...>,
+            _In_ const format_type f) noexcept {
+        return ((Format == f) || in_format_list(format_list<Formats...>(), f));
+    }
+
+    //template<class TValue, class TFunc>
+    //inline auto invoke_for(_In_ TFunc &&func) {
+    //    return invoke(std::forward<TFunc>(func))
+    //}
+
+
 
     std::array<std::uint8_t, type_list_max_sizeof<format_types>::value> _data;
     format_type _format;
