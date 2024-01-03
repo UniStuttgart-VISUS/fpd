@@ -1,5 +1,5 @@
 ﻿// <copyright file="format_variant.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2024 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
@@ -40,6 +40,7 @@ namespace detail {
     };
 
 } /* namespace detail */
+
 
 /// <summary>
 /// A variant type that can hold variables matching all of the given

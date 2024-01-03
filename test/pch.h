@@ -21,6 +21,7 @@
 #include "fpd/format_traits.h"
 #include "fpd/format_variant.h"
 #include "fpd/header_segment.h"
+#include "fpd/invoke.h"
 #include "fpd/literal.h"
 #include "fpd/meta_data.h"
 #include "fpd/posix_io.h"

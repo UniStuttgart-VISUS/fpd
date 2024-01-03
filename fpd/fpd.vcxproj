@@ -158,6 +158,7 @@
     <ClInclude Include="fpd\format_variant.h" />
     <ClInclude Include="fpd\header_segment.h" />
     <ClInclude Include="fpd\icu_category.h" />
+    <ClInclude Include="fpd\invoke.h" />
     <ClInclude Include="fpd\literal.h" />
     <ClInclude Include="fpd\meta_data.h" />
     <ClInclude Include="fpd\null_coalesce.h" />
