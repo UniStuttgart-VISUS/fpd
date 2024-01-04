@@ -1,35 +1,125 @@
 ﻿// <copyright file="format_variant.inl" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2024 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
 
-#define _FPD_VARIANT_FORMATS FPD_NAMESPACE::format_list<Formats...>
+FPD_NAMESPACE_BEGIN
+
+namespace detail {
+
+    template<class TValue> struct format_value_ctor final {
+
+        template<class TArg>
+        typename std::enable_if<std::is_convertible<TValue, TArg>::value>::type
+        operator ()(_In_ TValue *target, _In_ TArg&& value) {
+            assert(target != nullptr);
+            new (target) TValue(static_cast<TValue>(value));
+        }
+
+        template<class TArg>
+        typename std::enable_if<!std::is_convertible<TValue, TArg>::value>::type
+        operator ()(_In_ TValue *target, _In_ TArg&& value) {
+            assert(target != nullptr);
+            assert(false);  // This should never be called by invoke.
+            new (target) TValue();
+        }
+    };
+
+    template<class TValue> struct format_value_runtime_ctor final {
+        inline void operator ()(_In_ TValue *target,
+                _In_reads_(cnt) const void *value,
+                _In_ std::size_t cnt) {
+            assert(target != nullptr);
+            assert(cnt >= sizeof(TValue));
+            new (target) TValue(*reinterpret_cast<const TValue *>(value));
+        }
+    };
+
+    template<class TValue> struct format_value_dtor final {
+        inline void operator ()(TValue *target) noexcept {
+            assert(target != nullptr);
+            target->~TValue();
+        }
+    };
+
+} /* namespace detail */
+
+FPD_NAMESPACE_END
+
+
+#define _FPD_VAR_FMTS FPD_NAMESPACE::format_list<Formats...>
+
 
 /*
- * ...::basic_format_variant<_FPD_VARIANT_FORMATS>::basic_format_variant
+ * ...::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant
  */
 template<FPD_NAMESPACE::format... Formats>
 template<class TValue>
-FPD_NAMESPACE::basic_format_variant<_FPD_VARIANT_FORMATS>::basic_format_variant(
+FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant(
         TValue&& value) : _format(format_reverse_traits<TValue>::format) {
-    auto dst = this->try_get<TValue>();
-    if (dst == nullptr) {
+    if (!this->supports(this->_format)) {
         throw std::invalid_argument("The variant does not support the "
             "specified kind of value.");
-    } else {
-        new (dst) TValue(std::forward<TValue>(value));
     }
+
+    this->invoke<detail::format_value_ctor>(std::forward<TValue>(value));
 }
 
 
 /*
- * FPD_NAMESPACE::basic_format_variant<_FPD_VARIANT_FORMATS>::get
+ * ...::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant
+ */
+template<FPD_NAMESPACE::format... Formats>
+FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant(
+        _In_ const format_type format,
+        _In_reads_(cnt) const void *value,
+        _In_ const std::size_t cnt)
+        : _format(format) {
+    if (!this->supports(this->_format)) {
+        throw std::invalid_argument("The variant does not support the "
+            "specified kind of value.");
+    }
+    if (value == nullptr) {
+        throw std::invalid_argument("The provided data are invalid.");
+    }
+    if (cnt < to_size(format)) {
+        throw std::invalid_argument("The provided data are too small to "
+            "represent the specified format.");
+    }
+
+    this->invoke<detail::format_value_runtime_ctor>(value, cnt);
+}
+
+
+/*
+ * FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::~basic_format_variant
+ */
+template<FPD_NAMESPACE::format... Formats>
+FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::~basic_format_variant(
+        void) noexcept {
+    this->invoke<detail::format_value_dtor>();
+}
+
+
+/*
+ * FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::clear
+ */
+template<FPD_NAMESPACE::format... Formats>
+void FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::clear(
+        void) noexcept {
+    this->invoke<detail::format_value_dtor>();
+    this->_format = format_type::unknown;
+}
+
+
+/*
+ * FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::get
  */
 template<FPD_NAMESPACE::format... Formats>
 template<class TValue>
-const TValue& FPD_NAMESPACE::basic_format_variant<_FPD_VARIANT_FORMATS>::get(
+const TValue& FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::get(
         void) const {
     auto retval = this->try_get<TValue>();
     if (retval == nullptr) {
@@ -42,11 +132,11 @@ const TValue& FPD_NAMESPACE::basic_format_variant<_FPD_VARIANT_FORMATS>::get(
 
 
 /*
- * FPD_NAMESPACE::basic_format_variant<_FPD_VARIANT_FORMATS>::get
+ * FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::get
  */
 template<FPD_NAMESPACE::format... Formats>
 template<class TValue>
-TValue& FPD_NAMESPACE::basic_format_variant<_FPD_VARIANT_FORMATS>::get(void) {
+TValue& FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::get(void) {
     auto retval = this->try_get<TValue>();
     if (retval == nullptr) {
         throw std::logic_error("The variant does not hold the expected kind of "
@@ -56,4 +146,27 @@ TValue& FPD_NAMESPACE::basic_format_variant<_FPD_VARIANT_FORMATS>::get(void) {
     }
 }
 
-#undef _FPD_VARIANT_FORMATS
+
+/*
+ * FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::invoke0
+ */
+template<FPD_NAMESPACE::format... Formats>
+template<template<class> class TFunc,
+    FPD_NAMESPACE::format Fmt,
+    FPD_NAMESPACE::format... Fmts,
+    class... TArgs>
+void FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::invoke0(
+        _In_ format_list<Fmt, Fmts...>,
+        _In_ TArgs&&... args) {
+    typedef typename format_forward_traits<Fmt>::type value_type;
+    if (Fmt == this->_format) {
+        FPD_NAMESPACE::invoke(TFunc<value_type>(),
+            this->try_get<value_type>(),
+            std::forward<TArgs>(args)...);
+    } else {
+        this->invoke0<TFunc>(format_list<Fmts...>(),
+            std::forward<TArgs>(args)...);
+    }
+}
+
+#undef _FPD_VAR_FMTS

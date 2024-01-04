@@ -8,6 +8,7 @@
 
 #include <array>
 #include <cinttypes>
+#include <memory>
 #include <stdexcept>
 
 #include "fpd/format_traits.h"
@@ -24,23 +25,6 @@ FPD_NAMESPACE_BEGIN
 /// <typeparam name="TFormatList">An instantiation of <see name="format_list" />
 /// specifying all formats that can be stored in the variant.</typeparam>
 template<class Formats> class basic_format_variant;
-
-
-namespace detail {
-
-    template<class TValue> struct format_value_ctor final {
-        inline void operator ()(TValue& value) {
-            value = TValue();
-        }
-    };
-
-    template<class TValue> struct format_value_dtor final {
-        inline void operator ()(TValue& value) noexcept {
-            value.~TValue();
-        }
-    };
-
-} /* namespace detail */
 
 
 /// <summary>
@@ -79,7 +63,7 @@ public:
     /// Initialises a new instance.
     /// </summary>
     inline basic_format_variant(void) noexcept
-        : _format(format_type::unknown) { }
+        : _data({ 0 }), _format(format_type::unknown) { }
 
     /// <summary>
     /// Initialises a new instance.
@@ -87,13 +71,33 @@ public:
     /// <typeparam name="TValue">The type of the value stored in the variant.
     /// This must be one of the <see cref="format_types" />.</typeparam>
     /// <param name="value">The initial value in the variant.</param>
+    /// <exception cref="std::invalid_argument">If the variant does not support
+    /// values of type <typeparamref name="TValue" />.</exception>
     template<class TValue> basic_format_variant(_In_ TValue&& value);
+
+    /// <summary>
+    /// Initialises a new instance.
+    /// </summary>
+    /// <param name="format"></param>
+    /// <param name="value"></param>
+    /// <param name="cnt"></param>
+    /// <exception cref="std::invalid_argument">If the variant does not support
+    /// values of type <typeparamref name="TValue" /> or if the provided data
+    /// are invalid.</exception>
+    inline basic_format_variant(_In_ const format_type format,
+        _In_reads_(cnt) const void *value,
+        _In_ const std::size_t cnt);
+
+    /// <summary>
+    /// Finalises the instance.
+    /// </summary>
+    ~basic_format_variant(void) noexcept;
 
     /// <summary>
     /// Clears the content of the variant to
     /// <see cref="format_type::unknown" />.
     /// </summary>
-    //void clear(void) noexcept;
+    void clear(void) noexcept;
 
     /// <summary>
     /// Answer the format of the data currently stored in the variant.
@@ -205,7 +209,7 @@ public:
     /// <returns>The value of the variant, or <c>nullptr</c> if the value does
     /// not have the requested format.</returns>
     template<format_type Format>
-    inline const typename format_forward_traits<Format>::type *get(
+    inline const typename format_forward_traits<Format>::type *try_get(
             void) const noexcept {
         return this->try_get<typename format_forward_traits<Format>::type>();
     }
@@ -216,7 +220,8 @@ public:
     /// <returns>The value of the variant, or <c>nullptr</c> if the value does
     /// not have the requested format.</returns>
     template<format_type Format>
-    inline typename format_forward_traits<Format>::type *get(void) noexcept {
+    inline typename format_forward_traits<Format>::type *try_get(
+            void) noexcept {
         return this->try_get<typename format_forward_traits<Format>::type>();
     }
 
@@ -260,24 +265,40 @@ public:
 
 private:
 
+    template<format_type Fmt, format_type... Fmts>
+    static constexpr inline bool in_format_list(
+            _In_ const format_list<Fmt, Fmts...>,
+            _In_ const format_type f) noexcept {
+        return ((Fmt == f) || in_format_list(format_list<Fmts...>(), f));
+    }
+
     static constexpr inline bool in_format_list(_In_ const format_list<>,
             _In_ const format_type) noexcept {
         return false;
     }
 
-    template<format_type Format, format_type... Formats>
-    static constexpr inline bool in_format_list(
-            _In_ const format_list<Format, Formats...>,
-            _In_ const format_type f) noexcept {
-        return ((Format == f) || in_format_list(format_list<Formats...>(), f));
+    template<template<class> class TFunc, class... TArgs>
+    inline void invoke(TArgs&&... args) {
+        this->invoke0<TFunc>(formats(), std::forward<TArgs>(args)...);
     }
 
-    //template<class TValue, class TFunc>
-    //inline auto invoke_for(_In_ TFunc &&func) {
-    //    return invoke(std::forward<TFunc>(func))
-    //}
+    template<template<class> class TFunc, class... TArgs>
+    inline void invoke(TArgs&&... args) const {
+        // Rationale: We do not want to implement the whole stack twice, so
+        // we use the const_cast here as we know that our own functors do
+        // not do nasty things.
+        auto that = const_cast<format_variant *>(this);
+        that->invoke0<TFunc>(format_list(), std::forward<TArgs>(args)...);
+    }
 
+    template<template<class> class TFunc,
+        FPD_NAMESPACE::format Fmt,
+        FPD_NAMESPACE::format... Fmts,
+        class... TArgs>
+    void invoke0(_In_ format_list<Fmt, Fmts...>, _In_ TArgs&&... args);
 
+    template<template<class> class TFunc, class... TArgs>
+    inline void invoke0(_In_ const format_list<>, TArgs&&...) { }
 
     std::array<std::uint8_t, type_list_max_sizeof<format_types>::value> _data;
     format_type _format;
@@ -288,7 +309,6 @@ private:
 /// A variant type that can hold all known <see cref="formats" />.
 /// </summary>
 typedef basic_format_variant<formats> format_variant;
-
 
 FPD_NAMESPACE_END
 

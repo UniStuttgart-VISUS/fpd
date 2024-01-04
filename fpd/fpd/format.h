@@ -289,11 +289,41 @@ enum class format : std::uint32_t {
 template<format... Formats> struct format_list final { };
 
 
+
+namespace detail {
+
+    template<class TList, format Format>
+    struct format_list_cat;
+
+    template<format... Formats, format Format>
+    struct format_list_cat<format_list<Formats...>, Format> final {
+        typedef format_list<Formats..., Format> type;
+    };
+
+} /* namespace detail */
+
+/// <summary>
+/// Appends a new format to the given instance of <see cref="format_list" />.
+/// </summary>
+/// <remarks>
+/// This template can be used to contstruct a new format list that not only
+/// contains all valid formats, but also <see cref="format::unknown" />. This
+/// is, for instance, used in <see cref="to_string" />.
+/// </remarks>
+/// <typeparam name="TList">The format list.</typeparam>
+/// <typeparam name="Format">The format to be appended.</typeparam>
+template<class TList, format Format>
+using format_list_cat = typename detail::format_list_cat<TList, Format>::type;
+
+
 /// <summary>
 /// A compile-time list of all built-in formats.
 /// </summary>
+/// <remarks>
+/// Note that this list contains only valid formats, i.e.
+/// <see cref="format::unknown" /> cannot be automatically resolved.
+/// </remarks>
 typedef format_list<
-    format::unknown,
     format::int8x,
     format::int8xy,
     format::int8xyz,

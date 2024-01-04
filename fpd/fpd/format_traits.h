@@ -211,7 +211,8 @@ inline std::size_t to_size(_In_ const format format) {
 /// is a bug in the implementation of the library.</exception>
 template<class TChar>
 inline const TChar *const to_string(_In_ const format format) {
-    return detail::to_string<TChar>(formats(), format);
+    typedef format_list_cat<formats, format::unknown> dispatch_type;
+    return detail::to_string<TChar>(dispatch_type(), format);
 }
 
 FPD_NAMESPACE_END
