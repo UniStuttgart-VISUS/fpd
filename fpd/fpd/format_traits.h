@@ -34,8 +34,15 @@ template<format Format> struct format_forward_traits { };
 /// A template that allows for retrieving the <paramref name="format" />
 /// of a type at compile time.
 /// </summary>
-/// <typeparam name="TFormat">The type to reflect on.</typeparam>
-template<class TFormat> struct format_reverse_traits { };
+/// <typeparam name="TValue">The type to reflect on.</typeparam>
+template<class TValue> struct format_reverse_traits {
+    typedef TValue type;
+    static constexpr const format format = format::unknown;
+    template<class TChar>
+    static inline constexpr const TChar *name(void) noexcept {
+        return FPD_TPL_LITERAL(TChar, "unknown");
+    }
+};
 
 
 #define _SPECIALISE_SCALAR_FMT_TRAITS(f, t)\
@@ -111,6 +118,17 @@ namespace detail {
         typedef type_list<traits<Formats>...> type;
     };
 
+    template<class TList, format Format> struct in_format_list;
+
+    template<format Head, format... Tail, format Needle>
+    struct in_format_list<format_list<Head, Tail...>, Needle> final {
+        static constexpr const bool value = (Head == Needle)
+            || in_format_list<format_list<Tail...>, Needle>::value;
+    };
+
+    template<format Needle>
+    struct in_format_list<format_list<>, Needle> final : std::false_type { };
+
     inline constexpr std::size_t to_components(_In_ const format_list<>,
             _In_ const format) noexcept {
         return 0;
@@ -173,6 +191,41 @@ namespace detail {
 /// in the <see cref="formats" /> list.
 /// </summary>
 typedef detail::format_type_list<formats>::type format_types;
+
+
+/// <summary>
+/// Answer whether <typeparamref name="Format" /> is in the given
+/// <typeparamref name="TList" /> of formats.
+/// </summary>
+/// <typeparam name="TList"></typeparam>
+/// <typeparam name="Format"></typeparam>
+template<class TList, format Format> struct is_supported_format final
+    : std::integral_constant<bool, detail::in_format_list<TList,
+    Format>::value> { };
+
+
+/// <summary>
+/// Answer whether the <see cref="format" /> of <typeparamref name="TValue" />
+/// is in the given <typeparamref name="TList" /> of formats.
+/// </summary>
+/// <typeparam name="TList"></typeparam>
+/// <typeparam name="TValue"></typeparam>
+template<class TList, class TValue> struct is_supported_type final
+    : std::integral_constant<bool, detail::in_format_list<TList,
+    format_reverse_traits<typename std::decay<TValue>::type>::format>::value> { };
+
+
+/// <summary>
+/// Answer a runtime list of the given compile-time list of formats.
+/// </summary>
+/// <typeparam name="Formats">A list of formats.</param>
+/// <returns>A runtime list containing <typeparamref name="Formats" />.
+/// </returns>
+template<format... Formats>
+constexpr inline std::array<format, sizeof...(Formats)> to_array(
+        _In_ const format_list<Formats...>) noexcept {
+    return std::array<format, sizeof...(Formats)> { Formats... };
+}
 
 
 /// <summary>

@@ -10,6 +10,7 @@
 #include <cinttypes>
 #include <memory>
 #include <stdexcept>
+#include <type_traits>
 
 #include "fpd/format_traits.h"
 #include "fpd/invoke.h"
@@ -20,9 +21,9 @@ FPD_NAMESPACE_BEGIN
 
 /// <summary>
 /// A variant type that can hold variables matching all of the given
-/// <typeparamref name="TFormatList" />.
+/// <typeparamref name="Formats" />.
 /// </summary>
-/// <typeparam name="TFormatList">An instantiation of <see name="format_list" />
+/// <typeparam name="Formats">An instantiation of <see name="format_list" />
 /// specifying all formats that can be stored in the variant.</typeparam>
 template<class Formats> class basic_format_variant;
 
@@ -71,22 +72,42 @@ public:
     /// <typeparam name="TValue">The type of the value stored in the variant.
     /// This must be one of the <see cref="format_types" />.</typeparam>
     /// <param name="value">The initial value in the variant.</param>
-    /// <exception cref="std::invalid_argument">If the variant does not support
-    /// values of type <typeparamref name="TValue" />.</exception>
-    template<class TValue> basic_format_variant(_In_ TValue&& value);
+    template<class TValue>
+    inline basic_format_variant(_In_ TValue&& value,
+            _In_opt_ typename std::enable_if<
+            is_supported_type<formats, TValue>::value>::type * = nullptr)
+            : _format(format_reverse_traits<TValue>::format) {
+        assert(this->supports(this->_format));
+        this->invoke<detail::format_value_ctor>(std::forward<TValue>(value));
+    }
 
     /// <summary>
     /// Initialises a new instance.
     /// </summary>
-    /// <param name="format"></param>
-    /// <param name="value"></param>
-    /// <param name="cnt"></param>
+    /// <param name="format">The format of the data designated by
+    /// <paramref name="value" />.</param>
+    /// <param name="value">A pointer to at least <paramref name="cnt" /> valid
+    /// bytes that can be interpreted as the initial value.</param>
+    /// <param name="cnt">The size of the data provided via
+    /// <paramref name="value" />, in bytes.</param>
     /// <exception cref="std::invalid_argument">If the variant does not support
     /// values of type <typeparamref name="TValue" /> or if the provided data
     /// are invalid.</exception>
-    inline basic_format_variant(_In_ const format_type format,
+    basic_format_variant(_In_ const format_type format,
         _In_reads_(cnt) const void *value,
         _In_ const std::size_t cnt);
+
+    /// <summary>
+    /// Clone <paramref name="rhs" />.
+    /// </summary>
+    /// <param name="rhs">The object to be cloned.</param>
+    basic_format_variant(_In_ const basic_format_variant& rhs);
+
+    /// <summary>
+    /// Move <paramref name="rhs" />.
+    /// </summary>
+    /// <param name="rhs">The object to be moved.</param>
+    basic_format_variant(_Inout_ basic_format_variant&& rhs);
 
     /// <summary>
     /// Finalises the instance.
@@ -106,18 +127,6 @@ public:
     inline format_type format(void) const noexcept {
         return this->_format;
     }
-
-    ///// <summary>
-    ///// Invoke the given functor template for the type that is actually
-    ///// stored in the variant.
-    ///// </summary>
-    ///// <typeparam name="TFunction">The functor template, which must be
-    ///// supported for all the types that can be stored in the variant.
-    ///// </typeparam>
-    ///// <param name="func">The functor to invoke.</param>
-    ///// <returns></returns>
-    //template<template<class> class TFunction>
-    //const basic_format_variant& invoke(_In_ TFunction&& func) const;
 
     /// <summary>
     /// Gets the value of the variant, provided it has the specified format.
@@ -176,9 +185,9 @@ public:
     /// <param name="format">The format to be tested.</param>
     /// <returns><c>true</c> if <paramref name="format" /> is among the formats
     /// supported by the variant, <c>false</c> otherwise.</returns>
-    inline constexpr bool supports(
-            _In_ const format_type format) const noexcept {
-        return in_format_list(formats(), format);
+    inline bool supports(_In_ const format_type format) const noexcept {
+        auto s = to_array(formats());
+        return (std::find(s.begin(), s.end(), format) != s.end());
     }
 
     /// <summary>
@@ -189,7 +198,7 @@ public:
     /// be stored in the variant, <c>false</c> otherwise.</returns>
     template<format_type Format>
     inline constexpr bool supports(void) const noexcept {
-        return in_format_list(formats(), Format);
+        return is_supported_format<formats, Format>::value;
     }
 
     /// <summary>
@@ -200,7 +209,7 @@ public:
     /// be stored in the variant, <c>false</c> otherwise.</returns>
     template<class TValue>
     inline constexpr bool supports(void) const noexcept {
-        return in_format_list(formats(), format_reverse_traits<TValue>::format);
+        return is_supported_type<formats, TValue>::value;
     }
 
     /// <summary>
@@ -264,18 +273,6 @@ public:
     }
 
 private:
-
-    template<format_type Fmt, format_type... Fmts>
-    static constexpr inline bool in_format_list(
-            _In_ const format_list<Fmt, Fmts...>,
-            _In_ const format_type f) noexcept {
-        return ((Fmt == f) || in_format_list(format_list<Fmts...>(), f));
-    }
-
-    static constexpr inline bool in_format_list(_In_ const format_list<>,
-            _In_ const format_type) noexcept {
-        return false;
-    }
 
     template<template<class> class TFunc, class... TArgs>
     inline void invoke(TArgs&&... args) {

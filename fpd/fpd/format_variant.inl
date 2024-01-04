@@ -51,23 +51,6 @@ FPD_NAMESPACE_END
 
 #define _FPD_VAR_FMTS FPD_NAMESPACE::format_list<Formats...>
 
-
-/*
- * ...::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant
- */
-template<FPD_NAMESPACE::format... Formats>
-template<class TValue>
-FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant(
-        TValue&& value) : _format(format_reverse_traits<TValue>::format) {
-    if (!this->supports(this->_format)) {
-        throw std::invalid_argument("The variant does not support the "
-            "specified kind of value.");
-    }
-
-    this->invoke<detail::format_value_ctor>(std::forward<TValue>(value));
-}
-
-
 /*
  * ...::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant
  */
@@ -90,6 +73,32 @@ FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant(
     }
 
     this->invoke<detail::format_value_runtime_ctor>(value, cnt);
+}
+
+
+/*
+ * ...::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant
+ */
+template<FPD_NAMESPACE::format... Formats>
+FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant(
+        _In_ const basic_format_variant<_FPD_VAR_FMTS>& rhs)
+        : _format(rhs._format) {
+    assert(this->supports(this->_format));
+    this->invoke<detail::format_value_runtime_ctor>(rhs._data.data(),
+        rhs._data.size());
+}
+
+
+/*
+ * ...::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant
+ */
+template<FPD_NAMESPACE::format... Formats>
+FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant(
+        _Inout_ basic_format_variant<_FPD_VAR_FMTS>&& rhs)
+    : _data(std::move(rhs._data)),
+        _format(rhs._format) {
+    assert(this->supports(this->_format));
+    rhs._format = format::unknown;
 }
 
 

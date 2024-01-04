@@ -77,14 +77,6 @@ namespace fpd {
         }
 
         TEST_METHOD(value_ctor) {
-            Assert::ExpectException<std::invalid_argument>([](void) {
-                basic_format_variant<format_list<>> v(42);
-            }, L"Cannot initialise empty variant", LINE_INFO());
-
-            Assert::ExpectException<std::invalid_argument>([](void) {
-                basic_format_variant<format_list<format::float32>> v(42);
-            }, L"Cannot initialise unsupported type", LINE_INFO());
-
             {
                 basic_format_variant<format_list<format::int32, format::float64>> v(42);
                 Assert::AreEqual(int(format::int32), int(v.format()), L"Format derived from argument", LINE_INFO());
@@ -118,7 +110,41 @@ namespace fpd {
                 Assert::AreEqual(42, v.get<format::int32>(), L"Get via format", LINE_INFO());
                 Assert::AreEqual(42, v.get<int>(), L"Get via type", LINE_INFO());
             }
+
+            {
+                double d = 42;
+                basic_format_variant<format_list<format::int32, format::float64>> v(format::float64, &d, sizeof(d));
+                Assert::AreEqual(int(format::float64), int(v.format()), L"Format derived from argument", LINE_INFO());
+                Assert::IsNotNull(v.try_get<double>(), L"Get via type valid", LINE_INFO());
+                Assert::IsNull(v.try_get<int>(), L"Get via wrong type invalid", LINE_INFO());
+                Assert::IsNotNull(v.try_get<format::float64>(), L"Get via format valid", LINE_INFO());
+                Assert::IsNull(v.try_get<format::int32>(), L"Get via wrong format invalid", LINE_INFO());
+                Assert::AreEqual(42.0, v.get<format::float64>(), L"Get via format", LINE_INFO());
+                Assert::AreEqual(42.0, v.get<double>(), L"Get via type", LINE_INFO());
+            }
         }
 
+        TEST_METHOD(copy_ctor) {
+            basic_format_variant<format_list<format::int32, format::float64>> v1(42.0);
+            Assert::IsTrue(bool(v1), L"Initialised valid", LINE_INFO());
+            Assert::AreEqual(42.0, v1.get<double>(), L"Get via type", LINE_INFO());
+
+            basic_format_variant<format_list<format::int32, format::float64>> v2(v1);
+            Assert::IsTrue(bool(v2), L"Initialised valid", LINE_INFO());
+            Assert::AreEqual(42.0, v2.get<double>(), L"Get via type", LINE_INFO());
+            Assert::IsTrue(bool(v1), L"Source still valid", LINE_INFO());
+            Assert::AreEqual(42.0, v1.get<double>(), L"Source unchanged", LINE_INFO());
+        }
+
+        TEST_METHOD(move_ctor) {
+            basic_format_variant<format_list<format::int32, format::float64>> v1(42.0);
+            Assert::IsTrue(bool(v1), L"Initialised valid", LINE_INFO());
+            Assert::AreEqual(42.0, v1.get<double>(), L"Get via type", LINE_INFO());
+
+            basic_format_variant<format_list<format::int32, format::float64>> v2(std::move(v1));
+            Assert::IsTrue(bool(v2), L"Initialised valid", LINE_INFO());
+            Assert::AreEqual(42.0, v2.get<double>(), L"Get via type", LINE_INFO());
+            Assert::IsFalse(bool(v1), L"Source now invalid", LINE_INFO());
+        }
     };
 }
