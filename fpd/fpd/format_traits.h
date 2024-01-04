@@ -195,7 +195,8 @@ inline std::size_t to_components(_In_ const format format) noexcept {
 /// was provided or if the type traits have not been setup properly. The latter
 /// is a bug in the implementation of the library.</exception>
 inline std::size_t to_size(_In_ const format format) {
-    return detail::to_size(formats(), format);
+    typedef format_list_cat<formats, format::unknown> dispatch_type;
+    return detail::to_size(dispatch_type(), format);
 }
 
 
