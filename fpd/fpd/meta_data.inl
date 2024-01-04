@@ -361,9 +361,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_global_particle_properties(
 
         const auto cnt = to_size(f);
         _FPD_THROW_IF_INCOMPLETE(cnt);
-        //meta_data._global_particle_properties[s] = format_variant()
-        throw "TODO";
-
+        meta_data._global_particle_properties[s] = format_variant(f, cur, cnt);
         cur += cnt;
     }
 
