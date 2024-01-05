@@ -60,48 +60,81 @@ namespace fpd {
             }
         }
 
-        TEST_METHOD(builder) {
+        TEST_METHOD(builder_wchar_builtin) {
+            meta_data_builder<wchar_t> builder;
+
+            builder.with_description(L"description")
+                .with_code_page(code_page::ansi)
+                .with_endian(endian::system)
+                .with_version(FPD_FILE_MAJOR, FPD_FILE_MINOR)
+                .with_bounding_box(0.0f, 1.0f, 2.0f, 10.0f, 11.0f, 12.0f)
+                .with_frames(42)
+                .add_format_element(semantic::position, nullptr, format::float32xyz);
+
             {
-                meta_data_builder<wchar_t> builder;
+                const std::size_t expected
+                    = 3                         // magic cookie
+                    + 1 + 1                     // file version
+                    + sizeof(endian)            // BOM
+                    + sizeof(std::uint32_t)     // header size
 
-                builder.with_description(L"description")
-                    .with_code_page(code_page::ansi)
-                    .with_endian(endian::system)
-                    .with_version(FPD_FILE_MAJOR, FPD_FILE_MINOR)
-                    .with_bounding_box(0.0f, 1.0f, 2.0f, 10.0f, 11.0f, 12.0f)
-                    .with_frames(42)
-                    .add_format_element(semantic::position, nullptr, format::float32xyz);
+                    // Frame offset table.
+                    + sizeof(header_segment)
+                    + 42 * sizeof(std::uint64_t)
 
-                {
-                    const std::size_t expected
-                        = 3                         // magic cookie
-                        + 1 + 1                     // file version
-                        + sizeof(endian)            // BOM
-                        + sizeof(std::uint32_t)     // header size
+                    // One format element
+                    + sizeof(header_segment)
+                    + element<wchar_t>::size_on_disk
 
-                        // Frame offset table.
-                        + sizeof(header_segment)
-                        + 42 * sizeof(std::uint64_t)
+                    // Single bounding box.
+                    + sizeof(header_segment)
+                    + 6 * sizeof(float)
 
-                        // One format element
-                        + sizeof(header_segment)
-                        + element<wchar_t>::size_on_disk
+                    // file description
+                    + sizeof(header_segment)
+                    + (::wcslen(L"description") + 1) * sizeof(char16_t);
 
-                        // Single bounding box.
-                        + sizeof(header_segment)
-                        + 6 * sizeof(float)
-
-                        // file description
-                        + sizeof(header_segment)
-                        + (::wcslen(L"description") + 1) * sizeof(char16_t);
-
-                    Assert::AreEqual(expected, builder.size(), L"Overall header size", LINE_INFO());
-                }
-
-                Assert::IsTrue(builder, L"Builder valid", LINE_INFO());
-                auto data = builder.build();
-                Assert::IsFalse(builder, L"Builder reset", LINE_INFO());
+                Assert::AreEqual(expected, builder.size(), L"Overall header size", LINE_INFO());
             }
+
+            Assert::IsTrue(builder, L"Builder valid", LINE_INFO());
+            auto data = builder.build();
+            Assert::IsFalse(builder, L"Builder reset", LINE_INFO());
+        }
+
+        TEST_METHOD(builder_char_user_defined) {
+            meta_data_builder<char> builder;
+
+            builder.with_code_page(code_page::ansi)
+                .with_endian(endian::system)
+                .with_frames(1)
+                .add_format_element(semantic::user_defined, "float3", format::float32xyz);
+
+            {
+                const std::size_t expected
+                    = 3                         // magic cookie
+                    + 1 + 1                     // file version
+                    + sizeof(endian)            // BOM
+                    + sizeof(std::uint32_t)     // header size
+
+                    // Frame offset table.
+                    + sizeof(header_segment)
+                    + 1 * sizeof(std::uint64_t)
+
+                    // One format element
+                    + sizeof(header_segment)
+                    + element<wchar_t>::size_on_disk
+
+                    // User-defined format table.
+                    + sizeof(header_segment)
+                    + (::wcslen(L"float3") + 1) * sizeof(char16_t);
+
+                Assert::AreEqual(expected, builder.size(), L"Overall header size", LINE_INFO());
+            }
+
+            Assert::IsTrue(builder, L"Builder valid", LINE_INFO());
+            auto data = builder.build();
+            Assert::IsFalse(builder, L"Builder reset", LINE_INFO());
         }
     };
 }

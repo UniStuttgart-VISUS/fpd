@@ -40,6 +40,12 @@ public:
         format_description_type;
 
     /// <summary>
+    /// The type of an initialiser for a format element.
+    /// </summary>
+    typedef typename format_description_type::initialiser_type
+        element_initialiser_type;
+
+    /// <summary>
     /// The type of a format element.
     /// </summary>
     typedef typename format_description_type::element_type element_type;
@@ -76,7 +82,10 @@ public:
     /// <param name="semantic">The semantic of the element to be added.</param>
     /// <param name="semantic_name">The human-readable name of the semantic to
     /// be added. This can be <c>nullptr</c> if the <paramref name="semantic" />
-    /// is a built-in one.</param>
+    /// is a built-in one or if the name of the semantic has been previously
+    /// registered. If it is not <c>nullptr</c> and <paramref name="semantic" />
+    /// is a user-defined semantic, the name will be registered and will
+    /// possibly overwrite previous names for the same semantic.</param>
     /// <param name="group">The zero-based index of the group to add the element
     /// to. If this group does not yet exist, it will be created.</param>
     /// <param name="format">The format of the element.</param>
@@ -88,13 +97,19 @@ public:
     /// <param name="eval_offset">If <c>true</c>, add an explicit offset to the
     /// element based on the current content of the group.</param>
     /// <returns><c>*this</c>.</returns>
-    meta_data_builder& add_format_element(_In_ const semantic semantic,
-        _In_opt_z_ const char_type *semantic_name,
-        _In_ const format format,
-        _In_ const std::size_t group = 0,
-        _In_ const std::uint16_t offset = 0,
-        _In_ const std::uint16_t size = 0,
-        _In_ const bool eval_offset = false);
+    inline meta_data_builder& add_format_element(
+            _In_ const semantic semantic,
+            _In_opt_z_ const char_type *semantic_name,
+            _In_ const format format,
+            _In_ const std::size_t group = 0,
+            _In_ const std::uint16_t offset = 0,
+            _In_ const std::uint16_t size = 0,
+            _In_ const bool eval_offset = false) {
+        this->_format.add(semantic, semantic_name, format, group, offset, size,
+            eval_offset);
+        this->add_user_defined_semantic(semantic, semantic_name);
+        return *this;
+    }
 
     /// <summary>
     /// Appends an element to the format description, which must use a built-in
@@ -120,6 +135,26 @@ public:
             _In_ const std::uint16_t size = 0,
             _In_ const bool eval_offset = false) {
         this->_format.add(semantic, format, group, offset, size, eval_offset);
+        return *this;
+    }
+
+    /// <summary>
+    /// Adds a new element to the format description.
+    /// </summary>
+    /// <param name="initialiser">The initialiser for the new element. If the
+    /// initialiser uses a user-defined <see cref="semantic" /> and provides
+    /// a non-<c>nullptr</c> name for it, the method will register the name of
+    /// the semantic and possibly overwrite a previous name for the same
+    /// semantic.</param>
+    /// <param name="eval_offset">If <c>true</c>, add an explicit offset to the
+    /// element based on the current content of the group.</param>
+    /// <returns><c>*this</c>.</returns>
+    inline meta_data_builder& add_format_element(
+            _In_ const element_initialiser_type& initialiser,
+            _In_ const bool eval_offset = false) {
+        this->_format.add(initialiser, eval_offset);
+        this->add_user_defined_semantic(initialiser._semantic,
+            initialiser._semantic_name);
         return *this;
     }
 
@@ -314,6 +349,9 @@ public:
 private:
 
     static constexpr bool check_version(_In_ const version_type v);
+
+    void add_user_defined_semantic(_In_ const semantic s,
+        _In_opt_z_ const char_type *d);
 
     std::vector<bounding_box> _bounding_boxes;
     code_page _code_page;

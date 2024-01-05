@@ -16,38 +16,6 @@ FPD_NAMESPACE::meta_data_builder<TChar>::meta_data_builder(void)
 
 
 /*
- * FPD_NAMESPACE::meta_data_builder<TChar>::add_format_element
- */
-template<class TChar>
-FPD_NAMESPACE::meta_data_builder<TChar>&
-FPD_NAMESPACE::meta_data_builder<TChar>::add_format_element(
-        _In_ const semantic semantic,
-        _In_opt_z_ const char_type *semantic_name,
-        _In_ const format format,
-        _In_ const std::size_t group,
-        _In_ const std::uint16_t offset,
-        _In_ const std::uint16_t size,
-        _In_ const bool eval_offset) {
-    this->_format.add(semantic, semantic_name, format, group, offset, size,
-        eval_offset);
-
-    if ((semantic > semantic::user_defined) && (semantic_name != nullptr)) {
-        typedef std::underlying_type<decltype(semantic)>::type int_type;
-        auto i = static_cast<int_type>(semantic);
-        i -= static_cast<int_type>(semantic::user_defined);
-
-        if (this->_user_defined_semantics.size() < i) {
-            this->_user_defined_semantics.resize(i + i);
-        }
-
-        this->_user_defined_semantics[i] = semantic_name;
-    }
-
-    return *this;
-}
-
-
-/*
  * FPD_NAMESPACE::meta_data meta_data_builder<TChar>::build
  */
 template<class TChar>
@@ -60,8 +28,12 @@ FPD_NAMESPACE::meta_data_builder<TChar>::build(void) {
 
     meta_data_type retval;
 
-    retval._bounding_box = std::move(this->_bounding_boxes[0]);
-    this->_bounding_boxes.erase(this->_bounding_boxes.begin());
+    if (this->_bounding_boxes.empty()) {
+        retval._bounding_box = bounding_box();
+    } else {
+        retval._bounding_box = std::move(this->_bounding_boxes[0]);
+        this->_bounding_boxes.erase(this->_bounding_boxes.begin());
+    }
 
     this->_code_page = code_page::oem;
 
@@ -339,5 +311,25 @@ constexpr bool FPD_NAMESPACE::meta_data_builder<TChar>::check_version(
         return false;
     } else {
         return (v.first < FPD_FILE_MAJOR) || (v.second <= FPD_FILE_MINOR);
+    }
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data_builder<TChar>::add_user_defined_semantic
+ */
+template<class TChar>
+void FPD_NAMESPACE::meta_data_builder<TChar>::add_user_defined_semantic(
+        _In_ const semantic s, _In_opt_z_ const char_type *d) {
+    if ((s >= semantic::user_defined) && (d != nullptr)) {
+        typedef std::underlying_type<semantic>::type int_type;
+        auto i = static_cast<int_type>(s);
+        i -= static_cast<int_type>(semantic::user_defined);
+
+        if (this->_user_defined_semantics.size() <= i) {
+            this->_user_defined_semantics.resize(i + 1);
+        }
+
+        this->_user_defined_semantics[i] = d;
     }
 }
