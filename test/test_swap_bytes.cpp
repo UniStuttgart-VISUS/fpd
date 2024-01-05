@@ -366,7 +366,7 @@ namespace fpd {
                 union {
                     type value;
                     std::uint8_t bytes[sizeof(type)];
-                } swapped { type(USHRT_MAX) + i };
+                } swapped { type(USHRT_MAX) + type(i) };
                 std::reverse(swapped.bytes, swapped.bytes + sizeof(type));
 
                 Assert::AreEqual(swapped.value, data[i], L"bytes swapped", LINE_INFO());

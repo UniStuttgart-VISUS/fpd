@@ -55,5 +55,48 @@ namespace fpd {
                 Assert::AreEqual(actual, expected, L"roundtrip", LINE_INFO());
             }
         }
+
+        TEST_METHOD(posix) {
+            const auto expected = "Horst";
+            char actual[] = "\0\0\0\0\0\0";
+
+            {
+                wchar_t path[MAX_PATH];
+
+                {
+                    auto r = ::GetTempPathW(MAX_PATH, path);
+                    if ((r > MAX_PATH) || (r == 0)) {
+                        Assert::Fail(L"Failed to get temporary path", LINE_INFO());
+                    }
+                }
+
+                Assert::IsTrue(::GetTempFileNameW(path, L"fpd", 0, path), L"GetTempFileName", LINE_INFO());
+
+                posix_io io(path, _O_RDWR | _O_CREAT | _O_TRUNC);
+                Assert::IsTrue(::strlen(expected) <= io.write(0, expected, ::strlen(expected)), L"write", LINE_INFO());
+                ::ZeroMemory(actual, sizeof(actual));
+                Assert::IsTrue(::strlen(expected) <= io.read(actual, ::strlen(expected), 0), L"read", LINE_INFO());
+                Assert::AreEqual(actual, expected, L"roundtrip", LINE_INFO());
+            }
+
+            {
+                char path[MAX_PATH];
+
+                {
+                    auto r = ::GetTempPathA(MAX_PATH, path);
+                    if ((r > MAX_PATH) || (r == 0)) {
+                        Assert::Fail(L"Failed to get temporary path", LINE_INFO());
+                    }
+                }
+
+                Assert::IsTrue(::GetTempFileNameA(path, "fpd", 0, path), L"GetTempFileName", LINE_INFO());
+
+                posix_io io(path, _O_RDWR | _O_CREAT | _O_TRUNC);
+                Assert::IsTrue(::strlen(expected) <= io.write(0, expected, ::strlen(expected)), L"write", LINE_INFO());
+                ::ZeroMemory(actual, sizeof(actual));
+                Assert::IsTrue(::strlen(expected) <= io.read(actual, ::strlen(expected), 0), L"read", LINE_INFO());
+                Assert::AreEqual(actual, expected, L"roundtrip", LINE_INFO());
+            }
+        }
     };
 }

@@ -10,13 +10,17 @@
 #include <system_error>
 
 #include <fcntl.h>
+
 #if defined(_WIN32)
 #include <io.h>
+#include <share.h>
 #else /* defined(_WIN32) */
 #include <unistd.h>
 #endif /* defined(_WIN32) */
 
-#include "fpd/abi.h"
+#include <sys/stat.h>
+
+#include "fpd/convert_string.h"
 
 
 FPD_NAMESPACE_BEGIN
@@ -42,59 +46,76 @@ public:
         handle = -1;
     }
 
-    ///// <summary>
-    ///// Initialises a new instance by opening a file.
-    ///// </summary>
-    ///// <param name="path">The path to the file to be opened.</param>
-    ///// <param name="desired_access">The desired access to the file, which
-    ///// defaults to <c>GENERIC_READ<c/>.</param>
-    ///// <param name="share_mode">The desired share mode for the open file, which
-    ///// defaults to <c>FILE_SHARE_READ</c>.</param>
-    ///// <param name="create_disposition">Indicates how missing and existing
-    ///// files are handled. This defaults to <c>OPEN_EXISTING</c>.</param>
-    ///// <param name="flags">The flags for the file handle, which defaults to
-    ///// zero.</param>
-    ///// <exception cref="std::system_error">If the file could not be opened.
-    ///// </exception>
-    //inline posix_io(_In_z_ const wchar_t *path,
-    //        _In_ const DWORD desired_access = GENERIC_READ,
-    //        _In_ const DWORD share_mode = FILE_SHARE_READ,
-    //        _In_ const DWORD create_disposition = OPEN_EXISTING,
-    //        _In_ const DWORD flags = 0)
-    //    : _handle(::CreateFileW(path, desired_access, share_mode, nullptr,
-    //        create_disposition, flags, NULL)) {
-    //    if (this->_handle == -1) {
-    //        throw "TODO";
-    //        //throw std::system_error(::GetLastError(), std::system_category());
-    //    }
-    //}
+    /// <summary>
+    /// Initialises a new instance by opening a file.
+    /// </summary>
+    /// <param name="path">The path to the file to be opened.</param>
+    /// <param name="flags">The desired access flags, which
+    /// defaults to <c>_O_BINARY | _O_RDONLY | _O_SEQUENTIAL<c/>.</param>
+    /// <param name="share">Defines the share mode, which defaults to
+    /// <c>_SH_DENYWR</c>. This parameter has no effect on non-Windows
+    /// platforms.</param>
+    /// <param name="mode">The mode of newly created files. This parameter
+    /// defaults to zero.</param>
+    /// <exception cref="std::system_error">If the file could not be opened.
+    /// </exception>
+#if defined(_WIN32)
+    inline posix_io(_In_z_ const wchar_t *path,
+            _In_ const int flags = _O_BINARY | _O_RDONLY | _O_SEQUENTIAL,
+            _In_ const int share = _SH_DENYWR,
+            _In_ const int mode = 0)
+            : _handle(-1) {
+        auto status = ::_wsopen_s(&this->_handle, path, flags, share, mode);
+        if (status != 0) {
+            throw std::system_error(status, std::generic_category());
+        }
+    }
+#else /* defined(_WIN32) */
+    inline posix_io(_In_z_ const wchar_t *path,
+            _In_ const int flags = O_RDONLY,
+            _In_ const int share = 0,
+            _In_ const mode_t mode = 0)
+            : _handle(-1) {
+        auto p = convert_string<char>(path);
+        if ((this->_handle = ::open(p.c_str(), flags, mode)) == -1) {
+            throw std::system_error(errno, std::system_category());
+        }
+    }
+#endif /* defined(_WIN32) */
 
-    ///// <summary>
-    ///// Initialises a new instance by opening a file.
-    ///// </summary>
-    ///// <param name="path">The path to the file to be opened.</param>
-    ///// <param name="desired_access">The desired access to the file, which
-    ///// defaults to <c>GENERIC_READ<c/>.</param>
-    ///// <param name="share_mode">The desired share mode for the open file, which
-    ///// defaults to <c>FILE_SHARE_READ</c>.</param>
-    ///// <param name="create_disposition">Indicates how missing and existing
-    ///// files are handled. This defaults to <c>OPEN_EXISTING</c>.</param>
-    ///// <param name="flags">The flags for the file handle, which defaults to
-    ///// zero.</param>
-    ///// <exception cref="std::system_error">If the file could not be opened.
-    ///// </exception>
-    //inline posix_io(_In_z_ const char *path,
-    //        _In_ const DWORD desired_access = GENERIC_READ,
-    //        _In_ const DWORD share_mode = FILE_SHARE_READ,
-    //        _In_ const DWORD create_disposition = OPEN_EXISTING,
-    //        _In_ const DWORD flags = 0) 
-    //    : _handle(::CreateFileA(path, desired_access, share_mode, nullptr,
-    //        create_disposition, flags, NULL)) {
-    //    if (this->_handle == -1) {
-    //        throw "TODO";
-    //        //throw std::system_error(::GetLastError(), std::system_category());
-    //    }
-    //}
+    /// <summary>
+    /// Initialises a new instance by opening a file.
+    /// </summary>
+    /// <param name="path">The path to the file to be opened.</param>
+    /// <param name="flags">The desired access flags, which
+    /// defaults to <c>_O_BINARY | _O_RDONLY | _O_SEQUENTIAL<c/>.</param>
+    /// <param name="mode">The mode of newly created files. This parameter
+    /// defaults to zero.</param>
+    /// <exception cref="std::system_error">If the file could not be opened.
+    /// </exception>
+#if defined(_WIN32)
+    inline posix_io(_In_z_ const char *path,
+            _In_ const int flags = _O_BINARY | _O_RDONLY | _O_SEQUENTIAL,
+            _In_ const int share = _SH_DENYWR,
+            _In_ const int mode = 0)
+            : _handle(-1) {
+        auto status = ::_sopen_s(&this->_handle, path, flags, share, mode);
+        if (status != 0) {
+            throw std::system_error(status, std::generic_category());
+        }
+    }
+#else /* defined(_WIN32) */
+    inline posix_io(_In_z_ const char *path,
+            _In_ const int flags = O_RDONLY,
+            _In_ const int share = 0,
+            _In_ const mode_t mode = 0)
+            : _handle(::open(path, flags, mode)) {
+        if (this->_handle == -1) {
+            throw std::system_error(errno, std::system_category());
+        }
+    }
+#endif /* defined(_WIN32) */
+
 
     /// <summary>
     /// Initialise from move.
@@ -126,12 +147,13 @@ public:
     /// <returns>The number of bytes actually read.</returns>
     /// <exception cref="std::system_error">If either seeking to the desired
     /// location or reading from it failed.</exception>
-    inline std::size_t read(_Out_writes_bytes_to_opt_(cnt, return) void *dst,
+    inline std::size_t read(_Out_writes_bytes_to_(cnt, return) void *dst,
             _In_ const std::size_t cnt,
             _In_ const std::size_t offset) const {
         this->seek(offset);
 #if defined(_WIN32)
-        auto retval = ::_read(this->_handle, dst, cnt);
+        auto retval = ::_read(this->_handle, dst,
+            static_cast<unsigned int>(cnt));
         if (retval < 0) {
             throw std::system_error(errno, std::generic_category());
         }
@@ -154,11 +176,12 @@ public:
     /// <param name="cnt">The number of bytes to write.</param>
     /// <returns>The number of bytes actually written.</returns>
     inline std::size_t write(_In_ const std::size_t offset,
-            _In_reads_bytes_opt_(cnt) const void *src,
+            _In_reads_bytes_(cnt) const void *src,
             _In_ const std::size_t cnt) const {
         this->seek(offset);
 #if defined(_WIN32)
-        auto retval = ::_write(this->_handle, src, cnt);
+        auto retval = ::_write(this->_handle, src,
+            static_cast<unsigned int>(cnt));
         if (retval < 0) {
             throw std::system_error(errno, std::generic_category());
         }

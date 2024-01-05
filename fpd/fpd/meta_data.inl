@@ -57,6 +57,8 @@ FPD_NAMESPACE::meta_data<TChar>& FPD_NAMESPACE::meta_data<TChar>::parse(
         _In_ const std::size_t cnt) {
     auto cur = static_cast<const std::uint8_t * >(data);
     const auto end = cut + cnt;
+    auto deferred_format = std::make_pair(static_cast<const void *>(nullptr),
+        static_cast<std::size_t>(0));
 
     while (cur + sizeof(header_segment_type) < end) {
         // Interpret the 32-bit header of the header segment.
@@ -75,7 +77,15 @@ FPD_NAMESPACE::meta_data<TChar>& FPD_NAMESPACE::meta_data<TChar>::parse(
                 break;
 
             case header_segment::format_description:
-                parse_format_description(meta_data, cur, length);
+                try {
+                    parse_format_description(meta_data, cur, length);
+                } catch (...) {
+                    // The format will fail if there are user-defined semantics
+                    // and we have not yet seen these. Therefore, we postpone
+                    // parsing it again until the end.
+                    deferred_format.first = cur;
+                    deferred_format.second = length;
+                }
                 break;
 
             case header_segment::user_semantics:
@@ -96,6 +106,13 @@ FPD_NAMESPACE::meta_data<TChar>& FPD_NAMESPACE::meta_data<TChar>::parse(
         }
 
         cur += length;
+    }
+
+    // If we have postponed parsing the format, do it now. If it fails again,
+    // the input is invalid.
+    if (deferred_format.first != nullptr) {
+        parse_format_description(meta_data, deferred_format.first,
+            deferred_format.second);
     }
 
     return meta_data;
@@ -302,6 +319,11 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_format_description(
         _Inout_ meta_data& meta_data,
         _In_ const void *data,
         _In_ const std::size_t cnt) {
+    if (!meta_data._format_description) {
+        throw std::invalid_argument("The format description has already been "
+            "parsed.");
+    }
+
     throw "TODO";
 }
 
