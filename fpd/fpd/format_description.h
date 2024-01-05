@@ -16,7 +16,7 @@ FPD_NAMESPACE_BEGIN
 /// <summary>
 /// Defines an element that makes a particle <see cref="format_description" />.
 /// </summary>
-/// <typemaram name="TChar">The type of a character in a string.</typeparam>
+/// <typeparam name="TChar">The type of a character in a string.</typeparam>
 template<class TChar> class format_description final {
 
 public:
