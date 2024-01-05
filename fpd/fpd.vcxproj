@@ -161,6 +161,7 @@
     <ClInclude Include="fpd\invoke.h" />
     <ClInclude Include="fpd\literal.h" />
     <ClInclude Include="fpd\meta_data.h" />
+    <ClInclude Include="fpd\meta_data_builder.h" />
     <ClInclude Include="fpd\null_coalesce.h" />
     <ClInclude Include="fpd\posix_io.h" />
     <ClInclude Include="fpd\semantic.h" />
@@ -178,6 +179,7 @@
     <None Include="fpd\format_description.inl" />
     <None Include="fpd\format_variant.inl" />
     <None Include="fpd\meta_data.inl" />
+    <None Include="fpd\meta_data_builder.inl" />
     <None Include="fpd\semantic.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

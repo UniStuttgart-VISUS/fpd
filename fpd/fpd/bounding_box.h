@@ -220,6 +220,14 @@ public:
     }
 
     /// <summary>
+    /// Answer the size of the bounding box in bytes.
+    /// </summary>
+    /// <returns>The size of the bounding box in bytes.</returns>
+    inline std::size_t size(void) const noexcept {
+        return this->_values.size();
+    }
+
+    /// <summary>
     /// Answer whether the bounding box is valid.
     /// </summary>
     /// <returns><c>true</c> if the bounding box has a valid format and valid

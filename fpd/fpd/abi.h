@@ -6,6 +6,12 @@
 
 #pragma once
 
+#include <cinttypes>
+
+
+#define FPD_FILE_MAJOR static_cast<std::uint8_t>(0)
+#define FPD_FILE_MINOR static_cast<std::uint8_t>(1)
+
 
 #define FPD_ABI_MAJOR 0
 #define FPD_ABI_MINOR 1

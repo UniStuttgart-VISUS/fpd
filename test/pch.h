@@ -24,6 +24,7 @@
 #include "fpd/invoke.h"
 #include "fpd/literal.h"
 #include "fpd/meta_data.h"
+#include "fpd/meta_data_builder.h"
 #include "fpd/posix_io.h"
 #include "fpd/semantic.h"
 #include "fpd/swap_bytes.h"

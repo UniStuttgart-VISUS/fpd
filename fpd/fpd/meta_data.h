@@ -1,5 +1,5 @@
 ﻿// <copyright file="meta_data.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2024 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <map>
 
+#include "fpd/annotations.h"
 #include "fpd/bounding_box.h"
 #include "fpd/endian.h"
 #include "fpd/format_description.h"
@@ -310,6 +311,8 @@ private:
     std::map<semantic, format_variant> _global_particle_properties;
     std::vector<string_type> _user_defined_semantics;
     version_type _version;
+
+    template<class> friend class meta_data_builder;
 };
 
 FPD_NAMESPACE_END

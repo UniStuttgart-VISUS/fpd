@@ -328,6 +328,85 @@ inline std::basic_string<TDstChar> convert_string(
     return convert_string(src, -1, code_page);
 }
 
+
+/// <summary>
+/// Measures how many code units of <typeparamref name="TDstChar" /> are
+/// required for <paramref name="str" />.
+/// </summary>
+/// <remarks>
+/// This is a convenience function for <see cref="convert_string" /> without
+/// a valid output buffer.
+/// </remarks>
+/// <typeparam name="TDstChar"></typeparam>
+/// <typeparam name="TSrcChar"></typeparam>
+/// <param name="str"></param>
+/// <param name="cnt"></param>
+/// <param name="code_page"></param>
+/// <returns>The number of characters required for the converted string,
+/// including the terminating zero.</returns>
+/// <exception cref="std::invalid_argument">If <paramref name="src" /> is
+/// <c>nullptr</c>.</exception>
+/// <exception cref="std::system_error">If the conversion is not possible.
+/// </exception>
+template<class TDstChar, class TSrcChar>
+inline std::size_t measure_string(_In_reads_or_z_(cnt_src) const TSrcChar *str,
+        _In_ const std::ptrdiff_t cnt,
+        _In_ const code_page code_page) {
+    return convert_string(static_cast<TDstChar *>(nullptr), 0, str, cnt,
+        code_page);
+}
+
+/// <summary>
+/// Measures how many code units of <typeparamref name="TDstChar" /> are
+/// required for <paramref name="str" />.
+/// </summary>
+/// <remarks>
+/// This is a convenience function for <see cref="convert_string" /> without
+/// a valid output buffer.
+/// </remarks>
+/// <typeparam name="TDstChar"></typeparam>
+/// <typeparam name="TSrcChar"></typeparam>
+/// <param name="str"></param>
+/// <param name="code_page"></param>
+/// <returns>The number of characters required for the converted string,
+/// including the terminating zero.</returns>
+/// <exception cref="std::invalid_argument">If <paramref name="src" /> is
+/// <c>nullptr</c>.</exception>
+/// <exception cref="std::system_error">If the conversion is not possible.
+/// </exception>
+template<class TDstChar, class TSrcChar>
+inline std::size_t measure_string(_In_reads_or_z_(cnt_src) const TSrcChar *str,
+        _In_ const code_page code_page) {
+    return convert_string(static_cast<TDstChar *>(nullptr), 0, str, -1,
+        code_page);
+}
+
+/// <summary>
+/// Measures how many code units of <typeparamref name="TDstChar" /> are
+/// required for <paramref name="str" />.
+/// </summary>
+/// <remarks>
+/// This is a convenience function for <see cref="convert_string" /> without
+/// a valid output buffer.
+/// </remarks>
+/// <typeparam name="TDstChar"></typeparam>
+/// <typeparam name="TSrcChar"></typeparam>
+/// <typeparam name="TSrcTraits"></typeparam>
+/// <typeparam name="TSrcAlloc"></typeparam>
+/// <param name="str"></param>
+/// <param name="code_page"></param>
+/// <returns>The number of characters required for the converted string,
+/// including the terminating zero.</returns>
+/// <exception cref="std::system_error">If the conversion is not possible.
+/// </exception>
+template<class TDstChar, class TSrcChar, class TSrcTraits, class TSrcAlloc>
+inline std::size_t measure_string(
+        _In_ const std::basic_string<TSrcChar, TSrcTraits, TSrcAlloc>& str,
+        _In_ const code_page code_page) {
+    return convert_string(static_cast<TDstChar *>(nullptr), 0, str.c_str(), -1,
+        code_page);
+}
+
 FPD_NAMESPACE_END
 
 #include "fpd/convert_string.inl"

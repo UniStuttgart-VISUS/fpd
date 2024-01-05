@@ -15,11 +15,12 @@ namespace fpd {
 
         TEST_METHOD(add) {
             format_description<char> fd;
-            Assert::AreEqual(std::size_t(0), fd.count(), L"initial count", LINE_INFO());
+            Assert::AreEqual(std::size_t(0), fd.count_groups(), L"initial count", LINE_INFO());
 
             fd.add(semantic::position_radius, format::float32xyzw, 0, 0, 0, true);
-            Assert::AreEqual(std::size_t(1), fd.count(), L"First group added", LINE_INFO());
+            Assert::AreEqual(std::size_t(1), fd.count_groups(), L"First group added", LINE_INFO());
             Assert::AreEqual(std::size_t(1), fd[0].count(), L"First group has one element", LINE_INFO());
+            Assert::AreEqual(std::size_t(1), fd.count_elements(), L"Total elements", LINE_INFO());
 
             Assert::AreEqual(int(format::float32xyzw), int(fd(0, 0).format()), L"format@0, 0", LINE_INFO());
             Assert::AreEqual(int(0), int(fd(0, 0).offset()), L"offset@0, 0", LINE_INFO());
@@ -28,7 +29,7 @@ namespace fpd {
             Assert::AreEqual(4 * sizeof(float), std::size_t(fd(0, 0).size()), L"size@0, 0", LINE_INFO());
 
             fd.add(semantic::colour, format::uint8xyzw, 1, 0, 0, false);
-            Assert::AreEqual(std::size_t(2), fd.count(), L"Second group added", LINE_INFO());
+            Assert::AreEqual(std::size_t(2), fd.count_groups(), L"Second group added", LINE_INFO());
             Assert::AreEqual(std::size_t(1), fd[0].count(), L"First group has one element", LINE_INFO());
             Assert::AreEqual(std::size_t(1), fd[1].count(), L"Second group has one element", LINE_INFO());
 
@@ -45,7 +46,7 @@ namespace fpd {
             Assert::AreEqual(4 * sizeof(std::uint8_t), std::size_t(fd(1, 0).size()), L"size@1, 0", LINE_INFO());
 
             fd.add(user_defined_semantic(0), "hugo", format::float32, 1, 0, 0, true);
-            Assert::AreEqual(std::size_t(2), fd.count(), L"No new group added", LINE_INFO());
+            Assert::AreEqual(std::size_t(2), fd.count_groups(), L"No new group added", LINE_INFO());
             Assert::AreEqual(std::size_t(1), fd[0].count(), L"First group has one element", LINE_INFO());
             Assert::AreEqual(std::size_t(2), fd[1].count(), L"Second group has two elements", LINE_INFO());
 
@@ -68,7 +69,7 @@ namespace fpd {
             Assert::AreEqual(sizeof(float), std::size_t(fd(1, 1).size()), L"size@1, 1", LINE_INFO());
 
             fd.add({ user_defined_semantic(1), "horst", format::int32, 1, 0, 0 }, true);
-            Assert::AreEqual(std::size_t(2), fd.count(), L"No new group added", LINE_INFO());
+            Assert::AreEqual(std::size_t(2), fd.count_groups(), L"No new group added", LINE_INFO());
             Assert::AreEqual(std::size_t(1), fd[0].count(), L"First group has one element", LINE_INFO());
             Assert::AreEqual(std::size_t(3), fd[1].count(), L"Second group has three elements", LINE_INFO());
 
@@ -105,7 +106,7 @@ namespace fpd {
                 { user_defined_semantic(1), L"horst", format::int32, 1, 0, 0 }
             };
 
-            Assert::AreEqual(std::size_t(2), fd.count(), L"Two groups", LINE_INFO());
+            Assert::AreEqual(std::size_t(2), fd.count_groups(), L"Two groups", LINE_INFO());
             Assert::AreEqual(std::size_t(1), fd[0].count(), L"First group has one element", LINE_INFO());
             Assert::AreEqual(std::size_t(3), fd[1].count(), L"Second group has three elements", LINE_INFO());
 

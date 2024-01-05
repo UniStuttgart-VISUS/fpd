@@ -93,6 +93,9 @@
     <ClInclude Include="fpd\invoke.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fpd\meta_data_builder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\semantic.inl">
@@ -117,6 +120,9 @@
       <Filter>Header Files</Filter>
     </None>
     <None Include="fpd\format_variant.inl">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="fpd\meta_data_builder.inl">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>
