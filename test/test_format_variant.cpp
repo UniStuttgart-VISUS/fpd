@@ -134,6 +134,21 @@ namespace fpd {
             Assert::AreEqual(42.0, v2.get<double>(), L"Get via type", LINE_INFO());
             Assert::IsTrue(bool(v1), L"Source still valid", LINE_INFO());
             Assert::AreEqual(42.0, v1.get<double>(), L"Source unchanged", LINE_INFO());
+
+            basic_format_variant<format_list<format::float64>> v3(v1);
+            Assert::IsTrue(bool(v3), L"Initialised valid", LINE_INFO());
+            Assert::AreEqual(42.0, v3.get<double>(), L"Get via type", LINE_INFO());
+            Assert::IsTrue(bool(v1), L"Source still valid", LINE_INFO());
+            Assert::AreEqual(42.0, v1.get<double>(), L"Source unchanged", LINE_INFO());
+
+            const basic_format_variant<format_list<format::float64>> empty;
+            basic_format_variant<format_list<format::int32>> v4(empty);
+            Assert::IsFalse(bool(v4), L"Initialised empty", LINE_INFO());
+
+            Assert::IsTrue(bool(v2), L"Valid value in object to be cloned", LINE_INFO());
+            Assert::ExpectException<std::invalid_argument>([&v2](void) {
+                basic_format_variant<format_list<format::float32>> v(v2);
+            }, L"Initialise from unsupported", LINE_INFO());
         }
 
         TEST_METHOD(move_ctor) {
@@ -145,6 +160,72 @@ namespace fpd {
             Assert::IsTrue(bool(v2), L"Initialised valid", LINE_INFO());
             Assert::AreEqual(42.0, v2.get<double>(), L"Get via type", LINE_INFO());
             Assert::IsFalse(bool(v1), L"Source now invalid", LINE_INFO());
+        }
+
+        TEST_METHOD(assignment) {
+            basic_format_variant<format_list<format::int32, format::float64>> v1(42.0);
+            Assert::IsTrue(bool(v1), L"Initialised valid", LINE_INFO());
+            Assert::AreEqual(42.0, v1.get<double>(), L"Get via type", LINE_INFO());
+
+            basic_format_variant<format_list<format::int32, format::float64>> v2(17);
+            Assert::IsTrue(bool(v2), L"Initialised valid", LINE_INFO());
+            Assert::AreEqual(17, v2.get<int>(), L"Get via type", LINE_INFO());
+            v2 = v1;
+            Assert::IsTrue(bool(v2), L"Target still valid", LINE_INFO());
+            Assert::AreEqual(42.0, v1.get<double>(), L"Target assigned", LINE_INFO());
+            Assert::IsTrue(bool(v1), L"Source still valid", LINE_INFO());
+            Assert::AreEqual(42.0, v1.get<double>(), L"Source unchanged", LINE_INFO());
+
+            basic_format_variant<format_list<format::float64>> v3(43.0);
+            Assert::IsTrue(bool(v3), L"Initialised valid", LINE_INFO());
+            Assert::AreEqual(43.0, v3.get<double>(), L"Get via type", LINE_INFO());
+            v3 = v1;
+            Assert::IsTrue(bool(v2), L"Target still valid", LINE_INFO());
+            Assert::AreEqual(42.0, v1.get<double>(), L"Target assigned", LINE_INFO());
+            Assert::IsTrue(bool(v1), L"Source still valid", LINE_INFO());
+            Assert::AreEqual(42.0, v1.get<double>(), L"Source unchanged", LINE_INFO());
+
+            const basic_format_variant<format_list<format::float64>> empty;
+            basic_format_variant<format_list<format::int32>> v4(17);
+            Assert::IsFalse(bool(empty), L"Initialised empty", LINE_INFO());
+            v4 = empty;
+            Assert::IsFalse(bool(v4), L"Assigned empty", LINE_INFO());
+
+            Assert::ExpectException<std::invalid_argument>([&v2](void) {
+                basic_format_variant<format_list<format::float32>> v(17.0f);
+                Assert::IsTrue(bool(v), L"Initialised valid", LINE_INFO());
+                Assert::AreEqual(17.0f, v.get<float>(), L"Get via type", LINE_INFO());
+                v2 = v;
+            }, L"Assign unsupported", LINE_INFO());
+        }
+
+        TEST_METHOD(move_assignment) {
+            basic_format_variant<format_list<format::int32, format::float64>> v1(42.0);
+            Assert::IsTrue(bool(v1), L"Initialised valid", LINE_INFO());
+            Assert::AreEqual(42.0, v1.get<double>(), L"Get via type", LINE_INFO());
+
+            basic_format_variant<format_list<format::int32, format::float64>> v2(17);
+            Assert::IsTrue(bool(v2), L"Initialised valid", LINE_INFO());
+            Assert::AreEqual(17, v2.get<int>(), L"Get via type", LINE_INFO());
+            v2 = std::move(v1);
+            Assert::AreEqual(42.0, v2.get<double>(), L"Get via type", LINE_INFO());
+            Assert::IsFalse(bool(v1), L"Source now invalid", LINE_INFO());
+
+            v2 = v2;
+            Assert::IsTrue(bool(v2), L"Assignment on self valud", LINE_INFO());
+            Assert::AreEqual(42.0, v2.get<double>(), L"Get via type", LINE_INFO());
+        }
+
+        TEST_METHOD(value_assignment) {
+            basic_format_variant<format_list<format::int32, format::float64>> v(42.0);
+            Assert::IsTrue(bool(v), L"Initialised valid", LINE_INFO());
+            Assert::AreEqual(int(format::float64), int(v.format()), L"format", LINE_INFO());
+            Assert::AreEqual(42.0, v.get<double>(), L"Get via type", LINE_INFO());
+
+            v = 42;
+            Assert::IsTrue(bool(v), L"Initialised valid", LINE_INFO());
+            Assert::AreEqual(int(format::int32), int(v.format()), L"format", LINE_INFO());
+            Assert::AreEqual(42, v.get<int>(), L"Get via type", LINE_INFO());
         }
     };
 }

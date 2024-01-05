@@ -104,6 +104,21 @@ public:
     basic_format_variant(_In_ const basic_format_variant& rhs);
 
     /// <summary>
+    /// Initialise from another variant.
+    /// </summary>
+    /// <typeparam name="F>The formats supported by the right-hand side
+    /// operand. These formats and the ones of the left-hand side operands do
+    /// not need to match, but only the currently active member of the right
+    /// side must be supported by the left side, too.</typeparam>
+    /// <param name="rhs">The object to be cloned. The value contained in this
+    /// parameter must be supported by the target variant. It is safe to clone
+    /// an empty variant.</param>
+    /// <exception cref="std::invalid_argument">If <paramref name="rhs" /> holds
+    /// a value that is not supported by the new type of variant.</exception>
+    template<FPD_NAMESPACE::format... F> basic_format_variant(
+        _In_ const basic_format_variant<format_list<F...>>& rhs);
+
+    /// <summary>
     /// Move <paramref name="rhs" />.
     /// </summary>
     /// <param name="rhs">The object to be moved.</param>
@@ -263,6 +278,50 @@ public:
     }
 
     /// <summary>
+    /// Assignment.
+    /// </summary>
+    /// <param name="rhs">The right-hand side operand.</param>
+    /// <returns><c>*this</c>.</returns>
+    basic_format_variant& operator =(_In_ const basic_format_variant& rhs);
+
+    /// <summary>
+    /// Assignment.
+    /// </summary>
+    /// <typeparam name="F>The formats supported by the right-hand side
+    /// operand. These formats and the ones of the left-hand side operands do
+    /// not need to match, but only the currently active member of the right
+    /// side must be supported by the left side, too.</typeparam>
+    /// <param name="rhs">The right-hand side operand.</param>
+    /// <returns><c>*this</c>.</returns>
+    template<FPD_NAMESPACE::format... F> basic_format_variant& operator =(
+        _In_ const basic_format_variant<format_list<F...>>& rhs);
+
+    /// <summary>
+    /// Move assignment.
+    /// </summary>
+    /// <param name="rhs">The right-hand side operand.</param>
+    /// <returns><c>*this</c>.</returns>
+    basic_format_variant& operator =(_In_ basic_format_variant&& rhs) noexcept;
+
+    /// <summary>
+    /// Value assignment.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the value being assigned. This must
+    /// be a type supported by the variant.</typeparam>
+    /// <param name="value">The value to be assigned.</param>
+    /// <returns><c>*this</c>.</returns>
+    template<class TValue>
+    inline typename std::enable_if<is_supported_type<formats, TValue>::value,
+        basic_format_variant>::type&
+    operator =(_In_ TValue&& value) {
+        this->invoke<detail::format_value_dtor>();
+        this->_format = format_reverse_traits<TValue>::format;
+        assert(this->supports(this->_format));
+        this->invoke<detail::format_value_ctor>(std::forward<TValue>(value));
+        return *this;
+    }
+
+    /// <summary>
     /// Answer whether the variant holds valid data.
     /// </summary>
     /// <returns><c>true</c> if the variant holds valid data,
@@ -299,6 +358,8 @@ private:
 
     std::array<std::uint8_t, type_list_max_sizeof<format_types>::value> _data;
     format_type _format;
+
+    template<class> friend class basic_format_variant;
 };
 
 

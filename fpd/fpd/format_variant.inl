@@ -81,9 +81,27 @@ FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant(
  */
 template<FPD_NAMESPACE::format... Formats>
 FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant(
-        _In_ const basic_format_variant<_FPD_VAR_FMTS>& rhs)
+        _In_ const basic_format_variant& rhs)
         : _format(rhs._format) {
-    assert(this->supports(this->_format));
+    this->invoke<detail::format_value_runtime_ctor>(rhs._data.data(),
+        rhs._data.size());
+}
+
+
+/*
+ * ...::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant
+ */
+template<FPD_NAMESPACE::format... Formats>
+template<FPD_NAMESPACE::format... F>
+FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant(
+        _In_ const basic_format_variant<format_list<F...>>& rhs)
+        : _format(rhs._format) {
+    if ((this->_format != format_type::unknown)
+            && !this->supports(this->_format)) {
+        throw std::invalid_argument("A copy of a variant cannot be created "
+            "from a variant holding an unsupported kind of value.");
+    }
+
     this->invoke<detail::format_value_runtime_ctor>(rhs._data.data(),
         rhs._data.size());
 }
@@ -95,8 +113,7 @@ FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant(
 template<FPD_NAMESPACE::format... Formats>
 FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant(
         _Inout_ basic_format_variant<_FPD_VAR_FMTS>&& rhs)
-    : _data(std::move(rhs._data)),
-        _format(rhs._format) {
+        : _data(std::move(rhs._data)), _format(rhs._format) {
     assert(this->supports(this->_format));
     rhs._format = format::unknown;
 }
@@ -153,6 +170,65 @@ TValue& FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::get(void) {
     } else {
         return *retval;
     }
+}
+
+
+/*
+ * FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::operator =
+ */
+template<FPD_NAMESPACE::format... Formats>
+FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS> &
+FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::operator =(
+        _In_ const basic_format_variant &rhs) {
+    if (this != std::addressof(rhs)) {
+        this->invoke<detail::format_value_dtor>();
+        this->_format = rhs._format;
+        this->invoke<detail::format_value_runtime_ctor>(rhs._data.data(),
+            rhs._data.size());
+    }
+
+    return *this;
+}
+
+
+/*
+ * FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::operator =
+ */
+template<FPD_NAMESPACE::format... Formats>
+template<FPD_NAMESPACE::format... F>
+FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>&
+FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::operator =(
+        _In_ const basic_format_variant<format_list<F...>>& rhs) {
+    if ((rhs._format != format_type::unknown) && !this->supports(rhs._format)) {
+        throw std::invalid_argument("The right-hand side operand holds "
+            "a value which is not supported by the left-hand side "
+            "operand.");
+    }
+
+    this->invoke<detail::format_value_dtor>();
+    this->_format = rhs._format;
+    this->invoke<detail::format_value_runtime_ctor>(rhs._data.data(),
+        rhs._data.size());
+
+    return *this;
+}
+
+
+/*
+ * FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::operator =
+ */
+template<FPD_NAMESPACE::format... Formats>
+FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>&
+FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::operator =(
+        _In_ basic_format_variant&& rhs) noexcept {
+    if (this != std::addressof(rhs)) {
+        this->invoke<detail::format_value_dtor>();
+        this->_data = std::move(rhs._data);
+        this->_format = rhs._format;
+        rhs._format = format::unknown;
+    }
+
+    return *this;
 }
 
 
