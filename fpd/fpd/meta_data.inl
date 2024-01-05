@@ -319,12 +319,70 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_format_description(
         _Inout_ meta_data& meta_data,
         _In_ const void *data,
         _In_ const std::size_t cnt) {
+#define _FPD_THROW_IF_INCOMPLETE(req) \
+    if ((end - cur) < req) { \
+        throw std::invalid_argument("The format description header "\
+            "segment contains incomplete data."); \
+    }
+
     if (!meta_data._format_description) {
         throw std::invalid_argument("The format description has already been "
             "parsed.");
     }
+    if ((cnt % element_size) != 0) {
+        throw std::invalid_argument("The format description has an unexpected "
+            "size.");
+    }
 
-    throw "TODO";
+    auto cur = static_cast<const std::uint8_t *>(data);
+    const auto end = cur + cnt;
+
+    while (cur < end) {
+        _FPD_THROW_IF_INCOMPLETE(sizeof(semantic));
+        const auto s = *reinterpret_cast<const semantic *>(cur);
+        cur += sizeof(s);
+
+        _FPD_THROW_IF_INCOMPLETE(sizeof(format));
+        const auto f = *reinterpret_cast<const format *>(cur);
+        cur += sizeof(f);
+
+        _FPD_THROW_IF_INCOMPLETE(sizeof(std::uint16_t));
+        const auto g = *reinterpret_cast<const std::uint16_t *>(cur);
+        cur += sizeof(g);
+
+        _FPD_THROW_IF_INCOMPLETE(sizeof(std::uint16_t));
+        const auto o = *reinterpret_cast<const std::uint16_t *>(cur);
+        cur += sizeof(o);
+
+        _FPD_THROW_IF_INCOMPLETE(sizeof(std::uint16_t));
+        const auto b = *reinterpret_cast<const std::uint16_t *>(cur);
+        cur += sizeof(b);
+
+        if (s < semantic::user_defined) {
+            meta_data._format_description.add(s, f, g, o, b, true);
+
+        } else {
+            // If this is a user-defined semantic, find the description in the
+            // table of user-defined semantics provided with the meta data
+            // object. If that fails, we raise an exception and the caller must
+            // parse the meta data again once the table has been read. In order
+            // for this to succeed, any existing data must be cleared.
+            typedef std::underlying_type<semantic>::type int_type;
+            auto i = static_cast<int_type>(s);
+            i -= static_cast<int_type>(semantic::user_defined);
+
+            if (i >= meta_data._user_defined_semantics.size()) {
+                meta_data._format_description = format_description_type();
+                throw std::logic_error("The specified user-defined semantic "
+                    "has no valid description.");
+            }
+
+            auto d = meta_data._user_defined_semantics[i].c_str();
+
+            meta_data._format_description.add(s, d, f, g, o, b, true);
+        }
+    } /* while (cur < end) */
+#undef _FPD_THROW_IF_INCOMPLETE
 }
 
 
