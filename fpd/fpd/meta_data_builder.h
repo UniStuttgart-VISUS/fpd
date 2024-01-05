@@ -40,6 +40,11 @@ public:
         format_description_type;
 
     /// <summary>
+    /// The type of a format element.
+    /// </summary>
+    typedef typename format_description_type::element_type element_type;
+
+    /// <summary>
     /// The type used to represent the absolute offsets of the frames into
     /// the file.
     /// </summary>
@@ -64,6 +69,59 @@ public:
     /// Initialises a new version.
     /// </summary>
     meta_data_builder(void);
+
+    /// <summary>
+    /// Appends an element to the format description.
+    /// </summary>
+    /// <param name="semantic">The semantic of the element to be added.</param>
+    /// <param name="semantic_name">The human-readable name of the semantic to
+    /// be added. This can be <c>nullptr</c> if the <paramref name="semantic" />
+    /// is a built-in one.</param>
+    /// <param name="group">The zero-based index of the group to add the element
+    /// to. If this group does not yet exist, it will be created.</param>
+    /// <param name="format">The format of the element.</param>
+    /// <param name="offset">The offset of the element from the begin of the
+    /// group. This can be zero if the element starts immediately after the
+    /// previous one without any padding.</param>
+    /// <param name="size">The size of the element. This can be zero if the
+    /// <paramref name="format" /> is one with a known size.</param>
+    /// <param name="eval_offset">If <c>true</c>, add an explicit offset to the
+    /// element based on the current content of the group.</param>
+    /// <returns><c>*this</c>.</returns>
+    meta_data_builder& add_format_element(_In_ const semantic semantic,
+        _In_opt_z_ const char_type *semantic_name,
+        _In_ const format format,
+        _In_ const std::size_t group = 0,
+        _In_ const std::uint16_t offset = 0,
+        _In_ const std::uint16_t size = 0,
+        _In_ const bool eval_offset = false);
+
+    /// <summary>
+    /// Appends an element to the format description, which must use a built-in
+    /// semantic.
+    /// </summary>
+    /// <param name="semantic">The semantic of the element to be added.</param>
+    /// <param name="group">The zero-based index of the group to add the element
+    /// to. If this group does not yet exist, it will be created.</param>
+    /// <param name="format">The format of the element.</param>
+    /// <param name="offset">The offset of the element from the begin of the
+    /// group. This can be zero if the element starts immediately after the
+    /// previous one without any padding.</param>
+    /// <param name="size">The size of the element. This can be zero if the
+    /// <paramref name="format" /> is one with a known size.</param>
+    /// <param name="eval_offset">If <c>true</c>, add an explicit offset to the
+    /// element based on the current content of the group.</param>
+    /// <returns><c>*this</c>.</returns>
+    inline meta_data_builder& add_format_element(
+            _In_ const semantic semantic,
+            _In_ const format format,
+            _In_ const std::size_t group = 0,
+            _In_ const std::uint16_t offset = 0,
+            _In_ const std::uint16_t size = 0,
+            _In_ const bool eval_offset = false) {
+        this->_format.add(semantic, format, group, offset, size, eval_offset);
+        return *this;
+    }
 
     /// <summary>
     /// Builds the <see cref="meta_data" /> and resets the builder.

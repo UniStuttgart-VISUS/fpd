@@ -16,6 +16,38 @@ FPD_NAMESPACE::meta_data_builder<TChar>::meta_data_builder(void)
 
 
 /*
+ * FPD_NAMESPACE::meta_data_builder<TChar>::add_format_element
+ */
+template<class TChar>
+FPD_NAMESPACE::meta_data_builder<TChar>&
+FPD_NAMESPACE::meta_data_builder<TChar>::add_format_element(
+        _In_ const semantic semantic,
+        _In_opt_z_ const char_type *semantic_name,
+        _In_ const format format,
+        _In_ const std::size_t group,
+        _In_ const std::uint16_t offset,
+        _In_ const std::uint16_t size,
+        _In_ const bool eval_offset) {
+    this->_format.add(semantic, semantic_name, format, group, offset, size,
+        eval_offset);
+
+    if ((semantic > semantic::user_defined) && (semantic_name != nullptr)) {
+        typedef std::underlying_type<decltype(semantic)>::type int_type;
+        auto i = static_cast<int_type>(semantic);
+        i -= static_cast<int_type>(semantic::user_defined);
+
+        if (this->_user_defined_semantics.size() < i) {
+            this->_user_defined_semantics.resize(i + i);
+        }
+
+        this->_user_defined_semantics[i] = semantic_name;
+    }
+
+    return *this;
+}
+
+
+/*
  * FPD_NAMESPACE::meta_data meta_data_builder<TChar>::build
  */
 template<class TChar>
@@ -94,12 +126,7 @@ FPD_NAMESPACE::meta_data_builder<TChar>::size(void) const {
 
     // Mandatory format description (0x02).
     retval += sizeof(header_segment);
-    retval += this->_format.count_elements()
-        * (sizeof(semantic)         // Semantic of element
-        + sizeof(format)            // Format of elements
-        + sizeof(std::uint16_t)     // Element group (stream)
-        + sizeof(std::uint16_t)     // Offset within group
-        + sizeof(std::uint16_t));   // Explicit size override
+    retval += this->_format.count_elements() * element_type::size_on_disk;
 
     // Optional user semantic description (0x03).
     if (!this->_user_defined_semantics.empty()) {

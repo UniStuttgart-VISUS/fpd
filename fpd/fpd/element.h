@@ -51,6 +51,16 @@ public:
     typedef std::basic_string<char_type> string_type;
 
     /// <summary>
+    /// Specifies the size of a single element on disk.
+    /// </summary>
+    static constexpr const std::size_t size_on_disk
+        = sizeof(semantic)          // Semantic of element
+        + sizeof(format)            // Format of elements
+        + sizeof(std::uint16_t)     // Element group (stream)
+        + sizeof(std::uint16_t)     // Offset within group
+        + sizeof(std::uint16_t);    // Explicit size override;
+
+    /// <summary>
     /// Initialises a new instance.
     /// </summary>
     /// <param name=""></param>

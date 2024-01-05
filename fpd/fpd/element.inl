@@ -6,6 +6,13 @@
 
 
 /*
+ * FPD_NAMESPACE::element<TChar>::size_on_disk
+ */
+template<class TChar>
+constexpr const std::size_t FPD_NAMESPACE::element<TChar>::size_on_disk;
+
+
+/*
  * FPD_NAMESPACE::element<TChar>::element
  */
 template<class TChar>
