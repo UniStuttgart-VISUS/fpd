@@ -134,6 +134,5 @@
     <None Include="fpd\meta_data_builder.inl">
       <Filter>Header Files</Filter>
     </None>
-    <None Include="packages.config" />
   </ItemGroup>
 </Project>

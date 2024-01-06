@@ -159,6 +159,7 @@ namespace fpd {
             const auto expected = "Horst";
             char actual[] = "\0\0\0\0\0\0";
 
+            // Create a temporary file name for the test.
             wchar_t path[MAX_PATH];
 
             {
@@ -170,18 +171,19 @@ namespace fpd {
 
             Assert::IsTrue(::GetTempFileNameW(path, L"fpd", 0, path), L"GetTempFileName", LINE_INFO());
 
+            // Fill the temporary file.
             {
                 win32_io io(path, GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
                 Assert::IsTrue(::strlen(expected) <= io.write(0, expected, ::strlen(expected)), L"write", LINE_INFO());
             }
 
-
+            // Test dstorage_io.
             {
-                ID3D12Device *device;
-                Assert::IsTrue(SUCCEEDED(::D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&device))), L"D3D device", LINE_INFO());
-
                 auto factory = dstorage_io::get_factory();
                 Assert::IsNotNull(factory, L"DirectStorage factory", LINE_INFO());
+
+                ID3D12Device *device;
+                Assert::IsTrue(SUCCEEDED(::D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&device))), L"D3D device", LINE_INFO());
 
                 ID3D12Fence *fence;
                 Assert::IsTrue(SUCCEEDED(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence))), L"Fence", LINE_INFO());
