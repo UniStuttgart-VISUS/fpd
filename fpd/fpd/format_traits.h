@@ -168,7 +168,7 @@ namespace detail {
             _In_ const format_list<Format, Formats...>,
             _In_ const format format) {
         if (format == Format) {
-            return format_forward_traits<Format>::name<TChar>();
+            return format_forward_traits<Format>::template name<TChar>();
         } else {
             return to_string<TChar>(format_list<Formats...>(), format);
         }

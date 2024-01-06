@@ -19,7 +19,8 @@ FPD_NAMESPACE_BEGIN
 /// an FPD file.
 /// </summary>
 /// <typeparam name="TChar">The type of a character in a string.</typeparam>
-template<class TChar> class meta_data_builder final {
+template<class TChar>
+class meta_data_builder final : public with_code_page<TChar> {
 
 public:
 
@@ -176,6 +177,21 @@ public:
     size_type size(void) const;
 
     /// <summary>
+    /// Sets the code page to be assumed for narrow strings.
+    /// </summary>
+    /// <remarks>
+    /// The code page is not relevant if the application uses UTF-16 strings and
+    /// will be discarded.
+    /// </remarks>
+    /// <param name="code_page">The code page of narrow strings.</param>
+    /// <returns><c>*this</c>.</returns>
+    meta_data_builder& uses_code_page(
+            _In_ const code_page_type code_page) noexcept {
+        this->code_page(code_page);
+        return *this;
+    }
+
+    /// <summary>
     /// Sets the global bounding box of the particles.
     /// </summary>
     /// <param name="bounding_box">The global bounding box of the particles.
@@ -213,20 +229,6 @@ public:
             _In_ const TValue max_y, _In_ const TValue max_z) {
         return this->with_bounding_box(bounding_box(min_x, min_y, min_z,
             max_x, max_y, max_z));
-    }
-
-    /// <summary>
-    /// Sets the code page to be assumed for narrow strings.
-    /// </summary>
-    /// <remarks>
-    /// The code page is not relevant if the application uses UTF-16 strings.
-    /// </remarks>
-    /// <param name="code_page">The code page of narrow strings.</param>
-    /// <returns><c>*this</c>.</returns>
-    meta_data_builder& with_code_page(
-            _In_ const code_page code_page) noexcept {
-        this->_code_page = code_page;
-        return *this;
     }
 
     /// <summary>
@@ -354,7 +356,6 @@ private:
         _In_opt_z_ const char_type *d);
 
     std::vector<bounding_box> _bounding_boxes;
-    code_page _code_page;
     string_type _description;
     endian _endian;
     format_description_type _format;

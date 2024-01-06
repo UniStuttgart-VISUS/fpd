@@ -17,6 +17,7 @@
 #include "fpd/element.h"
 #include "fpd/element_group.h"
 #include "fpd/endian.h"
+#include "fpd/file.h"
 #include "fpd/format.h"
 #include "fpd/format_description.h"
 #include "fpd/format_traits.h"

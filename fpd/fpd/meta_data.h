@@ -11,11 +11,13 @@
 
 #include "fpd/annotations.h"
 #include "fpd/bounding_box.h"
+#include "fpd/convert_string.h"
 #include "fpd/endian.h"
 #include "fpd/format_description.h"
 #include "fpd/format_variant.h"
 #include "fpd/header_segment.h"
 #include "fpd/swap_bytes.h"
+#include "fpd/with_code_page.h"
 
 
 FPD_NAMESPACE_BEGIN

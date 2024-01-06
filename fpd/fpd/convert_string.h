@@ -407,6 +407,29 @@ inline std::size_t measure_string(
         code_page);
 }
 
+/// <summary>
+/// Answer the number of characters in the given string.
+/// </summary>
+/// <remarks>
+/// This function effectively retrieves the size of <paramref name="str" />,
+/// but uses the conversion interface, therefore optimising the actual call
+/// to <see cref="convert_string" /> away if the string is not being converted.
+/// </remarks>
+/// <typeparam name="TChar"></typeparam>
+/// <typeparam name="TTraits"></typeparam>
+/// <typeparam name="TAlloc"></typeparam>
+/// <param name="str"></param>
+/// <param name="code_page"></param>
+/// <returns>The number of characters required for the string, including the
+/// terminating zero.</returns>
+template<class TChar, class TTraits, class TAlloc>
+inline std::size_t measure_string(
+        _In_ const std::basic_string<TChar, TTraits, TAlloc>& str,
+        _In_ const code_page code_page) {
+    return (str.size() + 1);
+}
+
+
 FPD_NAMESPACE_END
 
 #include "fpd/convert_string.inl"

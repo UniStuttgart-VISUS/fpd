@@ -163,7 +163,7 @@ template<class TValue> void swap_endian(_Inout_updates_(cnt) TValue *values,
 template<class TValue>
 TValue swap_endian_as(_In_ const void *value, _In_ const endian endian) {
     assert(value != nullptr);
-    auto retval = *static_cast<const TValue *>;
+    auto retval = *static_cast<const TValue *>(value);
 
     if (requires_conversion(endian)) {
         retval = swap_bytes(retval);

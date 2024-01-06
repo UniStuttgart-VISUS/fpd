@@ -155,6 +155,7 @@
     <ClInclude Include="fpd\element_initialiser.h" />
     <ClInclude Include="fpd\code_page.h" />
     <ClInclude Include="fpd\endian.h" />
+    <ClInclude Include="fpd\file.h" />
     <ClInclude Include="fpd\format.h" />
     <ClInclude Include="fpd\format_description.h" />
     <ClInclude Include="fpd\format_traits.h" />
@@ -175,12 +176,14 @@
     <ClInclude Include="fpd\type_list.h" />
     <ClInclude Include="fpd\type_size.h" />
     <ClInclude Include="fpd\win32_io.h" />
+    <ClInclude Include="fpd\with_code_page.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\bounding_box.inl" />
     <None Include="fpd\convert_string.inl" />
     <None Include="fpd\element.inl" />
     <None Include="fpd\element_group.inl" />
+    <None Include="fpd\file.inl" />
     <None Include="fpd\format_description.inl" />
     <None Include="fpd\format_variant.inl" />
     <None Include="fpd\meta_data.inl" />

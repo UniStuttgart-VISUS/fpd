@@ -56,11 +56,11 @@ FPD_NAMESPACE::meta_data<TChar>& FPD_NAMESPACE::meta_data<TChar>::parse(
         _In_ const void *data,
         _In_ const std::size_t cnt) {
     auto cur = static_cast<const std::uint8_t * >(data);
-    const auto end = cut + cnt;
+    const auto end = cur + cnt;
     auto deferred_format = std::make_pair(static_cast<const void *>(nullptr),
         static_cast<std::size_t>(0));
 
-    while (cur + sizeof(header_segment_type) < end) {
+    while (cur + sizeof(header_segment) < end) {
         // Interpret the 32-bit header of the header segment.
         auto header = swap_endian_as<std::uint32_t>(cur, meta_data._endian);
         cur += sizeof(header);
@@ -100,9 +100,15 @@ FPD_NAMESPACE::meta_data<TChar>& FPD_NAMESPACE::meta_data<TChar>::parse(
                 parse_bounding_box(meta_data, cur, length);
                 break;
 
-            case header_sgement::global_particle_properties:
+            case header_segment::global_particle_properties:
                 parse_global_particle_properties(meta_data, cur, length);
                 break;
+
+            case header_segment::spatial_hierarchy:
+                throw "TODO";
+
+            case header_segment::compression:
+                throw "TODO";
         }
 
         cur += length;
@@ -256,7 +262,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_bounding_box(
     }
     if (cnt < sizeof(format)) {
         throw std::invalid_argument("The bounding boxes must contain a format "
-            "specification.")´;
+            "specification.");
     }
 
     // Determine the format of the bounding boxes and how big one is on disk.
@@ -329,7 +335,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_format_description(
         throw std::invalid_argument("The format description has already been "
             "parsed.");
     }
-    if ((cnt % element_size) != 0) {
+    if ((cnt % format_description_type::element_type::size_on_disk) != 0) {
         throw std::invalid_argument("The format description has an unexpected "
             "size.");
     }
@@ -489,11 +495,12 @@ FPD_NAMESPACE::meta_data<TChar>::to_string(_In_ const meta_data& meta_data,
     string.resize(end - begin);
 
     // Swap the endian according to what the meta data say.
-    swap_endian(string.data(), begin, string.size());
+    swap_endian(string.data(), begin, string.size(), meta_data.endian());
 
     // Convert the character type or the meta data.
     return convert_string<char_type>(string.data(), string.size(),
         code_page::oem);
+    // TODO: make the code page configurable.
 }
 
 
@@ -505,7 +512,7 @@ typename FPD_NAMESPACE::meta_data<TChar>::string_type
 FPD_NAMESPACE::meta_data<TChar>::to_string(_In_ const meta_data& meta_data,
         _In_reads_(cnt) const void *data, _In_ const std::size_t cnt) {
     assert(data != nullptr);
-    auto end = static_cast<std::uint8_t>(data) + cnt;
+    auto end = static_cast<const std::uint8_t *>(data) + cnt;
     return to_string(static_cast<const char16_t *>(data),
         reinterpret_cast<const char16_t *>(end));
 }

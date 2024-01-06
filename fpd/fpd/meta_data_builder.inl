@@ -10,7 +10,7 @@
  */
 template<class TChar>
 FPD_NAMESPACE::meta_data_builder<TChar>::meta_data_builder(void)
-    : _code_page(code_page::oem),
+    : with_code_page(code_page_type::oem),
       _endian(endian::system),
       _version(std::make_pair(FPD_FILE_MAJOR, FPD_FILE_MINOR)) { }
 
@@ -35,7 +35,7 @@ FPD_NAMESPACE::meta_data_builder<TChar>::build(void) {
         this->_bounding_boxes.erase(this->_bounding_boxes.begin());
     }
 
-    this->_code_page = code_page::oem;
+    this->code_page(code_page::oem);
 
     retval._description = std::move(this->_description);
     assert(this->_description.empty());
@@ -104,7 +104,7 @@ FPD_NAMESPACE::meta_data_builder<TChar>::size(void) const {
     if (!this->_user_defined_semantics.empty()) {
         retval += sizeof(header_segment);
         for (auto& s : this->_user_defined_semantics) {
-            retval += measure_string<char16_t>(s.c_str(), this->_code_page)
+            retval += measure_string<char16_t>(s.c_str(), this->code_page())
                 * sizeof(char16_t);
         }
     }
@@ -113,7 +113,7 @@ FPD_NAMESPACE::meta_data_builder<TChar>::size(void) const {
     if (!this->_description.empty()) {
         retval += sizeof(header_segment);
         retval += measure_string<char16_t>(this->_description.c_str(),
-            this->_code_page) * sizeof(char16_t);
+            this->code_page()) * sizeof(char16_t);
     }
 
     // Optional bounding boxes (0x05).
