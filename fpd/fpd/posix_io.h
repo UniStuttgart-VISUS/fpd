@@ -212,7 +212,7 @@ public:
     /// <returns><c>true</c> if the file handle in the object is valid,
     /// <c>false</c> otherwise.</returns>
     inline operator bool(void) const noexcept {
-        return (this->_handle < 0);
+        return (this->_handle >= 0);
     }
 
 private:

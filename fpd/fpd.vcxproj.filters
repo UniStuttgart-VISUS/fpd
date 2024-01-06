@@ -99,6 +99,12 @@
     <ClInclude Include="fpd\memory_io.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fpd\dstorage_io.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fpd\com_category.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\semantic.inl">
@@ -128,5 +134,6 @@
     <None Include="fpd\meta_data_builder.inl">
       <Filter>Header Files</Filter>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

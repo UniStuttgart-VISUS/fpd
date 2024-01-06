@@ -146,7 +146,9 @@
     <ClInclude Include="fpd\abi.h" />
     <ClInclude Include="fpd\annotations.h" />
     <ClInclude Include="fpd\bounding_box.h" />
+    <ClInclude Include="fpd\com_category.h" />
     <ClInclude Include="fpd\convert_string.h" />
+    <ClInclude Include="fpd\dstorage_io.h" />
     <ClInclude Include="fpd\element.h" />
     <ClInclude Include="fpd\element_group.h" />
     <ClInclude Include="fpd\element_initialiser.h" />
@@ -182,8 +184,16 @@
     <None Include="fpd\meta_data.inl" />
     <None Include="fpd\meta_data_builder.inl" />
     <None Include="fpd\semantic.inl" />
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\Microsoft.Direct3D.DirectStorage.1.2.2\build\native\targets\Microsoft.Direct3D.DirectStorage.targets" Condition="Exists('..\packages\Microsoft.Direct3D.DirectStorage.1.2.2\build\native\targets\Microsoft.Direct3D.DirectStorage.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.Direct3D.DirectStorage.1.2.2\build\native\targets\Microsoft.Direct3D.DirectStorage.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.DirectStorage.1.2.2\build\native\targets\Microsoft.Direct3D.DirectStorage.targets'))" />
+  </Target>
 </Project>
