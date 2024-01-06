@@ -40,6 +40,11 @@ This segment is mandatory.
 
 The frame table segment holds the absolute offsets (`SEEK_SET`) of all frames in the file. Each offset is represented as `uint64`. The number of frames can be computed by dividing the size of this header by the size of `uint64`.
 
+| Type           | Length   | Description                                      |
+|----------------|----------|--------------------------------------------------|
+| uint64 | 8 Bytes | The offset of the first frame from the begin of the file. |
+| ...    | 8 Bytes | The offsets of all frames follow in the same format.      |
+
 ### Format description (0x02)
 This segment is mandatory.
 
@@ -118,7 +123,7 @@ This segment specifies whether and how the particle data are compressed. The seg
 | compression | 4 Bytes | The type of the compression algorithm used, which must be one of the built-in `compression`s.                                                                                                      |
 | uint32      | 4 Bytes | The level of a potential hierarchy at which the compression occurs. If the frame is compressed as a whole, this must be zero (0). If the algorithm is `compression::none`, this value is optional. |
 | uint64      | 8 Bytes | The number of particles that have been compressed. If the algorithm is `compression::none`, this value is optional.                                                                                |
-| ...         | ....    | If the compression was not performed at level zero of the hierarchy, additional numbers of particles follow.                                                                                       |
+| ...         | 8 Bytes | If the compression was not performed at level zero of the hierarchy, additional numbers of particles follow.                                                                                       |
 
 TODO: Describe how the hierarchy thing is working.
 
