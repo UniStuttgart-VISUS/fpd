@@ -53,13 +53,27 @@ enum class header_segment : std::uint32_t {
     /// The bounding box segment holds the global bounding box and potentially
     /// additional per-frame bounding boxes.
     /// </summary>
-    bounding_box = 0x05 << 25,
+    bounding_box = 0x05 << 24,
 
     /// <summary>
     /// The global particle properties segments holds a table of
     /// <see cref="semantic" />s that are the same for all particles in the file.
     /// </summary>
-    global_particle_properties = 0x06 << 25,
+    global_particle_properties = 0x06 << 24,
+
+    /// <summary>
+    /// Specifies the spatial hierarchy of the data.
+    /// </summary>
+    /// <remarks>
+    /// The content of the section depends of the first 32-bit value, which
+    /// determines the type of the hierarchy.
+    /// </remarks>
+    spatial_hierarchy = 0x07 << 24,
+
+    /// <summary>
+    /// Specifies whether the particle data are compressed.
+    /// </summary>
+    compression = 0x08 << 24
 };
 
 FPD_NAMESPACE_END

@@ -68,7 +68,18 @@ This segment is optional.
 
 This segment specifies the axis-aligned bounding box of the data over all frames and optionally a bounding box for each frame. The presence of per-frame bounding boxes can be determined by checking the size of the segment.
 
-The segment starts with the `format` (4 bytes) of the bounding box. This must be a scalar format (one element), typically, it is `format::float32`.
+The segment starts with the `format` (4 bytes) of the bounding box. This must be a scalar format (one element), while typically is `format::float32`, followed by the bounding boxes.
+
+| Type     | Length   | Description                                                                                                                          |
+|----------|----------|--------------------------------------------------------------------------------------------------------------------------------------|
+| format   | 4 Bytes  | The format used to specifiy the locations of the borders of the bounding box, which must be a scalare from the enumerated `format`s. |
+| [format] | Variable | The minimum location on the x-axis. This must have the format specified before.                                                      |
+| [format] | Variable | The minimum location on the y-axis. This must have the format specified before.                                                      |
+| [format] | Variable | The minimum location on the z-axis. This must have the format specified before.                                                      |
+| [format] | Variable | The maximum location on the x-axis. This must have the format specified before.                                                      |
+| [format] | Variable | The maximum location on the y-axis. This must have the format specified before.                                                      |
+| [format] | Variable | The maximum location on the z-axis. This must have the format specified before.                                                      |
+| ...      | ...      | Additional per-frame bounding boxes in the same format as the global bounding box before.                                            |
 
 At least one bounding box covering all frames of the file must be present in the previously specified format. The bounding box comprises six elements of the previously specified format specifying the minimum x, minimum y and minimum z position followed by the maximum x, maximum y and maximum z position. The minimum and maximum positions shall account for the radius of the particles in the data set.
 
@@ -86,6 +97,30 @@ The global particles are specified as one or more structures of the following co
 | semantic | 8 Bytes  | The semantic of the property, which can be one of the built-in `semantic`s or a custom one.                                        |
 | format   | 4 Bytes  | The format of the the property, which must be one of the enumerated `format`s.                                                     |
 | uint8    | Variable | The value of the property, which must be an element of the previous `format`. The size is dependent on the format of the property. |
+
+### Spatial hierarchy (0x07)
+This segment is optional.
+
+This segment specifies whether there is a spatial hierarchy in the data and potentially additional information about this hierarchy. It always starts with the type of the `spatial_hierarchy` followed by optional data depending on the type of the hierarchy:
+
+| Type              | Length   | Description                                                                                |
+|-------------------|----------|--------------------------------------------------------------------------------------------|
+| spatial_hierarchy | 4 Bytes  | The type of the spatial hierarchy, which must be one of the built-in `spatial_hierarchy`s. |
+| ...               | Variable | Additional data depend on the type of the spatial hierarchy specified before.              |
+
+### Compression (0x08)
+This segment is optional.
+
+This segment specifies whether and how the particle data are compressed. The segment looks like:
+
+| Type        | Length  | Description                                                                                                                                                                                        |
+|-------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| compression | 4 Bytes | The type of the compression algorithm used, which must be one of the built-in `compression`s.                                                                                                      |
+| uint32      | 4 Bytes | The level of a potential hierarchy at which the compression occurs. If the frame is compressed as a whole, this must be zero (0). If the algorithm is `compression::none`, this value is optional. |
+| uint64      | 8 Bytes | The number of particles that have been compressed. If the algorithm is `compression::none`, this value is optional.                                                                                |
+| ...         | ....    | If the compression was not performed at level zero of the hierarchy, additional numbers of particles follow.                                                                                       |
+
+TODO: Describe how the hierarchy thing is working.
 
 ## Frame data
 The frame data is a raw consecutive list of frames each of which is a list of consecutive particles as described in the format description header segment. The number of particles is determined by the size of the frame in bytes divided by the size of a single particle as described in the format description header segment.

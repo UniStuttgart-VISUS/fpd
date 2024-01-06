@@ -146,6 +146,7 @@
     <ClInclude Include="fpd\abi.h" />
     <ClInclude Include="fpd\annotations.h" />
     <ClInclude Include="fpd\bounding_box.h" />
+    <ClInclude Include="fpd\compression.h" />
     <ClInclude Include="fpd\com_category.h" />
     <ClInclude Include="fpd\convert_string.h" />
     <ClInclude Include="fpd\dstorage_io.h" />
@@ -168,6 +169,7 @@
     <ClInclude Include="fpd\null_coalesce.h" />
     <ClInclude Include="fpd\posix_io.h" />
     <ClInclude Include="fpd\semantic.h" />
+    <ClInclude Include="fpd\spatial_hierarchy.h" />
     <ClInclude Include="fpd\swap_bytes.h" />
     <ClInclude Include="fpd\type_components.h" />
     <ClInclude Include="fpd\type_list.h" />

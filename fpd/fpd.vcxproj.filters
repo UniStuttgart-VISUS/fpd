@@ -105,6 +105,12 @@
     <ClInclude Include="fpd\com_category.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fpd\spatial_hierarchy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fpd\compression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\semantic.inl">

@@ -29,6 +29,7 @@
 #include "fpd/meta_data_builder.h"
 #include "fpd/posix_io.h"
 #include "fpd/semantic.h"
+#include "fpd/spatial_hierarchy.h"
 #include "fpd/swap_bytes.h"
 #include "fpd/type_list.h"
 #include "fpd/type_size.h"
