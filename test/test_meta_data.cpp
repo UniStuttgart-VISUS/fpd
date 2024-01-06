@@ -64,7 +64,7 @@ namespace fpd {
             meta_data_builder<wchar_t> builder;
 
             builder.with_description(L"description")
-                .uses_code_page(code_page::ansi)
+                .using_code_page(code_page::ansi)
                 .with_endian(endian::system)
                 .with_version(FPD_FILE_MAJOR, FPD_FILE_MINOR)
                 .with_bounding_box(0.0f, 1.0f, 2.0f, 10.0f, 11.0f, 12.0f)
@@ -105,7 +105,7 @@ namespace fpd {
         TEST_METHOD(builder_char_user_defined) {
             meta_data_builder<char> builder;
 
-            builder.uses_code_page(code_page::ansi)
+            builder.using_code_page(code_page::ansi)
                 .with_endian(endian::system)
                 .with_frames(1)
                 .add_format_element(semantic::user_defined, "float3", format::float32xyz);

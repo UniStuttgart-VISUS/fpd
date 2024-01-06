@@ -26,7 +26,7 @@ FPD_NAMESPACE::meta_data_builder<TChar>::build(void) {
             "all data that are requried to build the meta data.");
     }
 
-    meta_data_type retval;
+    meta_data_type retval(this->code_page());
 
     if (this->_bounding_boxes.empty()) {
         retval._bounding_box = bounding_box();

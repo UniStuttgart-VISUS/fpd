@@ -149,21 +149,6 @@ FPD_NAMESPACE::meta_data<TChar> FPD_NAMESPACE::meta_data<TChar>::parse(
 
 
 /*
- * FPD_NAMESPACE::meta_data<TChar>::fixed_header_size
- */
-template<class TChar>
-const std::size_t FPD_NAMESPACE::meta_data<TChar>::fixed_header_size;
-
-
-/*
- * FPD_NAMESPACE::meta_data<TChar>::meta_data
- */
-template<class TChar>
-FPD_NAMESPACE::meta_data<TChar>::meta_data(void) noexcept
-    : _endian(endian_type::undefined), _file_size(0), _version(0, 0) { }
-
-
-/*
  * FPD_NAMESPACE::meta_data<TChar>::frame_offset
  */
 template<class TChar>

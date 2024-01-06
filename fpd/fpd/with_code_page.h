@@ -27,6 +27,11 @@ public:
     typedef FPD_NAMESPACE::code_page code_page_type;
 
     /// <summary>
+    /// Indicates that the class does not really store a code page.
+    /// </summary>
+    static constexpr const bool has_code_page = false;
+
+    /// <summary>
     /// Answer the ANSI code page, because the character type does not need this
     /// information.
     /// </summary>
@@ -63,6 +68,11 @@ public:
     /// The type used to specify a code page.
     /// </summary>
     typedef FPD_NAMESPACE::code_page code_page_type;
+
+    /// <summary>
+    /// Indicates that the class actually stores a code page.
+    /// </summary>
+    static constexpr const bool has_code_page = true;
 
     /// <summary>
     /// Answer the configured code page for narrow strings.

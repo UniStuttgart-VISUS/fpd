@@ -185,7 +185,7 @@ public:
     /// </remarks>
     /// <param name="code_page">The code page of narrow strings.</param>
     /// <returns><c>*this</c>.</returns>
-    meta_data_builder& uses_code_page(
+    meta_data_builder& using_code_page(
             _In_ const code_page_type code_page) noexcept {
         this->code_page(code_page);
         return *this;

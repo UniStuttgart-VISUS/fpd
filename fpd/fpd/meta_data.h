@@ -26,7 +26,7 @@ FPD_NAMESPACE_BEGIN
 /// A container for all meta data in an FPD file.
 /// </summary>
 /// <typeparam name="TChar">The type of a character in a string.</typeparam>
-template<class TChar> class meta_data final {
+template<class TChar> class meta_data final : protected with_code_page<TChar> {
 
 public:
 
@@ -138,7 +138,14 @@ public:
     /// <summary>
     /// Initialises a new instance.
     /// </summary>
-    meta_data(void) noexcept;
+    /// <param name="code_page">The code page to convert strings to if
+    /// <see cref="char_type" /> does not implicitly carry an encoding. Note
+    /// to MegaMol users: <c>char</c> is not UTF-8 by definition, it <i>can</i>
+    /// be UTF-8 if the data are handled accordingly.</param>
+    explicit inline meta_data(_In_ const FPD_NAMESPACE::code_page code_page
+            = FPD_NAMESPACE::code_page::oem) noexcept
+        : with_code_page<TChar>(code_page), _endian(endian_type::undefined),
+            _file_size(0), _version(0, 0) { }
 
     /// <summary>
     /// Gets the endian of the file.
