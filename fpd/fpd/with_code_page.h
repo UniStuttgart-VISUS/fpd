@@ -26,14 +26,6 @@ public:
     /// </summary>
     typedef FPD_NAMESPACE::code_page code_page_type;
 
-protected:
-
-    /// <summary>
-    /// Initialises a new instance.
-    /// </summary>
-    /// <param name="code_page">The initial value of the code page.</param>
-    inline with_code_page(_In_ const code_page_type) noexcept { }
-
     /// <summary>
     /// Answer the ANSI code page, because the character type does not need this
     /// information.
@@ -48,6 +40,14 @@ protected:
     /// </summary>
     /// <param name="code_page">The new code page for narrow strings.</param>
     inline void code_page(_In_ const code_page_type code_page) noexcept { }
+
+protected:
+
+    /// <summary>
+    /// Initialises a new instance.
+    /// </summary>
+    /// <param name="code_page">The initial value of the code page.</param>
+    inline with_code_page(_In_ const code_page_type) noexcept { }
 
 };
 
@@ -64,15 +64,6 @@ public:
     /// </summary>
     typedef FPD_NAMESPACE::code_page code_page_type;
 
-protected:
-
-    /// <summary>
-    /// Initialises a new instance.
-    /// </summary>
-    /// <param name="code_page">The initial value of the code page.</param>
-    inline with_code_page(_In_ const code_page_type code_page
-        = code_page_type::oem) noexcept : _code_page(code_page) { }
-
     /// <summary>
     /// Answer the configured code page for narrow strings.
     /// </summary>
@@ -88,6 +79,15 @@ protected:
     inline void code_page(_In_ const code_page_type code_page) noexcept {
         this->_code_page = code_page;
     }
+
+protected:
+
+    /// <summary>
+    /// Initialises a new instance.
+    /// </summary>
+    /// <param name="code_page">The initial value of the code page.</param>
+    inline with_code_page(_In_ const code_page_type code_page
+        = code_page_type::oem) noexcept : _code_page(code_page) { }
 
 private:
 
