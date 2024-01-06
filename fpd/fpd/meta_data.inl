@@ -266,7 +266,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_bounding_box(
     auto cur = static_cast<const std::uint8_t *>(data);
     const auto end = cur + cnt;
     cur += sizeof(format);
-    meta_data._bounding_box = bounding_box(fmt, cur);
+    meta_data._bounding_box = bounding_box(fmt, cur, end - cur);
     cur += stride;
 
     // Read all optional per-frame bounding boxes.
@@ -276,7 +276,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_bounding_box(
     }
     meta_data._frame_bounding_boxes.reserve((end - cur) / stride);
     while (cur < end) {
-        meta_data._frame_bounding_boxes.emplace_back(fmt, cur);
+        meta_data._frame_bounding_boxes.emplace_back(fmt, cur, end - cur);
         cur += stride;
     }
 }
@@ -298,7 +298,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_description(
         throw std::invalid_argument("The description has an unexpected size.");
     }
 
-    meta_data._description = to_string(data, cnt);
+    meta_data._description = meta_data.to_string(data, cnt);
 }
 
 
@@ -393,7 +393,8 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_frame_table(
     }
 
     auto b = reinterpret_cast<const frame_table_type::value_type *>(data);
-    auto e = reinterpret_cast<const frame_table_type::value_type *>(data + cnt);
+    auto e = reinterpret_cast<const frame_table_type::value_type *>(
+        static_cast<const std::uint8_t *>(data) + cnt);
     meta_data._frame_table.reserve(e - b);
     std::copy(b, e, std::back_inserter(meta_data._frame_table));
 }
@@ -408,7 +409,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_global_particle_properties(
         _In_ const void *data,
         _In_ const std::size_t cnt) {
 #define _FPD_THROW_IF_INCOMPLETE(req) \
-    if ((end - cur) < req) { \
+    if (static_cast<std::size_t>(end - cur) < req) { \
         throw std::invalid_argument("The global particle property "\
         "header segment contains incomplete data."); \
     }
@@ -423,11 +424,11 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_global_particle_properties(
 
     while (cur < end) {
         _FPD_THROW_IF_INCOMPLETE(sizeof(semantic_type));
-        const auto s = swap_endian_as<semantic_type>(cur, meta_data.endian);
+        const auto s = swap_enum_endian<semantic_type>(cur, meta_data.endian());
         cur += sizeof(s);
 
         _FPD_THROW_IF_INCOMPLETE(sizeof(format_type));
-        const auto f = swap_endian_as<format_type>(cur, meta_data.endian);
+        const auto f = swap_enum_endian<format_type>(cur, meta_data.endian());
         cur += sizeof(f);
 
         const auto cnt = to_size(f);
@@ -459,8 +460,8 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_user_semantics(
     while (cur < end) {
         auto next = cur;
         while (*next++ != 0);
-        meta_data._user_defined_semantics.push_back(
-            to_string(meta_data, cur, next));
+        auto str = meta_data.to_string(cur, next);
+        meta_data._user_defined_semantics.push_back(std::move(str));
         cur = next;
     }
 }
@@ -471,21 +472,20 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_user_semantics(
  */
 template<class TChar>
 typename FPD_NAMESPACE::meta_data<TChar>::string_type
-FPD_NAMESPACE::meta_data<TChar>::to_string(_In_ const meta_data& meta_data,
-        _In_ const char16_t *begin, _In_ const char16_t *end) {
+FPD_NAMESPACE::meta_data<TChar>::to_string(_In_ const char16_t *begin,
+        _In_ const char16_t *end) {
     assert(begin != nullptr);
     assert(end != nullptr);
     assert(end >= begin);
-    std::basic_string<char16_t> string;
+    std::vector<char16_t> string;
     string.resize(end - begin);
 
     // Swap the endian according to what the meta data say.
-    swap_endian(string.data(), begin, string.size(), meta_data.endian());
+    swap_endian(string.data(), begin, string.size(), this->endian());
 
     // Convert the character type or the meta data.
     return convert_string<char_type>(string.data(), string.size(),
-        code_page::oem);
-    // TODO: make the code page configurable.
+        this->code_page());
 }
 
 
@@ -494,10 +494,10 @@ FPD_NAMESPACE::meta_data<TChar>::to_string(_In_ const meta_data& meta_data,
  */
 template<class TChar>
 typename FPD_NAMESPACE::meta_data<TChar>::string_type
-FPD_NAMESPACE::meta_data<TChar>::to_string(_In_ const meta_data& meta_data,
-        _In_reads_(cnt) const void *data, _In_ const std::size_t cnt) {
+FPD_NAMESPACE::meta_data<TChar>::to_string(_In_reads_(cnt) const void *data,
+        _In_ const std::size_t cnt) {
     assert(data != nullptr);
     auto end = static_cast<const std::uint8_t *>(data) + cnt;
-    return to_string(static_cast<const char16_t *>(data),
+    return this->to_string(static_cast<const char16_t *>(data),
         reinterpret_cast<const char16_t *>(end));
 }

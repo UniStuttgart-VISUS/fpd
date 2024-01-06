@@ -6,10 +6,53 @@
 
 
 /*
+ * FPD_NAMESPACE::file<TChar, TIoTraits>::read
+ */
+template<class TChar, class TIoTraits>
+void FPD_NAMESPACE::file<TChar, TIoTraits>::read(
+        _Out_writes_all_(cnt) std::uint8_t *dst,
+        _In_ const std::size_t cnt,
+        _In_ std::size_t from) const {
+    std::size_t offset = 0;
+    auto rem = cnt;
+
+    while (offset < cnt) {
+        const auto read = this->_io.read(dst + offset, rem, from + offset);
+        offset += read;
+        rem -= read;
+    }
+}
+
+
+/*
  * FPD_NAMESPACE::file<TChar, TIoTraits>::read_meta_data
  */
 template<class TChar, class TIoTraits>
 void FPD_NAMESPACE::file<TChar, TIoTraits>::read_meta_data(
         _In_ const std::size_t expected_header_size) {
-    throw "TODO";
+    std::vector<std::uint8_t> header((std::max)(expected_header_size,
+        meta_data_type::fixed_header_size));
+    this->read(header.data(), header.size(), 0);
+
+    auto flex_header_size = meta_data_type::check_header_size(this->_meta_data,
+        header.data(), header.size());
+    if (flex_header_size < header.size() - meta_data_type::fixed_header_size) {
+        // The guess was bad, so we need to read the flexible headers in
+        // an additional request.
+        assert(header.size() >= meta_data_type::fixed_header_size);
+        header.resize(flex_header_size);
+        this->read(header.data(),
+            header.size(),
+            meta_data_type::fixed_header_size);
+        meta_data_type::parse(this->_meta_data,
+            header.data(),
+            flex_header_size);
+
+    } else {
+        // The guess was good, so we can parse the flexible headers from
+        // what we already have.
+        meta_data_type::parse(this->_meta_data,
+            header.data() + meta_data_type::fixed_header_size,
+            flex_header_size);
+    }
 }

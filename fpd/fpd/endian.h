@@ -172,4 +172,22 @@ TValue swap_endian_as(_In_ const void *value, _In_ const endian endian) {
     return retval;
 }
 
+/// <summary>
+/// Swaps the bytes of the given enumeration type as its underlying type.
+/// </summary>
+/// <typeparam name="TValue">The type of the enumeration.</typeparam>
+/// <param name="value">A pointer to an enumeration value from
+/// <typeparamref name="TValue" />.</param>
+/// <param name="endian">The reference endian, which determines whether the
+/// bytes will be swapped (if this value is not <see cref="endian::system" />)
+/// or not (if this value is <see cref="endian::undefined" /> or
+/// not <see cref="endian::system" />).</param>
+/// <returns>The (potentially byte-swapped) value.</returns>
+template<class TValue>
+inline TValue swap_enum_endian(_In_ const void *value,
+        _In_ const endian endian) {
+    typedef typename std::underlying_type<TValue>::type int_type;
+    return static_cast<TValue>(swap_endian_as<int_type>(value, endian));
+}
+
 FPD_NAMESPACE_END

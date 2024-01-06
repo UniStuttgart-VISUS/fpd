@@ -77,20 +77,8 @@ FPD_NAMESPACE::meta_data_builder<TChar>::size(void) const {
             "as long as all mandatory data are valid.");
     }
 
-    size_type retval = 0;
-
-    // Magic cookie.
-    retval += sizeof("FPD") - sizeof(char);
-
-    // File version.
-    retval += sizeof(this->_version.first);
-    retval += sizeof(this->_version.second);
-
-    // BOM.
-    retval += sizeof(endian);
-
-    // Size of header segments.
-    retval += sizeof(std::uint32_t);
+    // Magic cookie, version, BOM and overall size of segments.
+    size_type retval = meta_data_type::fixed_header_size;
 
     // Mandatory frame table (0x01).
     retval += sizeof(header_segment);

@@ -8,6 +8,7 @@
 
 #include <cinttypes>
 #include <utility>
+#include <vector>
 
 #include "fpd/meta_data.h"
 
@@ -86,7 +87,33 @@ public:
         this->read_meta_data(expected_header_size);
     }
 
+    /// <summary>
+    /// Initialises a new instance.
+    /// </summary>
+    /// <typeparam name="TArgs">The type of the arguments passed to the I/O
+    /// constructor.</typeparam>
+    /// <param name="cp">The code page used for narrow strings. This parameter
+    /// has no effect if the <see cref="char_type" /> is UTF-16 or UTF-32.
+    /// </param>
+    /// <param name="expected_header_size">The expected size of the file header
+    /// in bytes. If this is a good guess, the constructor can process the
+    /// header with a single read request. Otherwise, two reads will be
+    /// required.</param>
+    /// <param name="args">The arguments passed to the I/O constructors. This
+    /// depends on <see cref="io_type" /> and its constructor.</param>
+    template<class... TArgs>
+    explicit inline file(_In_ const code_page cp,
+            _In_ const std::size_t expected_header_size,
+            _In_ TArgs&&... args)
+            : _io(std::forward<TArgs>(args)...), _meta_data(cp) {
+        this->read_meta_data(expected_header_size);
+    }
+
 private:
+
+    void read(_Out_writes_all_(cnt) std::uint8_t *dst,
+        _In_ const std::size_t cnt,
+        _In_ std::size_t from) const;
 
     void read_meta_data(_In_ const std::size_t expected_header_size = 0);
 

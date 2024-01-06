@@ -102,7 +102,7 @@ public:
     /// Parses the header segments starting at <paramref name="data" /> using
     /// the file information provided in <paramref name="meta_data" />.
     /// </summary>
-    /// <param name="meta_data">The static metadata (file version and endian)
+    /// <param name="meta_data">The static meta data (file version and endian)
     /// as obtained by <see cref="check_header_size" />. On exit, this object
     /// has received all header segments the parser understands.</param>
     /// <param name="data">A pointer to the flexible header segments.</param>
@@ -304,11 +304,10 @@ private:
     static void parse_user_semantics(_Inout_ meta_data& meta_data,
         _In_ const void *data, _In_ const std::size_t cnt);
 
-    static string_type to_string(_In_ const meta_data& meta_data,
-        _In_ const char16_t *begin, _In_ const char16_t *end);
+    string_type to_string(_In_ const char16_t *begin, _In_ const char16_t *end);
 
-    static string_type to_string(_In_ const meta_data& meta_data,
-        _In_reads_(cnt) const void *data, _In_ const std::size_t cnt);
+    string_type to_string(_In_reads_(cnt) const void *data,
+        _In_ const std::size_t cnt);
 
     bounding_box _bounding_box;
     string_type _description;
