@@ -160,6 +160,7 @@
     <ClInclude Include="fpd\icu_category.h" />
     <ClInclude Include="fpd\invoke.h" />
     <ClInclude Include="fpd\literal.h" />
+    <ClInclude Include="fpd\memory_io.h" />
     <ClInclude Include="fpd\meta_data.h" />
     <ClInclude Include="fpd\meta_data_builder.h" />
     <ClInclude Include="fpd\null_coalesce.h" />

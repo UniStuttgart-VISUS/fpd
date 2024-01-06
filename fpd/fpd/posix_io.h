@@ -116,7 +116,6 @@ public:
     }
 #endif /* defined(_WIN32) */
 
-
     /// <summary>
     /// Initialise from move.
     /// </summary>

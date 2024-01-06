@@ -23,6 +23,7 @@
 #include "fpd/header_segment.h"
 #include "fpd/invoke.h"
 #include "fpd/literal.h"
+#include "fpd/memory_io.h"
 #include "fpd/meta_data.h"
 #include "fpd/meta_data_builder.h"
 #include "fpd/posix_io.h"

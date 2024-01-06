@@ -98,5 +98,59 @@ namespace fpd {
                 Assert::AreEqual(actual, expected, L"roundtrip", LINE_INFO());
             }
         }
+
+
+        TEST_METHOD(memory) {
+            const auto expected = "Horst";
+            char actual[] = "\0\0\0\0\0\0";
+
+            {
+                std::array<std::uint8_t, 32> buffer;
+                memory_io io(buffer.data(), buffer.size());
+                Assert::IsTrue(::strlen(expected) <= io.write(0, expected, ::strlen(expected)), L"write", LINE_INFO());
+                ::ZeroMemory(actual, sizeof(actual));
+                Assert::IsTrue(::strlen(expected) <= io.read(actual, ::strlen(expected), 0), L"read", LINE_INFO());
+                Assert::AreEqual(actual, expected, L"roundtrip", LINE_INFO());
+            }
+
+            {
+                Assert::ExpectException<std::system_error>([&](void) {
+                    memory_io io(nullptr, 0);
+                    io.write(0, expected, ::strlen(expected));
+                }, L"Write to empty buffer", LINE_INFO());
+            }
+
+            {
+                Assert::ExpectException<std::system_error>([&](void) {
+                    std::array<std::uint8_t, 32> buffer;
+                    memory_io io(buffer.data(), buffer.size());
+                    io.write(buffer.size(), expected, ::strlen(expected));
+                }, L"Write out of range", LINE_INFO());
+            }
+
+            {
+                Assert::ExpectException<std::system_error>([&](void) {
+                    memory_io io(nullptr, 0);
+                    io.read(actual, ::strlen(expected), 0);
+                }, L"Read from empty buffer", LINE_INFO());
+            }
+
+            {
+                Assert::ExpectException<std::system_error>([&](void) {
+                    std::array<std::uint8_t, 32> buffer;
+                    memory_io io(buffer.data(), buffer.size());
+                    io.read(actual, ::strlen(expected), buffer.size());
+                }, L"Read out of range", LINE_INFO());
+            }
+
+            {
+                std::array<std::uint8_t, 32> buffer;
+                memory_io io(buffer.data(), buffer.size());
+                Assert::AreEqual(std::size_t(1), io.write(31, expected, ::strlen(expected)), L"partial write", LINE_INFO());
+                ::ZeroMemory(actual, sizeof(actual));
+                Assert::AreEqual(std::size_t(1), io.read(actual, ::strlen(expected), 31), L"partical read", LINE_INFO());
+                Assert::AreEqual(actual[0], expected[0], L"roundtrip", LINE_INFO());
+            }
+        }
     };
 }
