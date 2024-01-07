@@ -115,7 +115,8 @@ const TChar *const to_string(_In_ const semantic semantic);
 /// </summary>
 /// <param name="index">The zero-based index of a user-defined semantic.</param>
 /// <returns>The requested user-defined semantic.</returns>
-constexpr semantic user_defined_semantic(_In_ const std::uint32_t index) {
+constexpr inline semantic user_defined_semantic(
+        _In_ const std::uint32_t index) {
     typedef std::underlying_type<semantic>::type int_type;
     return static_cast<semantic>(
         static_cast<int_type>(semantic::user_defined)

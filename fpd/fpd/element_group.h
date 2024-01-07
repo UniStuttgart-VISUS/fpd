@@ -154,6 +154,15 @@ public:
         return this->_elements[i];
     }
 
+    /// <summary>
+    /// Answer whether the group contains at least one element.
+    /// </summary>
+    /// <returns><c>true</c> if the group is not empty, <c>false</c> otherwise.
+    /// </returns>
+    inline operator bool(void) const noexcept {
+        return !this->_elements.empty();
+    }
+
 private:
 
     std::vector<element_type> _elements;

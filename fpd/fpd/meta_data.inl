@@ -1,5 +1,5 @@
 ﻿// <copyright file="meta_data.inl" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2024 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
@@ -56,9 +56,11 @@ FPD_NAMESPACE::meta_data<TChar>& FPD_NAMESPACE::meta_data<TChar>::parse(
         _In_ const void *data,
         _In_ const std::size_t cnt) {
     auto cur = static_cast<const std::uint8_t * >(data);
-    const auto end = cut + cnt;
+    const auto end = cur + cnt;
+    auto deferred_format = std::make_pair(static_cast<const void *>(nullptr),
+        static_cast<std::size_t>(0));
 
-    while (cur + sizeof(header_segment_type) < end) {
+    while (cur + sizeof(header_segment) < end) {
         // Interpret the 32-bit header of the header segment.
         auto header = swap_endian_as<std::uint32_t>(cur, meta_data._endian);
         cur += sizeof(header);
@@ -75,7 +77,15 @@ FPD_NAMESPACE::meta_data<TChar>& FPD_NAMESPACE::meta_data<TChar>::parse(
                 break;
 
             case header_segment::format_description:
-                parse_format_description(meta_data, cur, length);
+                try {
+                    parse_format_description(meta_data, cur, length);
+                } catch (...) {
+                    // The format will fail if there are user-defined semantics
+                    // and we have not yet seen these. Therefore, we postpone
+                    // parsing it again until the end.
+                    deferred_format.first = cur;
+                    deferred_format.second = length;
+                }
                 break;
 
             case header_segment::user_semantics:
@@ -90,12 +100,25 @@ FPD_NAMESPACE::meta_data<TChar>& FPD_NAMESPACE::meta_data<TChar>::parse(
                 parse_bounding_box(meta_data, cur, length);
                 break;
 
-            case header_sgement::global_particle_properties:
+            case header_segment::global_particle_properties:
                 parse_global_particle_properties(meta_data, cur, length);
                 break;
+
+            case header_segment::spatial_hierarchy:
+                throw "TODO";
+
+            case header_segment::compression:
+                throw "TODO";
         }
 
         cur += length;
+    }
+
+    // If we have postponed parsing the format, do it now. If it fails again,
+    // the input is invalid.
+    if (deferred_format.first != nullptr) {
+        parse_format_description(meta_data, deferred_format.first,
+            deferred_format.second);
     }
 
     return meta_data;
@@ -123,21 +146,6 @@ FPD_NAMESPACE::meta_data<TChar> FPD_NAMESPACE::meta_data<TChar>::parse(
         static_cast<const std::uint8_t *>(data) + fixed_header_size,
         required);
 }
-
-
-/*
- * FPD_NAMESPACE::meta_data<TChar>::fixed_header_size
- */
-template<class TChar>
-const std::size_t FPD_NAMESPACE::meta_data<TChar>::fixed_header_size;
-
-
-/*
- * FPD_NAMESPACE::meta_data<TChar>::meta_data
- */
-template<class TChar>
-FPD_NAMESPACE::meta_data<TChar>::meta_data(void) noexcept
-    : _endian(endian_type::undefined), _file_size(0), _version(0, 0) { }
 
 
 /*
@@ -239,7 +247,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_bounding_box(
     }
     if (cnt < sizeof(format)) {
         throw std::invalid_argument("The bounding boxes must contain a format "
-            "specification.")´;
+            "specification.");
     }
 
     // Determine the format of the bounding boxes and how big one is on disk.
@@ -258,7 +266,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_bounding_box(
     auto cur = static_cast<const std::uint8_t *>(data);
     const auto end = cur + cnt;
     cur += sizeof(format);
-    meta_data._bounding_box = bounding_box(fmt, cur);
+    meta_data._bounding_box = bounding_box(fmt, cur, end - cur);
     cur += stride;
 
     // Read all optional per-frame bounding boxes.
@@ -268,7 +276,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_bounding_box(
     }
     meta_data._frame_bounding_boxes.reserve((end - cur) / stride);
     while (cur < end) {
-        meta_data._frame_bounding_boxes.emplace_back(fmt, cur);
+        meta_data._frame_bounding_boxes.emplace_back(fmt, cur, end - cur);
         cur += stride;
     }
 }
@@ -290,7 +298,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_description(
         throw std::invalid_argument("The description has an unexpected size.");
     }
 
-    meta_data._description = to_string(data, cnt);
+    meta_data._description = meta_data.to_string(data, cnt);
 }
 
 
@@ -302,7 +310,70 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_format_description(
         _Inout_ meta_data& meta_data,
         _In_ const void *data,
         _In_ const std::size_t cnt) {
-    throw "TODO";
+#define _FPD_THROW_IF_INCOMPLETE(req) \
+    if ((end - cur) < req) { \
+        throw std::invalid_argument("The format description header "\
+            "segment contains incomplete data."); \
+    }
+
+    if (!meta_data._format_description) {
+        throw std::invalid_argument("The format description has already been "
+            "parsed.");
+    }
+    if ((cnt % format_description_type::element_type::size_on_disk) != 0) {
+        throw std::invalid_argument("The format description has an unexpected "
+            "size.");
+    }
+
+    auto cur = static_cast<const std::uint8_t *>(data);
+    const auto end = cur + cnt;
+
+    while (cur < end) {
+        _FPD_THROW_IF_INCOMPLETE(sizeof(semantic));
+        const auto s = *reinterpret_cast<const semantic *>(cur);
+        cur += sizeof(s);
+
+        _FPD_THROW_IF_INCOMPLETE(sizeof(format));
+        const auto f = *reinterpret_cast<const format *>(cur);
+        cur += sizeof(f);
+
+        _FPD_THROW_IF_INCOMPLETE(sizeof(std::uint16_t));
+        const auto g = *reinterpret_cast<const std::uint16_t *>(cur);
+        cur += sizeof(g);
+
+        _FPD_THROW_IF_INCOMPLETE(sizeof(std::uint16_t));
+        const auto o = *reinterpret_cast<const std::uint16_t *>(cur);
+        cur += sizeof(o);
+
+        _FPD_THROW_IF_INCOMPLETE(sizeof(std::uint16_t));
+        const auto b = *reinterpret_cast<const std::uint16_t *>(cur);
+        cur += sizeof(b);
+
+        if (s < semantic::user_defined) {
+            meta_data._format_description.add(s, f, g, o, b, true);
+
+        } else {
+            // If this is a user-defined semantic, find the description in the
+            // table of user-defined semantics provided with the meta data
+            // object. If that fails, we raise an exception and the caller must
+            // parse the meta data again once the table has been read. In order
+            // for this to succeed, any existing data must be cleared.
+            typedef std::underlying_type<semantic>::type int_type;
+            auto i = static_cast<int_type>(s);
+            i -= static_cast<int_type>(semantic::user_defined);
+
+            if (i >= meta_data._user_defined_semantics.size()) {
+                meta_data._format_description = format_description_type();
+                throw std::logic_error("The specified user-defined semantic "
+                    "has no valid description.");
+            }
+
+            auto d = meta_data._user_defined_semantics[i].c_str();
+
+            meta_data._format_description.add(s, d, f, g, o, b, true);
+        }
+    } /* while (cur < end) */
+#undef _FPD_THROW_IF_INCOMPLETE
 }
 
 
@@ -322,7 +393,8 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_frame_table(
     }
 
     auto b = reinterpret_cast<const frame_table_type::value_type *>(data);
-    auto e = reinterpret_cast<const frame_table_type::value_type *>(data + cnt);
+    auto e = reinterpret_cast<const frame_table_type::value_type *>(
+        static_cast<const std::uint8_t *>(data) + cnt);
     meta_data._frame_table.reserve(e - b);
     std::copy(b, e, std::back_inserter(meta_data._frame_table));
 }
@@ -337,7 +409,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_global_particle_properties(
         _In_ const void *data,
         _In_ const std::size_t cnt) {
 #define _FPD_THROW_IF_INCOMPLETE(req) \
-    if ((end - cur) < req) { \
+    if (static_cast<std::size_t>(end - cur) < req) { \
         throw std::invalid_argument("The global particle property "\
         "header segment contains incomplete data."); \
     }
@@ -352,11 +424,11 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_global_particle_properties(
 
     while (cur < end) {
         _FPD_THROW_IF_INCOMPLETE(sizeof(semantic_type));
-        const auto s = swap_endian_as<semantic_type>(cur, meta_data.endian);
+        const auto s = swap_enum_endian<semantic_type>(cur, meta_data.endian());
         cur += sizeof(s);
 
         _FPD_THROW_IF_INCOMPLETE(sizeof(format_type));
-        const auto f = swap_endian_as<format_type>(cur, meta_data.endian);
+        const auto f = swap_enum_endian<format_type>(cur, meta_data.endian());
         cur += sizeof(f);
 
         const auto cnt = to_size(f);
@@ -388,8 +460,8 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_user_semantics(
     while (cur < end) {
         auto next = cur;
         while (*next++ != 0);
-        meta_data._user_defined_semantics.push_back(
-            to_string(meta_data, cur, next));
+        auto str = meta_data.to_string(cur, next);
+        meta_data._user_defined_semantics.push_back(std::move(str));
         cur = next;
     }
 }
@@ -400,20 +472,20 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_user_semantics(
  */
 template<class TChar>
 typename FPD_NAMESPACE::meta_data<TChar>::string_type
-FPD_NAMESPACE::meta_data<TChar>::to_string(_In_ const meta_data& meta_data,
-        _In_ const char16_t *begin, _In_ const char16_t *end) {
+FPD_NAMESPACE::meta_data<TChar>::to_string(_In_ const char16_t *begin,
+        _In_ const char16_t *end) {
     assert(begin != nullptr);
     assert(end != nullptr);
     assert(end >= begin);
-    std::basic_string<char16_t> string;
+    std::vector<char16_t> string;
     string.resize(end - begin);
 
     // Swap the endian according to what the meta data say.
-    swap_endian(string.data(), begin, string.size());
+    swap_endian(string.data(), begin, string.size(), this->endian());
 
     // Convert the character type or the meta data.
     return convert_string<char_type>(string.data(), string.size(),
-        code_page::oem);
+        this->code_page());
 }
 
 
@@ -422,10 +494,10 @@ FPD_NAMESPACE::meta_data<TChar>::to_string(_In_ const meta_data& meta_data,
  */
 template<class TChar>
 typename FPD_NAMESPACE::meta_data<TChar>::string_type
-FPD_NAMESPACE::meta_data<TChar>::to_string(_In_ const meta_data& meta_data,
-        _In_reads_(cnt) const void *data, _In_ const std::size_t cnt) {
+FPD_NAMESPACE::meta_data<TChar>::to_string(_In_reads_(cnt) const void *data,
+        _In_ const std::size_t cnt) {
     assert(data != nullptr);
-    auto end = static_cast<std::uint8_t>(data) + cnt;
-    return to_string(static_cast<const char16_t *>(data),
+    auto end = static_cast<const std::uint8_t *>(data) + cnt;
+    return this->to_string(static_cast<const char16_t *>(data),
         reinterpret_cast<const char16_t *>(end));
 }

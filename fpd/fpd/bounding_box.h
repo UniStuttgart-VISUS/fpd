@@ -103,6 +103,25 @@ public:
         _In_ const TValue max_y, _In_ const TValue max_z);
 
     /// <summary>
+    /// Initialises a new instance.
+    /// </summary>
+    /// <param name="format">The scalar format of the bounding box.</param>
+    /// <param name="values">A pointer to at least six values of the specified
+    /// format.</param>
+    /// <param name="cnt">The size of the buffer designated by
+    /// <paramref name="values" />, in bytes.</param>
+    inline bounding_box(_In_ const format_type format,
+            _In_reads_bytes_(cnt)  const void *values,
+            _In_ const std::size_t cnt)
+            : _format(format) {
+        this->_values.resize(6 * to_size(this->_format));
+        if ((values == nullptr) || (cnt < this->_values.size())) {
+            throw std::invalid_argument("The specified bounds are invalid.");
+        }
+        ::memcpy(this->_values.data(), values, this->_values.size());
+    }
+
+    /// <summary>
     /// Answer the values of the bounding box in linear memory.
     /// </summary>
     /// <returns>The values of the bounding box, or <c>nullptr</c> if the
@@ -217,6 +236,14 @@ public:
     /// box is invalid.</exception>
     template<class TValue> inline TValue min_z(void) const {
         return this->get<TValue>(value::min_z);
+    }
+
+    /// <summary>
+    /// Answer the size of the bounding box in bytes.
+    /// </summary>
+    /// <returns>The size of the bounding box in bytes.</returns>
+    inline std::size_t size(void) const noexcept {
+        return this->_values.size();
     }
 
     /// <summary>

@@ -1,5 +1,5 @@
 ﻿// <copyright file="meta_data.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2024 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
@@ -9,12 +9,15 @@
 #include <cstdlib>
 #include <map>
 
+#include "fpd/annotations.h"
 #include "fpd/bounding_box.h"
+#include "fpd/convert_string.h"
 #include "fpd/endian.h"
 #include "fpd/format_description.h"
 #include "fpd/format_variant.h"
 #include "fpd/header_segment.h"
 #include "fpd/swap_bytes.h"
+#include "fpd/with_code_page.h"
 
 
 FPD_NAMESPACE_BEGIN
@@ -23,7 +26,7 @@ FPD_NAMESPACE_BEGIN
 /// A container for all meta data in an FPD file.
 /// </summary>
 /// <typeparam name="TChar">The type of a character in a string.</typeparam>
-template<class TChar> class meta_data final {
+template<class TChar> class meta_data final : protected with_code_page<TChar> {
 
 public:
 
@@ -99,7 +102,7 @@ public:
     /// Parses the header segments starting at <paramref name="data" /> using
     /// the file information provided in <paramref name="meta_data" />.
     /// </summary>
-    /// <param name="meta_data">The static metadata (file version and endian)
+    /// <param name="meta_data">The static meta data (file version and endian)
     /// as obtained by <see cref="check_header_size" />. On exit, this object
     /// has received all header segments the parser understands.</param>
     /// <param name="data">A pointer to the flexible header segments.</param>
@@ -135,7 +138,14 @@ public:
     /// <summary>
     /// Initialises a new instance.
     /// </summary>
-    meta_data(void) noexcept;
+    /// <param name="code_page">The code page to convert strings to if
+    /// <see cref="char_type" /> does not implicitly carry an encoding. Note
+    /// to MegaMol users: <c>char</c> is not UTF-8 by definition, it <i>can</i>
+    /// be UTF-8 if the data are handled accordingly.</param>
+    explicit inline meta_data(_In_ const FPD_NAMESPACE::code_page code_page
+            = FPD_NAMESPACE::code_page::oem) noexcept
+        : with_code_page<TChar>(code_page), _endian(endian_type::undefined),
+            _file_size(0), _version(0, 0) { }
 
     /// <summary>
     /// Gets the endian of the file.
@@ -294,11 +304,10 @@ private:
     static void parse_user_semantics(_Inout_ meta_data& meta_data,
         _In_ const void *data, _In_ const std::size_t cnt);
 
-    static string_type to_string(_In_ const meta_data& meta_data,
-        _In_ const char16_t *begin, _In_ const char16_t *end);
+    string_type to_string(_In_ const char16_t *begin, _In_ const char16_t *end);
 
-    static string_type to_string(_In_ const meta_data& meta_data,
-        _In_reads_(cnt) const void *data, _In_ const std::size_t cnt);
+    string_type to_string(_In_reads_(cnt) const void *data,
+        _In_ const std::size_t cnt);
 
     bounding_box _bounding_box;
     string_type _description;
@@ -310,6 +319,8 @@ private:
     std::map<semantic, format_variant> _global_particle_properties;
     std::vector<string_type> _user_defined_semantics;
     version_type _version;
+
+    template<class> friend class meta_data_builder;
 };
 
 FPD_NAMESPACE_END

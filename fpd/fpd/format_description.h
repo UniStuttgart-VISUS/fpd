@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <numeric>
 
 #include "fpd/element_group.h"
@@ -131,10 +132,23 @@ public:
         _In_ const bool eval_offset = false);
 
     /// <summary>
+    /// Gets the total number of elements over all groups.
+    /// </summary>
+    /// <returns>The total number of elements in all groups.</returns>
+    inline std::size_t count_elements(void) const noexcept {
+        return std::accumulate(this->_groups.begin(),
+            this->_groups.end(),
+            static_cast<std::size_t>(0),
+            [](const std::size_t s, const group_type& g) {
+                return s + g.count();
+            });
+    }
+
+    /// <summary>
     /// Gets the number of groups (arrays of structs) for each particle.
     /// </summary>
     /// <returns>The number of groups of elements.</returns>
-    inline std::size_t count(void) const noexcept {
+    inline std::size_t count_groups(void) const noexcept {
         return this->_groups.size();
     }
 
@@ -191,6 +205,16 @@ public:
     inline const element_type& operator ()(_In_ const std::size_t group,
             _In_ const std::size_t element) const {
         return this->_groups[group][element];
+    }
+
+    /// <summary>
+    /// Answer whether the description is non-empty.
+    /// </summary>
+    /// <returns><c>true</c> if there is at least one element in the format,
+    /// <c>false</c> otherwise.</returns>
+    inline operator bool(void) const noexcept {
+        return std::any_of(this->_groups.begin(), this->_groups.end(),
+            [](const group_type& g) { return static_cast<bool>(g); });
     }
 
 private:

@@ -28,6 +28,46 @@ FPD_NAMESPACE_BEGIN
 template<class Formats> class basic_format_variant;
 
 
+namespace detail {
+
+    template<class TValue> struct format_value_ctor final {
+
+        template<class TArg>
+        typename std::enable_if<std::is_convertible<TValue, TArg>::value>::type
+        operator ()(_In_ TValue *target, _In_ TArg&& value) {
+            assert(target != nullptr);
+            new (target) TValue(static_cast<TValue>(value));
+        }
+
+        template<class TArg>
+        typename std::enable_if<!std::is_convertible<TValue, TArg>::value>::type
+        operator ()(_In_ TValue *target, _In_ TArg&& value) {
+            assert(target != nullptr);
+            assert(false);  // This should never be called by invoke.
+            new (target) TValue();
+        }
+    };
+
+    template<class TValue> struct format_value_runtime_ctor final {
+        inline void operator ()(_In_ TValue *target,
+                _In_reads_(cnt) const void *value,
+                _In_ std::size_t cnt) {
+            assert(target != nullptr);
+            assert(cnt >= sizeof(TValue));
+            new (target) TValue(*reinterpret_cast<const TValue *>(value));
+        }
+    };
+
+    template<class TValue> struct format_value_dtor final {
+        inline void operator ()(TValue *target) noexcept {
+            assert(target != nullptr);
+            target->~TValue();
+        }
+    };
+
+} /* namespace detail */
+
+
 /// <summary>
 /// A variant type that can hold variables matching all of the given
 /// <typeparamref name="Formats" />.
@@ -343,8 +383,9 @@ private:
         // Rationale: We do not want to implement the whole stack twice, so
         // we use the const_cast here as we know that our own functors do
         // not do nasty things.
-        auto that = const_cast<format_variant *>(this);
-        that->invoke0<TFunc>(format_list(), std::forward<TArgs>(args)...);
+        auto that = const_cast<basic_format_variant *>(this);
+        that->invoke0<TFunc>(FPD_NAMESPACE::format_list(),
+            std::forward<TArgs>(args)...);
     }
 
     template<template<class> class TFunc,

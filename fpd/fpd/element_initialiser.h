@@ -105,8 +105,9 @@ private:
     const char_type *_semantic_name;
     std::uint16_t _size;
 
-    template<class T> friend class element;
-    template<class T> friend class format_description;
+    template<class> friend class element;
+    template<class> friend class format_description;
+    template<class> friend class meta_data_builder;
 };
 
 FPD_NAMESPACE_END
