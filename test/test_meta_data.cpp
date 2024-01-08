@@ -72,7 +72,7 @@ namespace fpd {
                 .add_format_element(semantic::position, nullptr, format::float32xyz);
 
             {
-                const std::size_t expected
+                const std::uint64_t expected
                     = 3                         // magic cookie
                     + 1 + 1                     // file version
                     + sizeof(endian)            // BOM
@@ -111,7 +111,7 @@ namespace fpd {
                 .add_format_element(semantic::user_defined, "float3", format::float32xyz);
 
             {
-                const std::size_t expected
+                const std::uint64_t expected
                     = 3                         // magic cookie
                     + 1 + 1                     // file version
                     + sizeof(endian)            // BOM
