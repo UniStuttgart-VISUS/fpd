@@ -28,6 +28,7 @@
 #include "fpd/memory_io.h"
 #include "fpd/meta_data.h"
 #include "fpd/meta_data_builder.h"
+#include "fpd/pkd_tree_builder.h"
 #include "fpd/posix_io.h"
 #include "fpd/semantic.h"
 #include "fpd/spatial_hierarchy.h"

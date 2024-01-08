@@ -17,27 +17,70 @@ inline void FPD_NAMESPACE::element_group<TChar>::add(
 
 
 /*
- * FPD_NAMESPACE::element_group<TChar>::size
+ * FPD_NAMESPACE::element_group<TChar>::offset
  */
 template<class TChar>
-std::uint16_t FPD_NAMESPACE::element_group<TChar>::size(void) const noexcept {
-    auto retval = static_cast<std::uint16_t>(0);
-    auto i = this->_elements.empty()
-        ? this->_elements.size()
-        : this->_elements.size() - 1;
+std::uint16_t FPD_NAMESPACE::element_group<TChar>::offset(
+        _In_ const std::size_t i) const noexcept {
+    if (this->_elements.empty()) {
+        return 0;
 
-    // Search the first element with an explicit offset.
-    while ((i > 0) && (retval == 0)) {
-        if ((retval = this->_elements[i].offset()) == 0) {
-            --i;
+    } else if (i == 0) {
+        // The first element is always at the configured offset, because
+        // the special value of zero, which indicates that we want to
+        // compute the offset, is the actual offset.
+        return this->_elements.front().offset();
+
+    } else {
+        const auto size = (std::min)(i, this->_elements.size());
+        auto retval = static_cast<std::uint16_t>(0);
+
+        // Search the first element with an explicit offset at or before
+        // the requested position.
+        assert(this->_elements.size() >= 1);
+        auto j = (std::min)(i, this->_elements.size() - 1);
+        while ((j > 0) && (retval == 0)) {
+            if ((retval = this->_elements[j].offset()) == 0) {
+                --j;
+            }
         }
+
+        // Accumulate the sizes of the elements.
+        for (; j < size; ++j) {
+            assert(this->_elements[j].size() > 0);
+            retval += this->_elements[j].size();
+        }
+
+        return retval;
+    }
+}
+
+
+/*
+ * FPD_NAMESPACE::element_group<TChar>::offset
+ */
+template<class TChar>
+std::uint16_t FPD_NAMESPACE::element_group<TChar>::offset(
+        _In_ const element_type& e) const {
+    std::uint16_t retval = 0;
+
+    for (auto& f : this->_elements) {
+        const auto has_offset = (f.offset() != 0);
+
+        if (has_offset) {
+            retval = f.offset();
+        }
+
+        if (f == e) {
+            return retval;
+        }
+
+        if (!has_offset) {
+            retval += f.size();
+        }
+
     }
 
-    // Accumulate the sizes of the elements.
-    for (; i < this->_elements.size(); ++i) {
-        assert(this->_elements[i].size() > 0);
-        retval += this->_elements[i].size();
-    }
-
-    return retval;
+    throw std::invalid_argument("The specified element is not part of the "
+        "element group.");
 }

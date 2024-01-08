@@ -1,5 +1,5 @@
 ﻿// <copyright file="element.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2024 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
@@ -135,6 +135,26 @@ public:
     }
 
     /// <summary>
+    /// Answer whether all bits of <paramref name="sematic" /> are set in
+    /// the semantic of the element.
+    /// </summary>
+    /// <param name="semantic">The <see cref="semantic" /> to search, which
+    /// might be a composite semantic like
+    /// <see cref="semantic::position_radius" /> or a part of such a semantic.
+    /// </param>
+    /// <returns><c>true</c> if the element holds the requested semantic, even
+    /// if it holds more than this, e.g. position and radius when the queried
+    /// <paramref name="semantic" /> is only the position,
+    /// <c>false</c> otherwise, i.e. also if the element does only hold a part
+    /// of the queried <paramref name="semantic" />.</returns>
+    inline bool has_semantic(_In_ const semantic_type semantic) const noexcept {
+        typedef std::underlying_type<semantic_type>::type int_type;
+        const auto haystack = static_cast<int_type>(this->_semantic);
+        const auto needle = static_cast<int_type>(semantic);
+        return ((haystack & needle) == needle);
+    }
+
+    /// <summary>
     /// Gets the offset of the element from the begin of the particle.
     /// </summary>
     /// <remarks>
@@ -170,6 +190,31 @@ public:
     /// <returns>The size of the element in bytes.</returns>
     inline std::uint16_t size(void) const noexcept {
         return this->_size;
+    }
+
+    /// <summary>
+    /// Test for equality.
+    /// </summary>
+    /// <param name="rhs">The object to be compared.</param>
+    /// <returns><c>true</c> if this object and <parmaref name="rhs" /> are
+    /// considered equal, <c>false</c> otherwise.</returns>
+    inline bool operator ==(_In_ const element& rhs) const noexcept {
+        return (this->_format == rhs._format)
+            && (this->_offset == rhs._offset)
+            && (this->_semantic == rhs._semantic)
+            // Note: The name of the semantic is a user-facing property that is
+            // not relevant for what the element is.
+            && (this->_size == rhs._size);
+    }
+
+    /// <summary>
+    /// Test for inequality.
+    /// </summary>
+    /// <param name="rhs">The object to be compared.</param>
+    /// <returns><c>true</c> if this object and <parmaref name="rhs" /> are
+    /// not considered equal, <c>false</c> otherwise.</returns>
+    inline bool operator !=(_In_ const element& rhs) const noexcept {
+        return !(*this == rhs);
     }
 
 private:

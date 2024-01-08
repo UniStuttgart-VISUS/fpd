@@ -117,6 +117,9 @@
     <ClInclude Include="fpd\with_code_page.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fpd\pkd_tree_builder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\semantic.inl">
@@ -147,6 +150,9 @@
       <Filter>Header Files</Filter>
     </None>
     <None Include="fpd\file.inl">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="fpd\pkd_tree_builder.inl">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>
