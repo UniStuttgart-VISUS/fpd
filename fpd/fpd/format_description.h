@@ -1,5 +1,5 @@
 ﻿// <copyright file="format_description.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2024 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <utility>
 
 #include "fpd/element_group.h"
 
@@ -17,7 +18,7 @@ FPD_NAMESPACE_BEGIN
 /// <summary>
 /// Defines an element that makes a particle <see cref="format_description" />.
 /// </summary>
-/// <typemaram name="TChar">The type of a character in a string.</typeparam>
+/// <typeparam name="TChar">The type of a character in a string.</typeparam>
 template<class TChar> class format_description final {
 
 public:
@@ -132,6 +133,14 @@ public:
         _In_ const bool eval_offset = false);
 
     /// <summary>
+    /// Gets an iterator for the first element group.
+    /// </summary>
+    /// <returns>An iterator for the first element group.</returns>
+    inline typename std::vector<group_type>::const_iterator begin(void) const {
+        return this->_groups.begin();
+    }
+
+    /// <summary>
     /// Gets the total number of elements over all groups.
     /// </summary>
     /// <returns>The total number of elements in all groups.</returns>
@@ -150,6 +159,14 @@ public:
     /// <returns>The number of groups of elements.</returns>
     inline std::size_t count_groups(void) const noexcept {
         return this->_groups.size();
+    }
+
+    /// <summary>
+    /// Gets an iterator past the last element group.
+    /// </summary>
+    /// <returns>An iterator past the last element group.</returns>
+    inline typename std::vector<group_type>::const_iterator end(void) const {
+        return this->_groups.end();
     }
 
     /// <summary>

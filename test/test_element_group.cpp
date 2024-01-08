@@ -293,5 +293,55 @@ namespace fpd {
             Assert::AreEqual(sizeof(float), std::size_t(g[3].size()), L"size@3", LINE_INFO());
         }
 
+        TEST_METHOD(group) {
+            element_group<wchar_t> g;
+            Assert::IsFalse(bool(g), L"initially empty", LINE_INFO());
+            Assert::AreEqual(int(0), int(g.size()), L"initially no size", LINE_INFO());
+            Assert::AreEqual(int(0), int(g.offset(0)), L"offset@0", LINE_INFO());
+            Assert::AreEqual(int(0), int(g.offset(1)), L"offset@1", LINE_INFO());
+            Assert::ExpectException<std::invalid_argument>([&g](void) {
+                auto dummy = g.offset(element<wchar_t>());
+            }, L"offset of invalid element", LINE_INFO());
+
+            g.add({ semantic::position_radius, format::float32xyzw, 0, 0 });
+            Assert::IsTrue(bool(g), L"not empty", LINE_INFO());
+            Assert::AreEqual(4 * sizeof(float), std::size_t(g.size()), L"float4", LINE_INFO());
+            Assert::AreEqual(std::size_t(0), std::size_t(g.offset(0)), L"offset@0", LINE_INFO());
+            Assert::AreEqual(4 * sizeof(float), std::size_t(g.offset(1)), L"offset@1", LINE_INFO());
+            Assert::AreEqual(int(g.offset(0)), int(g.offset(g[0])), L"offset@g[0]", LINE_INFO());
+
+            g.add({ semantic::colour, format::uint8xyzw, 0, 0 });
+            Assert::IsTrue(bool(g), L"not empty", LINE_INFO());
+            Assert::AreEqual(4 * sizeof(float) + 4 * sizeof(std::uint8_t), std::size_t(g.size()), L"float4 + byte4", LINE_INFO());
+            Assert::AreEqual(std::size_t(0), std::size_t(g.offset(0)), L"offset@0", LINE_INFO());
+            Assert::AreEqual(4 * sizeof(float), std::size_t(g.offset(1)), L"offset@1", LINE_INFO());
+            Assert::AreEqual(4 * sizeof(float) + 4 * sizeof(std::uint8_t), std::size_t(g.offset(2)), L"offset@2", LINE_INFO());
+            Assert::AreEqual(int(g.offset(0)), int(g.offset(g[0])), L"offset@g[0]", LINE_INFO());
+            Assert::AreEqual(int(g.offset(1)), int(g.offset(g[1])), L"offset@g[1]", LINE_INFO());
+
+            g.add({ semantic::velocity, format::float32xyzw, 32, 0 });
+            Assert::IsTrue(bool(g), L"not empty", LINE_INFO());
+            Assert::AreEqual(32 + 4 * sizeof(float), std::size_t(g.size()), L"offset + float4", LINE_INFO());
+            Assert::AreEqual(std::size_t(0), std::size_t(g.offset(0)), L"offset@0", LINE_INFO());
+            Assert::AreEqual(4 * sizeof(float), std::size_t(g.offset(1)), L"offset@1", LINE_INFO());
+            Assert::AreEqual(std::size_t(32), std::size_t(g.offset(2)), L"offset@2", LINE_INFO());
+            Assert::AreEqual(std::size_t(32) + 4 * sizeof(float), std::size_t(g.offset(3)), L"offset@3", LINE_INFO());
+            Assert::AreEqual(int(g.offset(0)), int(g.offset(g[0])), L"offset@g[0]", LINE_INFO());
+            Assert::AreEqual(int(g.offset(1)), int(g.offset(g[1])), L"offset@g[1]", LINE_INFO());
+            Assert::AreEqual(int(g.offset(2)), int(g.offset(g[2])), L"offset@g[2]", LINE_INFO());
+
+            g.add({ semantic::intensity, format::float32, 64, 0 });
+            Assert::IsTrue(bool(g), L"not empty", LINE_INFO());
+            Assert::AreEqual(64 + sizeof(float), std::size_t(g.size()), L"offset + float", LINE_INFO());
+            Assert::AreEqual(std::size_t(0), std::size_t(g.offset(0)), L"offset@0", LINE_INFO());
+            Assert::AreEqual(4 * sizeof(float), std::size_t(g.offset(1)), L"offset@1", LINE_INFO());
+            Assert::AreEqual(std::size_t(32), std::size_t(g.offset(2)), L"offset@2", LINE_INFO());
+            Assert::AreEqual(std::size_t(64), std::size_t(g.offset(3)), L"offset@3", LINE_INFO());
+            Assert::AreEqual(std::size_t(64) + sizeof(float), std::size_t(g.offset(4)), L"offset@4", LINE_INFO());
+            Assert::AreEqual(int(g.offset(0)), int(g.offset(g[0])), L"offset@g[0]", LINE_INFO());
+            Assert::AreEqual(int(g.offset(1)), int(g.offset(g[1])), L"offset@g[1]", LINE_INFO());
+            Assert::AreEqual(int(g.offset(2)), int(g.offset(g[2])), L"offset@g[2]", LINE_INFO());
+            Assert::AreEqual(int(g.offset(3)), int(g.offset(g[3])), L"offset@g[3]", LINE_INFO());
+        }
     };
 }

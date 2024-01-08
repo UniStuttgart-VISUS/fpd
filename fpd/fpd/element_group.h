@@ -1,11 +1,12 @@
 ﻿// <copyright file="element_group.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2024 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <iterator>
 #include <string>
@@ -122,6 +123,14 @@ public:
     }
 
     /// <summary>
+    /// Gets an iterator for the first element.
+    /// </summary>
+    /// <returns>An iterator for the first element.</returns>
+    inline typename std::vector<element_type>::const_iterator begin(void) const {
+        return this->_elements.begin();
+    }
+
+    /// <summary>
     /// Gets the number of consecutive elements in the stream that belong to
     /// a single particle.
     /// </summary>
@@ -129,6 +138,47 @@ public:
     inline std::size_t count(void) const noexcept {
         return this->_elements.size();
     }
+
+    /// <summary>
+    /// Gets an iterator past the last element.
+    /// </summary>
+    /// <returns>An iterator past the last element.</returns>
+    inline typename std::vector<element_type>::const_iterator end(void) const {
+        return this->_elements.end();
+    }
+
+    /// <summary>
+    /// First the first occurrence of the given semantic in the group.
+    /// </summary>
+    /// <param name="semantic">The semantic to search.</param>
+    /// <returns>An iterator for the respective semantic or <see cref="end" />
+    /// if the semantic does not exist in the group.</returns>
+    inline typename std::vector<element_type>::const_iterator find(
+            _In_ const semantic_type semantic) const {
+        return std::find_if(this->_elements.begin(),
+            this->_elements.end(),
+            [semantic](const element_type& e) {
+                return e.has_semantic(semantic);
+            });
+    }
+
+    /// <summary>
+    /// Answer the offset of the <paramref name="i" />th element in the group.
+    /// </summary>
+    /// <param name="i">The zero-based index of the element.</param>
+    /// <returns>The offset of the element in bytes. Note that invalid indices
+    /// will always yield <see cref="size" />, but the operation will not fail.
+    /// </returns>
+    std::uint16_t offset(_In_ const std::size_t i) const noexcept;
+
+    /// <summary>
+    /// Answer the offset of the given element in the group.
+    /// </summary>
+    /// <param name="e">The element to compute the offset of.</param>
+    /// <returns>The fofset of the element in bytes.</returns>
+    /// <exception cref="std::invalid_argument">If the <paramref name="e" /> was
+    /// not found in the group.</exception>
+    std::uint16_t offset(_In_ const element_type& e) const;
 
     /// <summary>
     /// Removes the <paramref name="i" />th element from the group.
@@ -142,7 +192,9 @@ public:
     /// Computes the current size of the element group.
     /// </summary>
     /// <returns>The current size of the group in bytes.</returns>
-    std::uint16_t size(void) const noexcept;
+    inline std::uint16_t size(void) const noexcept {
+        return this->offset(this->_elements.size());
+    }
 
     /// <summary>
     /// Provides access to the <paramref name="i" />th element.
