@@ -133,8 +133,14 @@ FPD_NAMESPACE_END
 template<class TChar>
 FPD_NAMESPACE::pkd_tree_builder<TChar>::pkd_tree_builder(void) noexcept
     : _dimensions(0),
+    _eq(nullptr),
     _format(format::unknown),
+    _ge(nullptr),
     _group(0),
+    _gt(nullptr),
+    _le(nullptr),
+    _lt(nullptr),
+    _ne(nullptr),
     _offset(0),
     _stride(0, 0) { }
 
@@ -180,6 +186,7 @@ FPD_NAMESPACE::pkd_tree_builder<TChar>::for_format(
             this->_dimensions = to_components(this->_format);
             this->_offset += g.offset(*e);
             this->_stride.second = g.size();
+            this->resolve_compare_as(formats(), this->_format);
 
             // If this is a combined position + radius semantic, we need to
             // subtract one dimension that is used by the radius.
@@ -199,10 +206,49 @@ FPD_NAMESPACE::pkd_tree_builder<TChar>::for_format(
             "hold a usable position.");
     }
 
+    assert(this->_eq != nullptr);
     assert(this->_format != format::unknown);
     assert(this->_dimensions > 0);
+    assert(this->_ge != nullptr);
     assert(this->_group >= 0);
     assert(this->_group < desc.count_groups());
+    assert(this->_gt != nullptr);
+    assert(this->_le != nullptr);
+    assert(this->_lt != nullptr);
+    assert(this->_ne != nullptr);
     assert(this->_stride.second > 0);
     return *this;
+}
+
+
+/*
+ * FPD_NAMESPACE::pkd_tree_builder<TChar>::resolve_compare_as
+ */
+template<class TChar>
+template<FPD_NAMESPACE::format Format, FPD_NAMESPACE::format... Formats>
+void FPD_NAMESPACE::pkd_tree_builder<TChar>::resolve_compare_as(
+        _In_ format_list<Format, Formats...>, _In_ const format format) {
+    if (format == Format) {
+        typedef typename format_forward_traits<Format>::type value_type;
+        this->_eq = compare_as< value_type>::eq;
+        this->_ge = compare_as< value_type>::ge;
+        this->_gt = compare_as< value_type>::gt;
+        this->_le = compare_as< value_type>::le;
+        this->_lt = compare_as< value_type>::lt;
+        this->_ne = compare_as< value_type>::ne;
+
+    } else {
+        this->resolve_compare_as(format_list<Formats...>(), format);
+    }
+}
+
+
+/*
+ * FPD_NAMESPACE::pkd_tree_builder<TChar>::resolve_compare_as
+ */
+template<class TChar>
+void FPD_NAMESPACE::pkd_tree_builder<TChar>::resolve_compare_as(
+        _In_ format_list<>, _In_ const format format) {
+    throw std::logic_error("The specified format of particle coordinates "
+        "cannot be compared.");
 }

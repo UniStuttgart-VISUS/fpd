@@ -310,9 +310,8 @@ template<class TChar>
 void FPD_NAMESPACE::meta_data_builder<TChar>::add_user_defined_semantic(
         _In_ const semantic s, _In_opt_z_ const char_type *d) {
     if ((s >= semantic::user_defined) && (d != nullptr)) {
-        typedef std::underlying_type<semantic>::type int_type;
-        auto i = static_cast<int_type>(s);
-        i -= static_cast<int_type>(semantic::user_defined);
+        auto i = static_cast<std::size_t>(s);
+        i -= static_cast<std::size_t>(semantic::user_defined);
 
         if (this->_user_defined_semantics.size() <= i) {
             this->_user_defined_semantics.resize(i + 1);

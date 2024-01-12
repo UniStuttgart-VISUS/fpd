@@ -79,6 +79,78 @@ public:
 
 private:
 
+    /// <summary>
+    /// Generic implementation of comparison operators for template-based
+    /// dispatching.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the values to be compared.
+    /// </typeparam>
+    template<class TValue> struct compare_as {
+
+        static inline constexpr bool eq(_In_ const void *lhs,
+                _In_ const void *rhs) noexcept {
+            assert(lhs != nullptr);
+            assert(rhs != nullptr);
+            auto l = reinterpret_cast<const TValue *>(lhs);
+            auto r = reinterpret_cast<const TValue *>(rhs);
+            return (*l == *r);
+        }
+
+        static inline constexpr bool ge(_In_ const void *lhs,
+                _In_ const void *rhs) noexcept {
+            assert(lhs != nullptr);
+            assert(rhs != nullptr);
+            auto l = reinterpret_cast<const TValue *>(lhs);
+            auto r = reinterpret_cast<const TValue *>(rhs);
+            return (*l >= *r);
+        }
+
+        static inline constexpr bool gt(_In_ const void *lhs,
+                _In_ const void *rhs) noexcept {
+            assert(lhs != nullptr);
+            assert(rhs != nullptr);
+            auto l = reinterpret_cast<const TValue *>(lhs);
+            auto r = reinterpret_cast<const TValue *>(rhs);
+            return (*l > *r);
+        }
+
+        static inline constexpr bool le(_In_ const void *lhs,
+                _In_ const void *rhs) noexcept {
+            assert(lhs != nullptr);
+            assert(rhs != nullptr);
+            auto l = reinterpret_cast<const TValue *>(lhs);
+            auto r = reinterpret_cast<const TValue *>(rhs);
+            return (*l <= *r);
+        }
+
+        static inline constexpr bool lt(_In_ const void *lhs,
+                _In_ const void *rhs) noexcept {
+            assert(lhs != nullptr);
+            assert(rhs != nullptr);
+            auto l = reinterpret_cast<const TValue *>(lhs);
+            auto r = reinterpret_cast<const TValue *>(rhs);
+            return (*l < *r);
+        }
+
+        static inline constexpr bool ne(_In_ const void *lhs,
+                _In_ const void *rhs) noexcept {
+            assert(lhs != nullptr);
+            assert(rhs != nullptr);
+            auto l = reinterpret_cast<const TValue *>(lhs);
+            auto r = reinterpret_cast<const TValue *>(rhs);
+            return (*l != *r);
+        }
+
+        compare_as(void) = delete;
+    };
+
+    /// <summary>
+    /// Forces array types to component-wise compare operations, because we
+    /// expect positions to be arrays, but we need to compare components.
+    /// </summary>
+    template<class TValue, std::size_t N>
+    struct compare_as<std::array<TValue, N>> : compare_as<TValue> { };
+
     typedef std::pair<std::size_t, std::size_t> particle_range;
 
     /// <summary>
@@ -98,11 +170,30 @@ private:
         return particles + (cnt * this->_stride.first + this->_stride.second);
     }
 
+    /// <summary>
+    /// Sets the <see cref="compare_as" /> operations if
+    /// <paramref name="format" /> if <typeparamref name="Format" />.
+    /// </summary>
+    template<format Format, format... Formats>
+    void resolve_compare_as(_In_ format_list<Format, Formats...>,
+        _In_ const format format);
+
+    /// <summary>
+    /// Recursion stop for <see cref="resolve_compare_as" />.
+    /// </summary>
+    void resolve_compare_as(_In_ format_list<>, _In_ const format format);
+
     bounding_box _bbox;
     std::size_t _dimensions;
+    bool (*_eq)(_In_ const void *lhs, _In_ const void *rhs);
     format _format;
+    bool (*_ge)(_In_ const void *lhs, _In_ const void *rhs);
     std::size_t _group;
+    bool (*_gt)(_In_ const void *lhs, _In_ const void *rhs);
+    bool (*_le)(_In_ const void *lhs, _In_ const void *rhs);
     std::mutex _lock;
+    bool (*_lt)(_In_ const void *lhs, _In_ const void *rhs);
+    bool (*_ne)(_In_ const void *lhs, _In_ const void *rhs);
     std::size_t _offset;
     std::queue<particle_range> _queue;
     std::pair<std::size_t, std::size_t> _stride;
