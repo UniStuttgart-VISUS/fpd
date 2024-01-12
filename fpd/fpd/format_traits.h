@@ -47,6 +47,7 @@ template<class TValue> struct format_reverse_traits {
 
 #define _SPECIALISE_SCALAR_FMT_TRAITS(f, t)\
 template<> struct format_forward_traits<format::f> {\
+    typedef t scalar;\
     typedef t type;\
     static constexpr const format format = format::f;\
     template<class TChar>\
@@ -55,6 +56,7 @@ template<> struct format_forward_traits<format::f> {\
     }\
 };\
 template<> struct format_reverse_traits<t> {\
+    typedef t scalar;\
     typedef t type;\
     static constexpr const format format = format::f;\
     template<class TChar>\
@@ -65,6 +67,7 @@ template<> struct format_reverse_traits<t> {\
 
 #define _SPECIALISE_VEC_FMT_TRAITS(f, s, t, d)\
 template<> struct format_forward_traits<format::f##s> {\
+    typedef t scalar;\
     typedef std::array<t, d> type;\
     static constexpr const format format = format::f##s;\
     template<class TChar>\
@@ -73,6 +76,7 @@ template<> struct format_forward_traits<format::f##s> {\
     }\
 };\
 template<> struct format_reverse_traits<std::array<t, d>> {\
+    typedef t scalar;\
     typedef std::array<t, d> type;\
     static constexpr const format format = format::f##s;\
     template<class TChar>\
@@ -142,6 +146,25 @@ namespace detail {
             return type_components<format_forward_traits<Format>::type>::value;
         } else {
             return to_components(format_list<Formats...>(), format);
+        }
+    }
+
+    inline std::size_t to_scalar_size(_In_ const format_list<>,
+            _In_ const format) {
+        throw std::logic_error("The size of the specified format could not be "
+            "derived. Please ensure that the format is a valid enumeration "
+            "member and that all enumeration members are registered in the "
+            "formats list.");
+    }
+
+    template<format Format, format... Formats>
+    inline std::size_t to_scalar_size(
+            _In_ const format_list<Format, Formats...>,
+            _In_ const format format) {
+        if (format == Format) {
+            return type_size<format_forward_traits<Format>::scalar>::value;
+        } else {
+            return to_scalar_size(format_list<Formats...>(), format);
         }
     }
 
@@ -240,10 +263,30 @@ inline std::size_t to_components(_In_ const format format) noexcept {
 
 
 /// <summary>
+/// Answer the size in bytes of a scalar of the given
+/// <paramref name="format" />.
+/// </summary>
+/// <remarks>
+/// If <paramref name="format" /> is a scalar type, this is equivalent to
+/// calling <see cref="to_size" />. Otherwise, the function will return the
+/// size of a single component.
+/// </remarks>
+/// <param name="format">The format to get the scalar size of.</param>
+/// <returns>The size of the scalar in bytes.</returns>
+/// <exception cref="std::logic_error">If an invalid <paramref name="format" />
+/// was provided or if the type traits have not been setup properly. The latter
+/// is a bug in the implementation of the library.</exception>
+inline std::size_t to_scalar_size(_In_ const format format) {
+    typedef format_list_cat<formats, format::unknown> dispatch_type;
+    return detail::to_scalar_size(dispatch_type(), format);
+}
+
+
+/// <summary>
 /// Answer the size in bytes of the given <paramref name="format" />.
 /// </summary>
 /// <param name="format">The format to get the size of.</param>
-/// <returns>The size of the forma in bytes.</returns>
+/// <returns>The size of the format in bytes.</returns>
 /// <exception cref="std::logic_error">If an invalid <paramref name="format" />
 /// was provided or if the type traits have not been setup properly. The latter
 /// is a bug in the implementation of the library.</exception>

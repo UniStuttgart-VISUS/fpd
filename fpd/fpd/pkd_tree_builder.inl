@@ -142,6 +142,7 @@ FPD_NAMESPACE::pkd_tree_builder<TChar>::pkd_tree_builder(void) noexcept
     _lt(nullptr),
     _ne(nullptr),
     _offset(0),
+    _scalar(0),
     _stride(0, 0) { }
 
 
@@ -155,6 +156,11 @@ FPD_NAMESPACE::pkd_tree_builder<TChar>::build(_In_ void *particles,
     if ((cnt > 0) && (particles == nullptr)) {
         throw std::invalid_argument("A valid pointer to the particles must be "
             "provided.");
+    }
+
+    if (this->_format == format::unknown) {
+        throw std::logic_error("The tree builder must be configured before it "
+            "can be used to build trees.");
     }
 
     auto positions = positions(particles, cnt);
@@ -185,6 +191,7 @@ FPD_NAMESPACE::pkd_tree_builder<TChar>::for_format(
             this->_format = e->format();
             this->_dimensions = to_components(this->_format);
             this->_offset += g.offset(*e);
+            this->_scalar = to_scalar_size(this->_format);
             this->_stride.second = g.size();
             this->resolve_compare_as(formats(), this->_format);
 
@@ -216,6 +223,7 @@ FPD_NAMESPACE::pkd_tree_builder<TChar>::for_format(
     assert(this->_le != nullptr);
     assert(this->_lt != nullptr);
     assert(this->_ne != nullptr);
+    assert(this->_scalar > 0);
     assert(this->_stride.second > 0);
     return *this;
 }
@@ -229,7 +237,7 @@ template<FPD_NAMESPACE::format Format, FPD_NAMESPACE::format... Formats>
 void FPD_NAMESPACE::pkd_tree_builder<TChar>::resolve_compare_as(
         _In_ format_list<Format, Formats...>, _In_ const format format) {
     if (format == Format) {
-        typedef typename format_forward_traits<Format>::type value_type;
+        typedef typename format_forward_traits<Format>::scalar value_type;
         this->_eq = compare_as< value_type>::eq;
         this->_ge = compare_as< value_type>::ge;
         this->_gt = compare_as< value_type>::gt;

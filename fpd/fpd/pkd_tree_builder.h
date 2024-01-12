@@ -85,7 +85,7 @@ private:
     /// </summary>
     /// <typeparam name="TValue">The type of the values to be compared.
     /// </typeparam>
-    template<class TValue> struct compare_as {
+    template<class TValue> struct compare_as final {
 
         static inline constexpr bool eq(_In_ const void *lhs,
                 _In_ const void *rhs) noexcept {
@@ -144,29 +144,39 @@ private:
         compare_as(void) = delete;
     };
 
-    /// <summary>
-    /// Forces array types to component-wise compare operations, because we
-    /// expect positions to be arrays, but we need to compare components.
-    /// </summary>
-    template<class TValue, std::size_t N>
-    struct compare_as<std::array<TValue, N>> : compare_as<TValue> { };
-
     typedef std::pair<std::size_t, std::size_t> particle_range;
 
     /// <summary>
     /// Advances the given position pointer by <paramref name="cnt" />
     /// particles.
     /// </summary>
-    static inline void *advance(_In_ std::uint8_t *positions,
+    inline void *advance(_In_ std::uint8_t *positions,
             _In_ const std::size_t cnt = 1) noexcept {
+        assert(position != nullptr);
+        assert(this->_stride.second > 0);
         return position + (cnt * this->_stride.second);
+    }
+
+    /// <summary>
+    /// Advances the given pointer to the <paramref name="dimension" />th
+    /// component of the vector.
+    /// </summary>
+    inline void *dimension(_In_ std::uint8_t *position,
+            _In_ const std::size_t dimension) noexcept {
+        assert(position != nullptr);
+        assert(dimension < this->_dimensions);
+        assert(this->_scalar > 0);
+        return position + dimension * this->_scalar;
     }
 
     /// <summary>
     /// Answer a pointer to the first position in the given particle list.
     /// </summary>
-    static inline void *positions(_In_ std::uint8_t *particles,
+    inline void *positions(_In_ std::uint8_t *particles,
             _In_ const std::size_t cnt) noexcept {
+        assert(particles != nullptr);
+        assert(this->_stride.first > 0);
+        assert(this->_stride.second > 0);
         return particles + (cnt * this->_stride.first + this->_stride.second);
     }
 
@@ -196,6 +206,7 @@ private:
     bool (*_ne)(_In_ const void *lhs, _In_ const void *rhs);
     std::size_t _offset;
     std::queue<particle_range> _queue;
+    std::size_t _scalar;
     std::pair<std::size_t, std::size_t> _stride;
 };
 

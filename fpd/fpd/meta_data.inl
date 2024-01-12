@@ -358,9 +358,8 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_format_description(
             // object. If that fails, we raise an exception and the caller must
             // parse the meta data again once the table has been read. In order
             // for this to succeed, any existing data must be cleared.
-            typedef std::underlying_type<semantic>::type int_type;
-            auto i = static_cast<int_type>(s);
-            i -= static_cast<int_type>(semantic::user_defined);
+            auto i = static_cast<std::size_t>(s);
+            i -= static_cast<std::size_t>(semantic::user_defined);
 
             if (i >= meta_data._user_defined_semantics.size()) {
                 meta_data._format_description = format_description_type();
