@@ -7,6 +7,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <limits>
 #include <mutex>
 #include <queue>
 #include <stdexcept>
@@ -77,96 +78,97 @@ public:
         this->_bbox = bbox;
     }
 
-private:
+    /// <summary>
+    /// Instructs the builder to split round robin starting at the first (x)
+    /// axis. The particle data will remain unchanged in this case.
+    /// </summary>
+    /// <returns></returns>
+    inline pkd_tree_builder& with_round_robin_splits(void) noexcept {
+        this->_axis_dimension = (std::numeric_limits<std::size_t>::max)();
+        return *this;
+    }
 
     /// <summary>
-    /// Generic implementation of comparison operators for template-based
-    /// dispatching.
+    /// Instructs the builder to choose the split axes based on the largest
+    /// bounding box to be formed for the subtrees and to embed this axis in the
+    /// <paramref name="dimension" />th dimension of the position by changing
+    /// the two least significant bits.
     /// </summary>
-    /// <typeparam name="TValue">The type of the values to be compared.
-    /// </typeparam>
-    template<class TValue> struct compare_as final {
+    /// <remarks>
+    /// A valid bounding box for all particles in the frame must be provided if
+    /// this option is chosen. The build will fail if this is not the case.
+    /// </remarks>
+    /// <param name="dimension">The dimension to embed the split axis in. If
+    /// this is outside the range of the dimensions the positions have (possibly
+    /// including the radius), the builder will create round-robin splits.</param>
+    /// <returns><c>*this</c>.</returns>
+    inline pkd_tree_builder& with_splits_embedded_in(
+            _In_ const std::size_t dimension) noexcept {
+        this->_axis_dimension = dimension;
+        return *this;
+    }
 
-        static inline constexpr bool eq(_In_ const void *lhs,
-                _In_ const void *rhs) noexcept {
-            assert(lhs != nullptr);
-            assert(rhs != nullptr);
-            auto l = reinterpret_cast<const TValue *>(lhs);
-            auto r = reinterpret_cast<const TValue *>(rhs);
-            return (*l == *r);
-        }
-
-        static inline constexpr bool ge(_In_ const void *lhs,
-                _In_ const void *rhs) noexcept {
-            assert(lhs != nullptr);
-            assert(rhs != nullptr);
-            auto l = reinterpret_cast<const TValue *>(lhs);
-            auto r = reinterpret_cast<const TValue *>(rhs);
-            return (*l >= *r);
-        }
-
-        static inline constexpr bool gt(_In_ const void *lhs,
-                _In_ const void *rhs) noexcept {
-            assert(lhs != nullptr);
-            assert(rhs != nullptr);
-            auto l = reinterpret_cast<const TValue *>(lhs);
-            auto r = reinterpret_cast<const TValue *>(rhs);
-            return (*l > *r);
-        }
-
-        static inline constexpr bool le(_In_ const void *lhs,
-                _In_ const void *rhs) noexcept {
-            assert(lhs != nullptr);
-            assert(rhs != nullptr);
-            auto l = reinterpret_cast<const TValue *>(lhs);
-            auto r = reinterpret_cast<const TValue *>(rhs);
-            return (*l <= *r);
-        }
-
-        static inline constexpr bool lt(_In_ const void *lhs,
-                _In_ const void *rhs) noexcept {
-            assert(lhs != nullptr);
-            assert(rhs != nullptr);
-            auto l = reinterpret_cast<const TValue *>(lhs);
-            auto r = reinterpret_cast<const TValue *>(rhs);
-            return (*l < *r);
-        }
-
-        static inline constexpr bool ne(_In_ const void *lhs,
-                _In_ const void *rhs) noexcept {
-            assert(lhs != nullptr);
-            assert(rhs != nullptr);
-            auto l = reinterpret_cast<const TValue *>(lhs);
-            auto r = reinterpret_cast<const TValue *>(rhs);
-            return (*l != *r);
-        }
-
-        compare_as(void) = delete;
-    };
+private:
 
     typedef std::pair<std::size_t, std::size_t> particle_range;
 
     /// <summary>
-    /// Advances the given position pointer by <paramref name="cnt" />
-    /// particles.
+    /// Builds an OSPray style P-kd tree.
     /// </summary>
-    inline void *advance(_In_ std::uint8_t *positions,
-            _In_ const std::size_t cnt = 1) noexcept {
-        assert(position != nullptr);
-        assert(this->_stride.second > 0);
-        return position + (cnt * this->_stride.second);
+    /// <typeparam name="TScalar"></typeparam>
+    /// <param name="particles"></param>
+    /// <param name="indices"></param>
+    /// <param name="node"></param>
+    /// <param name="bounds"></param>
+    /// <param name="depth"></param>
+    template<class TScalar> void build_ospray(_In_ void *particles,
+        _In_ std::vector<std::size_t>& indices,
+        _In_ const std::size_t node,
+        _In_ const bounding_box bounds,
+        _In_ const std::size_t depth) const;
+
+    /// <summary>
+    /// Gets the <paramref name="c" />th component of the
+    /// <paramref name="i" />th position indexed by <paramref name="indices" />.
+    /// </summary>
+    template<class TScalar> inline TScalar& component(_In_ void *positions,
+            _In_ std::size_t i,
+            _In_ const std::vector<std::size_t>& indices,
+            _In_ std::size_t c) {
+        assert(i < indices.size());
+        assert(c < this->_components);
+        auto position = this->position(position, i, indices);
+        auto components = static_cast<TScalar *>(position);
+        return components[c];
     }
 
     /// <summary>
-    /// Advances the given pointer to the <paramref name="dimension" />th
-    /// component of the vector.
+    /// Embeds the given <paramref name="axis" /> in the least significant bits
+    /// of the <see cref="_axis_dimension" />th component of
+    /// <paramref name="position" />.
     /// </summary>
-    inline void *dimension(_In_ std::uint8_t *position,
-            _In_ const std::size_t dimension) noexcept {
-        assert(position != nullptr);
-        assert(dimension < this->_dimensions);
-        assert(this->_scalar > 0);
-        return position + dimension * this->_scalar;
+    template<class TScalar> void embed_axis(_In_ TScalar *position,
+        _In_ const std::size_t axis) const noexcept;
+
+    /// <summary>
+    /// Answer the <paramref name="i" />th position pointer.
+    /// </summary>
+    inline void *position(_In_ std::uint8_t *positions,
+            _In_ const std::size_t i) noexcept {
+        assert(positions != nullptr);
+        assert(this->_stride.second > 0);
+        return positions + (i * this->_stride.second);
+    }
+
+    /// <summary>
+    /// Answer the position of the <paramref name="i" />th index in
+    /// <paramref name="indices" />.
+    /// </summary>
+    inline void *position(_In_ std::uint8_t *positions,
+            _In_ const std::size_t i,
+            _In_ const std::vector<std::size_t>& indices) noexcept {
+        assert(i < indices.size());
+        return this->position(position, indices[i]);
     }
 
     /// <summary>
@@ -176,34 +178,29 @@ private:
             _In_ const std::size_t cnt) noexcept {
         assert(particles != nullptr);
         assert(this->_stride.first > 0);
-        assert(this->_stride.second > 0);
         return particles + (cnt * this->_stride.first + this->_stride.second);
     }
 
-    /// <summary>
-    /// Sets the <see cref="compare_as" /> operations if
-    /// <paramref name="format" /> if <typeparamref name="Format" />.
-    /// </summary>
-    template<format Format, format... Formats>
-    void resolve_compare_as(_In_ format_list<Format, Formats...>,
-        _In_ const format format);
+    ///// <summary>
+    ///// Sets the <see cref="compare_as" /> operations if
+    ///// <paramref name="format" /> if <typeparamref name="Format" />.
+    ///// </summary>
+    //template<format Format, format... Formats>
+    //void resolve_compare_as(_In_ format_list<Format, Formats...>,
+    //    _In_ const format format);
 
-    /// <summary>
-    /// Recursion stop for <see cref="resolve_compare_as" />.
-    /// </summary>
-    void resolve_compare_as(_In_ format_list<>, _In_ const format format);
+    ///// <summary>
+    ///// Recursion stop for <see cref="resolve_compare_as" />.
+    ///// </summary>
+    //void resolve_compare_as(_In_ format_list<>, _In_ const format format);
 
+    std::size_t _axis_component;
+    std::size_t _components;
     bounding_box _bbox;
     std::size_t _dimensions;
-    bool (*_eq)(_In_ const void *lhs, _In_ const void *rhs);
     format _format;
-    bool (*_ge)(_In_ const void *lhs, _In_ const void *rhs);
     std::size_t _group;
-    bool (*_gt)(_In_ const void *lhs, _In_ const void *rhs);
-    bool (*_le)(_In_ const void *lhs, _In_ const void *rhs);
     std::mutex _lock;
-    bool (*_lt)(_In_ const void *lhs, _In_ const void *rhs);
-    bool (*_ne)(_In_ const void *lhs, _In_ const void *rhs);
     std::size_t _offset;
     std::queue<particle_range> _queue;
     std::size_t _scalar;
