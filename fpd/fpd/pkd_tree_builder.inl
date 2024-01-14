@@ -277,8 +277,8 @@ void FPD_NAMESPACE::pkd_tree_builder<TChar>::build_ospray(
         return;
     }
 
-    const auto position = this->position(particles, node, indices);
-    auto node_pos = this->component<TScalar>(position, split);
+    const auto position = this->position<TScalar>(particles, node, indices);
+    const auto node_pos = position[split];
     const auto split = depth % this->_dimensions;
     // const size_t dim = maxDim(bounds.size());
 
