@@ -129,7 +129,7 @@ private:
 
     /// <summary>
     /// Gets the <paramref name="c" />th component of the
-    /// <paramref name="i" />th position indexed by <paramref name="indices" />.
+    /// <paramref name="i" />th node in <paramref name="indices" />.
     /// </summary>
     template<class TScalar> inline TScalar& component(_In_ void *positions,
             _In_ std::size_t i,
@@ -137,9 +137,8 @@ private:
             _In_ std::size_t c) {
         assert(i < indices.size());
         assert(c < this->_components);
-        auto position = this->position(position, i, indices);
-        auto components = static_cast<TScalar *>(position);
-        return components[c];
+        auto position = this->position<TScalar>(position, i, indices);
+        return position[c];
     }
 
     /// <summary>
@@ -151,7 +150,8 @@ private:
         _In_ const std::size_t axis) const noexcept;
 
     /// <summary>
-    /// Answer the <paramref name="i" />th position pointer.
+    /// Answer the <paramref name="i" />th position pointer based on the
+    /// current per-component stride of the builder.
     /// </summary>
     inline void *position(_In_ std::uint8_t *positions,
             _In_ const std::size_t i) noexcept {
@@ -164,11 +164,13 @@ private:
     /// Answer the position of the <paramref name="i" />th index in
     /// <paramref name="indices" />.
     /// </summary>
-    inline void *position(_In_ std::uint8_t *positions,
+    template<class TScalar> inline TScalar *position(
+            _In_ std::uint8_t *positions,
             _In_ const std::size_t i,
             _In_ const std::vector<std::size_t>& indices) noexcept {
         assert(i < indices.size());
-        return this->position(position, indices[i]);
+        auto retval = this->position(position, indices[i]);
+        return static_cast<TScalar *>(retval);
     }
 
     /// <summary>
