@@ -219,7 +219,7 @@ FPD_NAMESPACE::convert_string(
 template<class TChar>
 std::size_t FPD_NAMESPACE::convert_string(
         _Out_writes_to_opt_(cnt_dst, return) TChar *dst,
-        _In_ const std::size_t cnt_dst,
+        _In_ std::size_t cnt_dst,
         _In_reads_or_z_(cnt_src) const TChar *src,
         _In_ int cnt_src,
         _In_ const code_page code_page) {
@@ -235,7 +235,7 @@ std::size_t FPD_NAMESPACE::convert_string(
 
     if ((cnt_src < 0) && (src != nullptr)) {
         // User requested us to measure the input, do so now.
-        cnt_src = std::char_traits<TChar>::length(src) + 1;
+        cnt_src = static_cast<int>(std::char_traits<TChar>::length(src)) + 1;
     }
 
     const auto cnt = (std::min)(cnt_dst, static_cast<std::size_t>(cnt_src));
@@ -320,7 +320,7 @@ std::basic_string<TDstChar> FPD_NAMESPACE::convert_string(
  */
 template<class TChar>
 std::basic_string<TChar> FPD_NAMESPACE::convert_string(
-        _In_reads_or_z_(cnt_src) const TChar *src,
+        _In_reads_or_z_opt_(cnt_src) const TChar *src,
         _In_ int cnt_src,
         _In_ const code_page code_page) {
     if ((src == nullptr) || (cnt_src == 0)) {

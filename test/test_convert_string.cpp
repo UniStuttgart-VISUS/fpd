@@ -131,15 +131,15 @@ namespace fpd {
             typedef char16_t dst_type;
 
             {
-                const std::basic_string<dst_type> expected = u"input";
                 const auto input = L"input";
-                Assert::AreEqual(expected, convert_string<dst_type>(input, -1, cp), L"standard input", LINE_INFO());
+                auto actual = convert_string<dst_type>(input, -1, cp);
+                Assert::AreEqual(input, reinterpret_cast<const wchar_t *>(actual.c_str()), L"standard input", LINE_INFO());
             }
 
             {
-                const std::basic_string<dst_type> expected = u"";
                 const auto input = L"";
-                Assert::AreEqual(expected, convert_string<dst_type>(input, -1, cp), L"empty conversion", LINE_INFO());
+                auto actual = convert_string<dst_type>(input, -1, cp);
+                Assert::AreEqual(input, reinterpret_cast<const wchar_t *>(actual.c_str()), L"empty conversion", LINE_INFO());
             }
 
             {

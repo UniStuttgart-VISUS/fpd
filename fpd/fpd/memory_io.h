@@ -1,9 +1,11 @@
 ﻿// <copyright file="memory_io.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2024 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2024 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
+#if !defined(_FPD_MEMORY_IO_H)
+#define _FPD_MEMORY_IO_H
 #pragma once
 
 #include <algorithm>
@@ -188,3 +190,5 @@ typedef basic_memory_io<void> memory_io;
 typedef basic_memory_io<const void> read_only_memory_io;
 
 FPD_NAMESPACE_END
+
+#endif /* !defined(_FPD_MEMORY_IO_H) */

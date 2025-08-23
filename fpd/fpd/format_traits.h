@@ -4,8 +4,8 @@
 // </copyright>
 // <author>Christoph Müller</author>
 
-#if !defined(_FPD_FORMAT_TRAITS_H_)
-#define _FPD_FORMAT_TRAITS_H_
+#if !defined(_FPD_FORMAT_TRAITS_H)
+#define _FPD_FORMAT_TRAITS_H
 #pragma once
 
 #include <array>
@@ -156,12 +156,20 @@ struct format_type_list<format_list<Formats ...>> final {
 /// </summary>
 template<class TList, format Format> struct in_format_list;
 
+/// <summary>
+/// Checks whether the <typeparamref name="Head" /> of the list is the
+/// <typeparamref name="Needle" /> we are looking for.
+/// </summary>
 template<format Head, format... Tail, format Needle>
 struct in_format_list<format_list<Head, Tail...>, Needle> final {
     static constexpr const bool value = (Head == Needle)
         || in_format_list<format_list<Tail...>, Needle>::value;
 };
 
+/// <summary>
+/// Recursion stop for the case where <typeparamref name="Needle" /> was not
+/// found.
+/// </summary>
 template<format Needle>
 struct in_format_list<format_list<>, Needle> final : std::false_type { };
 
@@ -196,6 +204,10 @@ inline constexpr std::size_t to_components(
     }
 }
 
+
+/// <summary>
+/// Recursion stop for <see cref="to_scalar_size" />.
+/// </summary>
 inline std::size_t to_scalar_size(_In_ const format_list<>,
         _In_ const format) {
     throw std::logic_error("The size of the specified format could not be "
@@ -204,6 +216,9 @@ inline std::size_t to_scalar_size(_In_ const format_list<>,
         "formats list.");
 }
 
+/// <summary>
+/// Determines the size of a scalar of the given <paramref name="format" />.
+/// </summary>
 template<format Format, format... Formats>
 inline std::size_t to_scalar_size(
         _In_ const format_list<Format, Formats...>,
@@ -215,6 +230,10 @@ inline std::size_t to_scalar_size(
     }
 }
 
+
+/// <summary>
+/// Recursion stop for <see cref="to_size" />.
+/// </summary>
 inline std::size_t to_size(_In_ const format_list<>, _In_ const format) {
     throw std::logic_error("The size of the specified format could not be "
         "derived. Please ensure that the format is a valid enumeration "
@@ -222,6 +241,9 @@ inline std::size_t to_size(_In_ const format_list<>, _In_ const format) {
         "formats list.");
 }
 
+/// <summary>
+/// Determines the size of the given <paramref name="format" />.
+/// </summary>
 template<format Format, format... Formats>
 inline std::size_t to_size(
         _In_ const format_list<Format, Formats...>,
@@ -233,6 +255,23 @@ inline std::size_t to_size(
     }
 }
 
+
+/// <summary>
+/// Recursion stop for <see cref="to_string" />.
+/// </summary>
+template<class TChar> inline const TChar *const to_string(
+    _In_ const format_list<>,
+    _In_ const format) {
+    throw std::logic_error("The specified format could not be converted to "
+        "a string. Please ensure that the format is a valid enumeration "
+        "member and that all enumeration members are registered in the "
+        "formats list.");
+}
+
+/// <summary>
+/// Resolves the human-readable description of the given
+/// <paramref name="format" />.
+/// </summary>
 template<class TChar, format Format, format... Formats>
 inline const TChar *const to_string(
         _In_ const format_list<Format, Formats...>,
@@ -242,15 +281,6 @@ inline const TChar *const to_string(
     } else {
         return to_string<TChar>(format_list<Formats...>(), format);
     }
-}
-
-template<class TChar> inline const TChar *const to_string(
-        _In_ const format_list<>,
-        _In_ const format) {
-    throw std::logic_error("The specified format could not be converted to "
-        "a string. Please ensure that the format is a valid enumeration "
-        "member and that all enumeration members are registered in the "
-        "formats list.");
 }
 
 FPD_DETAIL_NAMESPACE_END
@@ -283,7 +313,7 @@ template<class TList, format Format> struct is_supported_format final
 /// <typeparam name="TValue"></typeparam>
 template<class TList, class TValue> struct is_supported_type final
     : std::bool_constant<detail::in_format_list_v<TList,
-    detail::format_reverse_traits<typename std::decay<TValue>::type>::format>> { };
+    detail::format_v<std::decay_t<TValue>>>> { };
 
 
 /// <summary>
@@ -362,4 +392,4 @@ inline const TChar *const to_string(_In_ const format format) {
 
 FPD_NAMESPACE_END
 
-#endif /* !defined(_FPD_FORMAT_TRAITS_H_) */
+#endif /* !defined(_FPD_FORMAT_TRAITS_H) */

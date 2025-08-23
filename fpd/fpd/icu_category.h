@@ -14,9 +14,12 @@
 #if defined(_WIN32)
 #if (NTDDI_VERSION >= NTDDI_WIN10_RS2)
 #include <icu.h>
+#pragma comment(lib, "icu")
 #else /* (NTDDI_VERSION >= NTDDI_WIN10_RS2) */
 #include <icucommon.h>
 #include <icui18n.h>
+#pragma comment(lib, "icuuc")
+#pragma comment(lib, "icuin")
 #endif /* (NTDDI_VERSION >= NTDDI_WIN10_RS2) */
 
 #else /* defined(_WIN32) */

@@ -56,6 +56,10 @@ typedef char16_t utf16_type;
 /// Converts a multi-byte string of the given encoding into an UTF-16
 /// string.
 /// </summary>
+/// <remarks>
+/// This implementation will be used if the Unicode type is
+/// <see cref="utf16_type" />.
+/// </remarks>
 /// <typeparam name="TUnicode">The type used to represent a UTF-16 character,
 /// which must be <see cref="utf16_type" /> or a binary compatible type. On
 /// Windows, this can be <c>wchar_t</c>, but on Linux, it cannot as it uses
@@ -65,7 +69,8 @@ typedef char16_t utf16_type;
 /// <see langword="nullptr" /> if <paramref name="cnt_dst" /> is zero.</param>
 /// <param name="cnt_dst">The number of elements that can be stored to
 /// <paramref name="dst" />.</param>
-/// <param name="src">The source string.</param>
+/// <param name="src">The source string. It is safe to pass
+/// <see langword="nullptr" />, in which case nothing will be written.</param>
 /// <param name="cnt_src">The length of the source string, which can be -1
 /// if <paramref name="src" /> is null-terminated.</param>
 /// <param name="encoding">The code page used for the narrow string.</param>
@@ -78,7 +83,7 @@ std::enable_if_t<sizeof(TUnicode) == sizeof(utf16_type)
     && std::is_same_v<TUnicode, utf16_type>, std::size_t>
 convert_string(_Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
     _In_ std::size_t cnt_dst,
-    _In_reads_or_z_(cnt_src) const char *src,
+    _In_reads_or_z_opt_(cnt_src) const char *src,
     _In_ int cnt_src,
     _In_opt_z_ const code_page code_page);
 
@@ -87,6 +92,10 @@ convert_string(_Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
 /// Converts a multi-byte string of the given encoding into an UTF-16
 /// string.
 /// </summary>
+/// <remarks>
+/// This implementation will be used if the Unicode type is UTF-16, but not
+/// <see cref="utf16_type" />.
+/// </remarks>
 /// <typeparam name="TUnicode">The type used to represent a UTF-16 character,
 /// which must be <see cref="utf16_type" /> or a binary compatible type. On
 /// Windows, this can be <c>wchar_t</c>, but on Linux, it cannot as it uses
@@ -96,7 +105,8 @@ convert_string(_Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
 /// <see langword="nullptr" /> if <paramref name="cnt_dst" /> is zero.</param>
 /// <param name="cnt_dst">The number of elements that can be stored to
 /// <paramref name="dst" />.</param>
-/// <param name="src">The source string.</param>
+/// <param name="src">The source string. It is safe to pass
+/// <see langword="nullptr" />, in which case nothing will be written.</param>
 /// <param name="cnt_src">The length of the source string, which can be -1
 /// if <paramref name="src" /> is null-terminated.</param>
 /// <param name="encoding">The code page used for the narrow string.</param>
@@ -109,10 +119,11 @@ inline std::enable_if_t<sizeof(TUnicode) == sizeof(utf16_type)
     && !std::is_same_v<TUnicode, utf16_type>, std::size_t>
 convert_string(_Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
         _In_ std::size_t cnt_dst,
-        _In_reads_or_z_(cnt_src) const char *src,
+        _In_reads_or_z_opt_(cnt_src) const char *src,
         _In_ int cnt_src,
         _In_opt_z_ const code_page code_page) {
-    return convert_string(reinterpret_cast<utf16_type *>(dst), cnt_dst,
+    return convert_string<utf16_type>(
+        reinterpret_cast<utf16_type *>(dst), cnt_dst,
         src, cnt_src,
         code_page);
 }
@@ -131,7 +142,8 @@ convert_string(_Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
 /// <see langword="nullptr" /> if <paramref name="cnt_dst" /> is zero.</param>
 /// <param name="cnt_dst">The number of elements that can be stored to
 /// <paramref name="dst" />.</param>
-/// <param name="src">The source string.</param>
+/// <param name="src">The source string. It is safe to pass
+/// <see langword="nullptr" />, in which case nothing will be written.</param>
 /// <param name="cnt_src">The length of the source string, which can be -1
 /// if <paramref name="src" /> is null-terminated.</param>
 /// <param name="encoding">The code page used for the narrow string.</param>
@@ -143,9 +155,43 @@ template<class TUnicode>
 std::enable_if_t<sizeof(TUnicode) == sizeof(char32_t), std::size_t>
 convert_string(_Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
     _In_ std::size_t cnt_dst,
-    _In_reads_or_z_(cnt_src) const char *src,
+    _In_reads_or_z_opt_(cnt_src) const char *src,
     _In_ int cnt_src,
     _In_opt_z_ const code_page code_page);
+
+
+/// <summary>
+/// Creates a copy of a wide string.
+/// </summary>
+/// <typeparam name="TUnicode">The type used to represent a UTF-16 character,
+/// which must be <see cref="utf16_type" /> or a binary compatible type. On
+/// Windows, this can be <c>wchar_t</c>, but on Linux, it cannot as it uses
+/// UTF-32 for <c>wchar_t</c>.</typeparam>
+/// <param name="dst">A buffer to receive the output that can hold at least
+/// <paramref name="cnt_dst" /> characters. This can be
+/// <see langword="nullptr" /> if <paramref name="cnt_dst" /> is zero.</param>
+/// <param name="cnt_dst">The number of elements that can be stored to
+/// <paramref name="dst" />.</param>
+/// <param name="src">The source string.</param>
+/// <param name="cnt_src">The length of the source string, which can be -1
+/// if <paramref name="src" /> is null-terminated.</param>
+/// <param name="reserved">This parameter is ignored.</param>
+/// <returns>The number of characters required for the output string,
+/// including the terminating zero.</returns>
+/// <exception cref="std::system_error">If the conversion failed.
+/// </exception>
+template<class TUnicode>
+inline std::enable_if_t<sizeof(TUnicode) == sizeof(wchar_t)
+    && !std::is_same_v<TUnicode, wchar_t>, std::size_t>
+convert_string(_Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
+        _In_ std::size_t cnt_dst,
+        _In_reads_or_z_(cnt_src) const wchar_t *src,
+        _In_ int cnt_src,
+        _In_opt_z_ const code_page reserved) {
+    return convert_string(dst, cnt_dst,
+        reinterpret_cast<const TUnicode *>(src), cnt_src,
+        reserved);
+}
 
 
 /// <summary>
@@ -242,6 +288,40 @@ convert_string(_Out_writes_to_opt_(cnt_dst, return) char *dst,
 
 
 /// <summary>
+/// Creates a copy of a wide string.
+/// </summary>
+/// <typeparam name="TUnicode">The type used to represent a UTF-16 character,
+/// which must be <see cref="utf16_type" /> or a binary compatible type. On
+/// Windows, this can be <c>wchar_t</c>, but on Linux, it cannot as it uses
+/// UTF-32 for <c>wchar_t</c>.</typeparam>
+/// <param name="dst">A buffer to receive the output that can hold at least
+/// <paramref name="cnt_dst" /> characters. This can be
+/// <see langword="nullptr" /> if <paramref name="cnt_dst" /> is zero.</param>
+/// <param name="cnt_dst">The number of elements that can be stored to
+/// <paramref name="dst" />.</param>
+/// <param name="src">The source string.</param>
+/// <param name="cnt_src">The length of the source string, which can be -1
+/// if <paramref name="src" /> is null-terminated.</param>
+/// <param name="reserved">This parameter is ignored.</param>
+/// <returns>The number of characters required for the output string,
+/// including the terminating zero.</returns>
+/// <exception cref="std::system_error">If the conversion failed.
+/// </exception>
+template<class TUnicode>
+inline std::enable_if_t<sizeof(TUnicode) == sizeof(wchar_t)
+    && !std::is_same_v<TUnicode, wchar_t>, std::size_t>
+convert_string(_Out_writes_to_opt_(cnt_dst, return) wchar_t *dst,
+        _In_ std::size_t cnt_dst,
+        _In_reads_or_z_(cnt_src) const TUnicode *src,
+        _In_ int cnt_src,
+        _In_opt_z_ const code_page reserved) {
+    return convert_string(
+        dst, cnt_dst,
+        reinterpret_cast<const wchar_t *>(src), cnt_src,
+        reserved);
+}
+
+/// <summary>
 /// Convert a string from one encoding to another using an intermediate
 /// step via UTF-16.
 /// </summary>
@@ -299,7 +379,7 @@ convert_string(_Out_writes_to_opt_(cnt_dst, return) TTo *dst,
 /// </exception>
 template<class TChar> std::size_t convert_string(
     _Out_writes_to_opt_(cnt_dst, return) TChar *dst,
-    _In_ const std::size_t cnt_dst,
+    _In_ std::size_t cnt_dst,
     _In_reads_or_z_(cnt_src) const TChar *src,
     _In_ int cnt_src,
     _In_opt_z_ const code_page code_page);
@@ -324,14 +404,20 @@ std::basic_string<TDstChar> convert_string(
 /// <summary>
 /// Performs a trivial conversion to an STL string.
 /// </summary>
-/// <typeparam name="TChar"></typeparam>
-/// <param name="src"></param>
-/// <param name="cnt_src"></param>
-/// <param name="reserved"></param>
-/// <returns></returns>
+/// <typeparam name="TChar">The character type used by the string.</typeparam>
+/// <param name="src">The string to be copied, which must be either at least
+/// <paramref name="cnt_src" /> characters long or zero-terminated if
+/// <paramref name="cnt_src" /> is -1. It is safe to pass
+/// <see langword="nullptr" />, in which case the output string will be empty.
+/// </param>
+/// <param name="cnt_src">The number of characters in <paramref name="src" /> or
+/// -1 to use the full null-terminated input.</param>
+/// <param name="reserved">This parameter is ignored.</param>
+/// <returns>A new string containing <paramref name="src" /> or a substring
+/// thereof.</returns>
 template<class TChar>
 std::basic_string<TChar> convert_string(
-    _In_reads_or_z_(cnt_src) const TChar *src,
+    _In_reads_or_z_opt_(cnt_src) const TChar *src,
     _In_ int cnt_src,
     _In_opt_z_ const code_page reserved);
 

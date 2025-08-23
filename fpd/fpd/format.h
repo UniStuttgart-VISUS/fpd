@@ -1,9 +1,11 @@
 ﻿// <copyright file="format.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
+#if !defined(_FPD_FORMAT_H)
+#define _FPD_FORMAT_H
 #pragma once
 
 #include <cinttypes>
@@ -366,3 +368,5 @@ typedef format_list<
     format::float64xyzw> formats;
 
 FPD_NAMESPACE_END
+
+#endif /* !defined(_FPD_FORMAT_H) */

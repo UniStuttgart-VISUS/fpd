@@ -17,21 +17,21 @@ namespace fpd {
             {
                 typedef type_list<> old_list;
                 typedef int element;
-                typedef type_list_cat<old_list, element> new_list;
+                typedef type_list_cat_t<old_list, element> new_list;
                 Assert::IsTrue(std::is_same<type_list<element>, new_list>::value, L"cat to empty", LINE_INFO());
             }
 
             {
                 typedef type_list<float> old_list;
                 typedef int element;
-                typedef type_list_cat<old_list, element> new_list;
+                typedef type_list_cat_t<old_list, element> new_list;
                 Assert::IsTrue(std::is_same<type_list<float, element>, new_list>::value, L"cat to single", LINE_INFO());
             }
 
             {
                 typedef type_list<float, double> old_list;
                 typedef int element;
-                typedef type_list_cat<old_list, element> new_list;
+                typedef type_list_cat_t<old_list, element> new_list;
                 Assert::IsTrue(std::is_same<type_list<float, double, element>, new_list>::value, L"cat to list", LINE_INFO());
             }
         }

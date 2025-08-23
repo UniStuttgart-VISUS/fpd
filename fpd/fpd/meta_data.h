@@ -1,9 +1,11 @@
 ﻿// <copyright file="meta_data.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 - 2024 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
+#if !defined(_FPD_META_DATA_H)
+#define _FPD_META_DATA_H
 #pragma once
 
 #include <cstdlib>
@@ -326,3 +328,5 @@ private:
 FPD_NAMESPACE_END
 
 #include "fpd/meta_data.inl"
+
+#endif /* !defined(_FPD_META_DATA_H) */

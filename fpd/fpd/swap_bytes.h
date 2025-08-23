@@ -1,9 +1,11 @@
 ﻿// <copyright file="swap_bytes.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
+#if !defined(_FPD_SWAP_BYTES_H)
+#define _FPD_SWAP_BYTES_H
 #pragma once
 
 #include <algorithm>
@@ -117,138 +119,152 @@ inline constexpr char16_t swap_bytes(_In_ const char16_t v) noexcept {
 }
 
 
-namespace detail {
+/// <summary>
+/// Swaps the byte order of a UTF-32 code unit.
+/// </summary>
+/// <param name="v">The value to swap the byte order of.</param>
+/// <returns>The value when the byte order is swapped.</returns>
+inline constexpr char32_t swap_bytes(_In_ const char32_t v) noexcept {
+    return static_cast<char32_t>(swap_bytes(static_cast<std::uint32_t>(v)));
+}
 
-    /// <summary>
-    /// Swaps <paramref name="v" /> as if it were of type
-    /// <typeparamref name="TUnderlying" />, for which an explicit
-    /// implementation of <see cref="swap_bytes" /> must exist.
-    /// </summary>
-    /// <remarks>
-    /// Unfortunately, this cannot be <c>constepxr</c> as we are using a
-    /// <c>reinterpret_cast</c>.
-    /// </remarks>
-    /// <typeparam name="TUnderlying">The type used to swap the bytes, which
-    /// must be an integral numeric type of the same size as
-    /// <typeparamref name="TValue" />.</typeparam>
-    /// <typeparam name="TValue">The type of the value to swap the byte order
-    /// of.</typeparam>
-    /// <param name="v">The value to swap the byte order of.</param>
-    /// <returns>The value when the byte order is swapped.</returns>
-    template<class TUnderlying, class TValue>
-    inline TValue swap_as(_In_ const TValue v) noexcept {
-        static_assert(std::is_integral<TUnderlying>::value, "The underlying "
-            "type that is being swapped must be integral.");
-        static_assert(sizeof(TUnderlying) == sizeof(TValue), "The underlying "
-            "integral type must have the same size as the actual value.");
-        auto bytes = reinterpret_cast<const TUnderlying *>(std::addressof(v));
-        auto retval = FPD_NAMESPACE::swap_bytes(*bytes);
-        return *reinterpret_cast<TValue *>(std::addressof(retval));
+FPD_NAMESPACE_END
+
+
+FPD_DETAIL_NAMESPACE_BEGIN
+
+/// <summary>
+/// Swaps <paramref name="v" /> as if it were of type
+/// <typeparamref name="TUnderlying" />, for which an explicit
+/// implementation of <see cref="swap_bytes" /> must exist.
+/// </summary>
+/// <remarks>
+/// Unfortunately, this cannot be <c>constepxr</c> as we are using a
+/// <c>reinterpret_cast</c>.
+/// </remarks>
+/// <typeparam name="TUnderlying">The type used to swap the bytes, which
+/// must be an integral numeric type of the same size as
+/// <typeparamref name="TValue" />.</typeparam>
+/// <typeparam name="TValue">The type of the value to swap the byte order
+/// of.</typeparam>
+/// <param name="v">The value to swap the byte order of.</param>
+/// <returns>The value when the byte order is swapped.</returns>
+template<class TUnderlying, class TValue>
+inline TValue swap_as(_In_ const TValue v) noexcept {
+    static_assert(std::is_integral<TUnderlying>::value, "The underlying "
+        "type that is being swapped must be integral.");
+    static_assert(sizeof(TUnderlying) == sizeof(TValue), "The underlying "
+        "integral type must have the same size as the actual value.");
+    auto bytes = reinterpret_cast<const TUnderlying *>(std::addressof(v));
+    auto retval = FPD_NAMESPACE::swap_bytes(*bytes);
+    return *reinterpret_cast<TValue *>(std::addressof(retval));
+}
+
+/// <summary>
+/// Loops over <paramref name="cnt" /> <paramref name="src" /> of the
+/// numeric type <typeparamref name="TValue" /> and swaps their byte order.
+/// </summary>
+/// <remarks>
+/// This implementation uses Duff's device for partially unrolling the loop.
+/// </remarks>
+/// <typeparam name="TValue">The type of the numbers to swap.</typeparam>
+/// <param name="dst">A pointer to a buffer of <paramref name="cnt" />
+/// elements to receive the swapped bytes.</param>
+/// <param name="src">A pointer to a buffer of <paramref name="cnt" />
+/// elements to swap the bytes of.</param>
+/// <param name="cnt">The number of values to swap.</param>
+template<class TValue> void swap_bytes_duff(
+        _Out_writes_(cnt) TValue *dst,
+        _In_reads_(cnt) const TValue *src,
+        _In_ const std::size_t cnt) {
+    assert(dst != nullptr);
+    assert(src != nullptr);
+    auto i = (cnt + 7) / 8;
+
+    switch (cnt % 8) {
+        case 0:
+            do {
+                *dst++ = swap_bytes(*src++);
+            case 7:
+                *dst++ = swap_bytes(*src++);
+            case 6:
+                *dst++ = swap_bytes(*src++);
+            case 5:
+                *dst++ = swap_bytes(*src++);
+            case 4:
+                *dst++ = swap_bytes(*src++);
+            case 3:
+                *dst++ = swap_bytes(*src++);
+            case 2:
+                *dst++ = swap_bytes(*src++);
+            case 1:
+                *dst++ = swap_bytes(*src++);
+        } while (--i > 0);
     }
+}
 
-    /// <summary>
-    /// Loops over <paramref name="cnt" /> <paramref name="src" /> of the
-    /// numeric type <typeparamref name="TValue" /> and swaps their byte order.
-    /// </summary>
-    /// <remarks>
-    /// This implementation uses Duff's device for partially unrolling the loop.
-    /// </remarks>
-    /// <typeparam name="TValue">The type of the numbers to swap.</typeparam>
-    /// <param name="dst">A pointer to a buffer of <paramref name="cnt" />
-    /// elements to receive the swapped bytes.</param>
-    /// <param name="src">A pointer to a buffer of <paramref name="cnt" />
-    /// elements to swap the bytes of.</param>
-    /// <param name="cnt">The number of values to swap.</param>
-    template<class TValue> void swap_bytes_duff(
-            _Out_writes_(cnt) TValue *dst,
-            _In_reads_(cnt) const TValue *src,
-            _In_ const std::size_t cnt) {
-        assert(dst != nullptr);
-        assert(src != nullptr);
-        auto i = (cnt + 7) / 8;
+/// <summary>
+/// Loops over <paramref name="cnt" /> elements of
+/// <paramref name="size" /> bytes each spaced <paramref name="stride" />
+/// bytes and swaps the order of the <paramref name="stride" /> bytes in
+/// place.
+/// </summary>
+/// <remarks>
+/// This implementation uses Duff's device for partially unrolling the loop.
+/// </remarks>
+/// <param name="values">A pointer to a buffer of <paramref name="cnt" />
+/// elements of <paramref name="stride" /> bytes to be swapped.</param>
+/// <param name="cnt">The number of values to swap.</param>
+/// <param name="size">The number of bytes to reverse for each value. This
+/// must be more than one, because specifying one would have no effect.
+/// </param>
+/// <param name="stride">The number of bytes between values, which must be
+/// at least size.</param>
+inline void swap_bytes_duff(_Inout_updates_(cnt) void *values,
+        _In_ const std::size_t cnt,
+        _In_ const std::size_t size,
+        _In_ const std::size_t stride) {
+    assert(values != nullptr);
+    assert(stride >= size);
+    assert(stride > 1);
+    auto v = static_cast<std::uint8_t *>(values);
+    auto n = v;
+    auto i = (cnt + 7) / 8;
 
-        switch (cnt % 8) {
-            case 0:
-                do {
-                    *dst++ = swap_bytes(*src++);
-                case 7:
-                    *dst++ = swap_bytes(*src++);
-                case 6:
-                    *dst++ = swap_bytes(*src++);
-                case 5:
-                    *dst++ = swap_bytes(*src++);
-                case 4:
-                    *dst++ = swap_bytes(*src++);
-                case 3:
-                    *dst++ = swap_bytes(*src++);
-                case 2:
-                    *dst++ = swap_bytes(*src++);
-                case 1:
-                    *dst++ = swap_bytes(*src++);
-            } while (--i > 0);
-        }
+    switch (cnt % 8) {
+        case 0:
+            do {
+                std::reverse(v, v + size);
+                v += stride;
+            case 7:
+                std::reverse(v, v + size);
+                v += stride;
+            case 6:
+                std::reverse(v, v + size);
+                v += stride;
+            case 5:
+                std::reverse(v, v + size);
+                v += stride;
+            case 4:
+                std::reverse(v, v + size);
+                v += stride;
+            case 3:
+                std::reverse(v, v + size);
+                v += stride;
+            case 2:
+                std::reverse(v, v + size);
+                v += stride;
+            case 1:
+                std::reverse(v, v + size);
+                v += stride;
+        } while (--i > 0);
     }
+}
 
-    /// <summary>
-    /// Loops over <paramref name="cnt" /> elements of
-    /// <paramref name="size" /> bytes each spaced <paramref name="stride" />
-    /// bytes and swaps the order of the <paramref name="stride" /> bytes in
-    /// place.
-    /// </summary>
-    /// <remarks>
-    /// This implementation uses Duff's device for partially unrolling the loop.
-    /// </remarks>
-    /// <param name="values">A pointer to a buffer of <paramref name="cnt" />
-    /// elements of <paramref name="stride" /> bytes to be swapped.</param>
-    /// <param name="cnt">The number of values to swap.</param>
-    /// <param name="size">The number of bytes to reverse for each value. This
-    /// must be more than one, because specifying one would have no effect.
-    /// </param>
-    /// <param name="stride">The number of bytes between values, which must be
-    /// at least size.</param>
-    inline void swap_bytes_duff(_Inout_updates_(cnt) void *values,
-            _In_ const std::size_t cnt,
-            _In_ const std::size_t size,
-            _In_ const std::size_t stride) {
-        assert(values != nullptr);
-        assert(stride >= size);
-        assert(stride > 1);
-        auto v = static_cast<std::uint8_t *>(values);
-        auto n = v;
-        auto i = (cnt + 7) / 8;
+FPD_DETAIL_NAMESPACE_END
 
-        switch (cnt % 8) {
-            case 0:
-                do {
-                    std::reverse(v, v + size);
-                    v += stride;
-                case 7:
-                    std::reverse(v, v + size);
-                    v += stride;
-                case 6:
-                    std::reverse(v, v + size);
-                    v += stride;
-                case 5:
-                    std::reverse(v, v + size);
-                    v += stride;
-                case 4:
-                    std::reverse(v, v + size);
-                    v += stride;
-                case 3:
-                    std::reverse(v, v + size);
-                    v += stride;
-                case 2:
-                    std::reverse(v, v + size);
-                    v += stride;
-                case 1:
-                    std::reverse(v, v + size);
-                    v += stride;
-            } while (--i > 0);
-        }
-    }
 
-} /* namespace detail */
-
+FPD_NAMESPACE_BEGIN
 
 /// <summary>
 /// Swaps the byte order of a 32-bit floating point number.
@@ -356,3 +372,5 @@ inline void swap_bytes(_Inout_updates_(cnt) void *values,
 }
 
 FPD_NAMESPACE_END
+
+#endif /* !defined(_FPD_SWAP_BYTES_H) */

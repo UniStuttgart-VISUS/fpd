@@ -1,9 +1,11 @@
 ﻿// <copyright file="null_coalesce.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
+#if !defined(_FPD_NULL_COALESCE_H)
+#define _FPD_NULL_COALESCE_H
 #pragma once
 
 #include "fpd/abi.h"
@@ -44,3 +46,5 @@ template<class TChar> inline constexpr _Ret_valid_ const TChar *null_coalesce(
 }
 
 FPD_NAMESPACE_END
+
+#endif /* !defined(_FPD_NULL_COALESCE_H) */

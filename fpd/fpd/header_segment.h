@@ -1,9 +1,11 @@
 ﻿// <copyright file="header_segment.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
+#if !defined(_FPD_HEADER_SEGMENT_H)
+#define _FPD_HEADER_SEGMENT_H
 #pragma once
 
 #include <cinttypes>
@@ -77,3 +79,5 @@ enum class header_segment : std::uint32_t {
 };
 
 FPD_NAMESPACE_END
+
+#endif /* !defined(_FPD_HEADER_SEGMENT_H) */

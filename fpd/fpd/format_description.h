@@ -1,9 +1,11 @@
 ﻿// <copyright file="format_description.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 - 2024 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
+#if !defined(_FPD_FORMAT_DESCRIPTION_H)
+#define _FPD_FORMAT_DESCRIPTION_H
 #pragma once
 
 #include <algorithm>
@@ -18,6 +20,10 @@ FPD_NAMESPACE_BEGIN
 /// <summary>
 /// Defines an element that makes a particle <see cref="format_description" />.
 /// </summary>
+/// <remarks>
+/// A particle is made of one or more streams (element groups) of the same size
+/// that in union hold all of the properties of the particle.
+/// </remarks>
 /// <typeparam name="TChar">The type of a character in a string.</typeparam>
 template<class TChar> class format_description final {
 
@@ -243,3 +249,5 @@ private:
 FPD_NAMESPACE_END
 
 #include "fpd/format_description.inl"
+
+#endif /* !defined(_FPD_FORMAT_DESCRIPTION_H) */

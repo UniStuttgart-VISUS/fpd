@@ -1,9 +1,11 @@
 ﻿// <copyright file="semantic.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
+#if !defined(_FPD_SEMANTIC_H)
+#define _FPD_SEMANTIC_H
 #pragma once
 
 #include <cinttypes>
@@ -107,7 +109,7 @@ typedef semantic_list<
 /// <param name="semantic">The semantic to convert to a string.</param>
 /// <returns>The string representation of the given semantic.</returns>
 template<class TChar>
-const TChar *const to_string(_In_ const semantic semantic);
+_Ret_z_ const TChar *const to_string(_In_ const semantic semantic);
 
 
 /// <summary>
@@ -126,3 +128,5 @@ constexpr inline semantic user_defined_semantic(
 FPD_NAMESPACE_END
 
 #include "fpd/semantic.inl"
+
+#endif /* !defined(_FPD_SEMANTIC_H) */

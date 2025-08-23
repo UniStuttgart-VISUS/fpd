@@ -1,9 +1,11 @@
 ﻿// <copyright file="literal.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
+#if !defined(_FPD_LITERAL_H)
+#define _FPD_LITERAL_H
 #pragma once
 
 #include "fpd/abi.h"
@@ -154,3 +156,5 @@ FPD_NAMESPACE_END
 /// <param name="l">The string to be selected.</param>
 #define FPD_TPL_LITERAL(T, l) \
 fpd::detail::literal_selector<T>::select(l, L##l, u##l, u8##l)
+
+#endif /* !defined(_FPD_LITERAL_H) */
