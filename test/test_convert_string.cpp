@@ -33,9 +33,7 @@ namespace fpd {
 
             {
                 const auto input = static_cast<src_type *>(nullptr);
-                Assert::ExpectException<std::invalid_argument>([&input, cp](void) {
-                    convert_string<dst_type>(input, -1, cp), L"nullptr conversion", LINE_INFO();
-                });
+                Assert::IsTrue(convert_string<dst_type>(input, -1, cp).empty(), L"nullptr conversion", LINE_INFO());
             }
         }
 
@@ -58,9 +56,7 @@ namespace fpd {
 
             {
                 const auto input = static_cast<src_type *>(nullptr);
-                Assert::ExpectException<std::invalid_argument>([&input, cp](void) {
-                    convert_string<dst_type>(input, -1, cp), L"nullptr conversion", LINE_INFO();
-                });
+                Assert::IsTrue(convert_string<dst_type>(input, -1, cp).empty(), L"nullptr conversion", LINE_INFO());
             }
         }
 
@@ -94,9 +90,7 @@ namespace fpd {
 
             {
                 const auto input = static_cast<src_type *>(nullptr);
-                Assert::ExpectException<std::invalid_argument>([&input, cp](void) {
-                    convert_string<dst_type>(input, -1, cp), L"nullptr conversion", LINE_INFO();
-                });
+                Assert::IsTrue(convert_string<dst_type>(input, -1, cp).empty(), L"nullptr conversion", LINE_INFO());
             }
         }
 
@@ -119,9 +113,7 @@ namespace fpd {
 
             {
                 const auto input = static_cast<src_type *>(nullptr);
-                Assert::ExpectException<std::invalid_argument>([&input, cp](void) {
-                    convert_string<dst_type>(input, -1, cp), L"nullptr conversion", LINE_INFO();
-                });
+                Assert::IsTrue(convert_string<dst_type>(input, -1, cp).empty(), L"nullptr conversion", LINE_INFO());
             }
         }
 
@@ -144,9 +136,7 @@ namespace fpd {
 
             {
                 const auto input = static_cast<src_type *>(nullptr);
-                Assert::ExpectException<std::invalid_argument>([&input, cp](void) {
-                    convert_string<dst_type>(input, -1, cp), L"nullptr conversion", LINE_INFO();
-                });
+                Assert::IsTrue(convert_string<dst_type>(input, -1, cp).empty(), L"nullptr conversion", LINE_INFO());
             }
         }
     };
