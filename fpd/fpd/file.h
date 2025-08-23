@@ -4,6 +4,8 @@
 // </copyright>
 // <author>Christoph Müller</author>
 
+#if !defined(_FPD_FILE_H)
+#define _FPD_FILE_H
 #pragma once
 
 #include <cinttypes>
@@ -124,3 +126,5 @@ private:
 FPD_NAMESPACE_END
 
 #include "fpd/file.inl"
+
+#endif /* !defined(_FPD_FILE_H) */

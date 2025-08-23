@@ -14,7 +14,7 @@ namespace fpd {
     public:
 
         TEST_METHOD(oem2wchar) {
-            const auto cp = code_page::oem;
+            const auto cp = code_pages::oem;
             typedef char src_type;
             typedef wchar_t dst_type;
 
@@ -40,7 +40,7 @@ namespace fpd {
         }
 
         TEST_METHOD(wchar2oem) {
-            const auto cp = code_page::oem;
+            const auto cp = code_pages::oem;
             typedef wchar_t src_type;
             typedef char dst_type;
 
@@ -65,7 +65,7 @@ namespace fpd {
         }
 
         TEST_METHOD(wchar2utf8) {
-            const auto cp = code_page::utf8;
+            const auto cp = code_pages::utf8;
             typedef wchar_t src_type;
             typedef char dst_type;
 
@@ -101,7 +101,7 @@ namespace fpd {
         }
 
         TEST_METHOD(char162wchar) {
-            const auto cp = code_page::oem;
+            const auto cp = code_pages::oem;
             typedef char16_t src_type;
             typedef wchar_t dst_type;
 
@@ -113,6 +113,31 @@ namespace fpd {
 
             {
                 const std::basic_string<dst_type> expected = L"";
+                const auto input = u"";
+                Assert::AreEqual(expected, convert_string<dst_type>(input, -1, cp), L"empty conversion", LINE_INFO());
+            }
+
+            {
+                const auto input = static_cast<src_type *>(nullptr);
+                Assert::ExpectException<std::invalid_argument>([&input, cp](void) {
+                    convert_string<dst_type>(input, -1, cp), L"nullptr conversion", LINE_INFO();
+                });
+            }
+        }
+
+        TEST_METHOD(wchar2char16) {
+            const auto cp = code_pages::oem;
+            typedef wchar_t src_type;
+            typedef char16_t dst_type;
+
+            {
+                const std::basic_string<dst_type> expected = u"input";
+                const auto input = L"input";
+                Assert::AreEqual(expected, convert_string<dst_type>(input, -1, cp), L"standard input", LINE_INFO());
+            }
+
+            {
+                const std::basic_string<dst_type> expected = u"";
                 const auto input = L"";
                 Assert::AreEqual(expected, convert_string<dst_type>(input, -1, cp), L"empty conversion", LINE_INFO());
             }

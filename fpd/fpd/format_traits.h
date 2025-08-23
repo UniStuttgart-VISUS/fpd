@@ -1,9 +1,11 @@
 ﻿// <copyright file="format_taits.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
+#if !defined(_FPD_FORMAT_TRAITS_H_)
+#define _FPD_FORMAT_TRAITS_H_
 #pragma once
 
 #include <array>
@@ -21,7 +23,7 @@
 #include "fpd/type_size.h"
 
 
-FPD_NAMESPACE_BEGIN
+FPD_DETAIL_NAMESPACE_BEGIN
 
 /// <summary>
 /// A template that allows for retrieving compile-time information
@@ -111,103 +113,150 @@ _SPECIALISE_FMT_TRAITS(float64, double);
 #undef _SPECIALISE_SCALAR_FMT_TRAITS
 
 
-namespace detail {
+/// <summary>
+/// Resolves the scalar type used by a specified format.
+/// </summary>
+template<format Format>
+using scalar_t = typename format_forward_traits<Format>::scalar;
 
-    template<class TList> struct format_type_list;
 
-    template<format... Formats>
-    struct format_type_list<format_list<Formats ...>> final {
-        template<format F>
-        using traits = typename format_forward_traits<F>::type;
-        typedef type_list<traits<Formats>...> type;
-    };
+/// <summary>
+/// Resolves the type of a specified format (forward resolution).
+/// </summary>
+template<format Format>
+using format_t = typename format_forward_traits<Format>::type;
 
-    template<class TList, format Format> struct in_format_list;
 
-    template<format Head, format... Tail, format Needle>
-    struct in_format_list<format_list<Head, Tail...>, Needle> final {
-        static constexpr const bool value = (Head == Needle)
-            || in_format_list<format_list<Tail...>, Needle>::value;
-    };
+/// <summary>
+/// Resolves the format of a specified type (reverse resolution).
+/// </summary>
+template<class TValue>
+constexpr auto format_v = format_reverse_traits<TValue>::format;
 
-    template<format Needle>
-    struct in_format_list<format_list<>, Needle> final : std::false_type { };
 
-    inline constexpr std::size_t to_components(_In_ const format_list<>,
-            _In_ const format) noexcept {
-        return 0;
+/// <summary>
+/// Defines a list of formats that can be expanded to dynamically dispatch to
+/// a per-format handler.
+/// </summary>
+template<class TList> struct format_type_list;
+
+/// <summary>
+/// Specialisation for actual lists of formats.
+/// </summary>
+template<format... Formats>
+struct format_type_list<format_list<Formats ...>> final {
+    template<format F> using traits = format_t<F>;
+    typedef type_list<traits<Formats>...> type;
+};
+
+
+/// <summary>
+/// Checks whether <typeparamref name="Format" /> is in the given list of
+/// formats.
+/// </summary>
+template<class TList, format Format> struct in_format_list;
+
+template<format Head, format... Tail, format Needle>
+struct in_format_list<format_list<Head, Tail...>, Needle> final {
+    static constexpr const bool value = (Head == Needle)
+        || in_format_list<format_list<Tail...>, Needle>::value;
+};
+
+template<format Needle>
+struct in_format_list<format_list<>, Needle> final : std::false_type { };
+
+
+/// <summary>
+/// Checks whether <typeparamref name="Format" /> is in the given list of
+/// formats.
+/// </summary>
+template<class TList, format Format>
+constexpr bool in_format_list_v = in_format_list<TList, Format>::value;
+
+
+/// <summary>
+/// Recursion stop for <see cref="to_components" />.
+/// </summary>
+inline constexpr std::size_t to_components(_In_ const format_list<>,
+        _In_ const format) noexcept {
+    return 0;
+}
+
+/// <summary>
+/// Determines the number of components of a format.
+/// </summary>
+template<format Format, format... Formats>
+inline constexpr std::size_t to_components(
+        _In_ const format_list<Format, Formats...>,
+        _In_ const format format) noexcept {
+    if (format == Format) {
+        return type_components<format_t<Format>>::value;
+    } else {
+        return to_components(format_list<Formats...>(), format);
     }
+}
 
-    template<format Format, format... Formats>
-    inline std::size_t to_components(
-            _In_ const format_list<Format, Formats...>,
-            _In_ const format format) {
-        if (format == Format) {
-            return type_components<format_forward_traits<Format>::type>::value;
-        } else {
-            return to_components(format_list<Formats...>(), format);
-        }
+inline std::size_t to_scalar_size(_In_ const format_list<>,
+        _In_ const format) {
+    throw std::logic_error("The size of the specified format could not be "
+        "derived. Please ensure that the format is a valid enumeration "
+        "member and that all enumeration members are registered in the "
+        "formats list.");
+}
+
+template<format Format, format... Formats>
+inline std::size_t to_scalar_size(
+        _In_ const format_list<Format, Formats...>,
+        _In_ const format format) {
+    if (format == Format) {
+        return type_size<scalar_t<Format>>::value;
+    } else {
+        return to_scalar_size(format_list<Formats...>(), format);
     }
+}
 
-    inline std::size_t to_scalar_size(_In_ const format_list<>,
-            _In_ const format) {
-        throw std::logic_error("The size of the specified format could not be "
-            "derived. Please ensure that the format is a valid enumeration "
-            "member and that all enumeration members are registered in the "
-            "formats list.");
+inline std::size_t to_size(_In_ const format_list<>, _In_ const format) {
+    throw std::logic_error("The size of the specified format could not be "
+        "derived. Please ensure that the format is a valid enumeration "
+        "member and that all enumeration members are registered in the "
+        "formats list.");
+}
+
+template<format Format, format... Formats>
+inline std::size_t to_size(
+        _In_ const format_list<Format, Formats...>,
+        _In_ const format format) {
+    if (format == Format) {
+        return type_size<format_t<Format>>::value;
+    } else {
+        return to_size(format_list<Formats...>(), format);
     }
+}
 
-    template<format Format, format... Formats>
-    inline std::size_t to_scalar_size(
-            _In_ const format_list<Format, Formats...>,
-            _In_ const format format) {
-        if (format == Format) {
-            return type_size<format_forward_traits<Format>::scalar>::value;
-        } else {
-            return to_scalar_size(format_list<Formats...>(), format);
-        }
+template<class TChar, format Format, format... Formats>
+inline const TChar *const to_string(
+        _In_ const format_list<Format, Formats...>,
+        _In_ const format format) {
+    if (format == Format) {
+        return format_forward_traits<Format>::template name<TChar>();
+    } else {
+        return to_string<TChar>(format_list<Formats...>(), format);
     }
+}
 
-    inline std::size_t to_size(_In_ const format_list<>, _In_ const format) {
-        throw std::logic_error("The size of the specified format could not be "
-            "derived. Please ensure that the format is a valid enumeration "
-            "member and that all enumeration members are registered in the "
-            "formats list.");
-    }
+template<class TChar> inline const TChar *const to_string(
+        _In_ const format_list<>,
+        _In_ const format) {
+    throw std::logic_error("The specified format could not be converted to "
+        "a string. Please ensure that the format is a valid enumeration "
+        "member and that all enumeration members are registered in the "
+        "formats list.");
+}
 
-    template<format Format, format... Formats>
-    inline std::size_t to_size(
-            _In_ const format_list<Format, Formats...>,
-            _In_ const format format) {
-        if (format == Format) {
-            return type_size<format_forward_traits<Format>::type>::value;
-        } else {
-            return to_size(format_list<Formats...>(), format);
-        }
-    }
+FPD_DETAIL_NAMESPACE_END
 
-    template<class TChar, format Format, format... Formats>
-    inline const TChar *const to_string(
-            _In_ const format_list<Format, Formats...>,
-            _In_ const format format) {
-        if (format == Format) {
-            return format_forward_traits<Format>::template name<TChar>();
-        } else {
-            return to_string<TChar>(format_list<Formats...>(), format);
-        }
-    }
 
-    template<class TChar> inline const TChar *const to_string(
-            _In_ const format_list<>,
-            _In_ const format) {
-        throw std::logic_error("The specified format could not be converted to "
-            "a string. Please ensure that the format is a valid enumeration "
-            "member and that all enumeration members are registered in the "
-            "formats list.");
-    }
-
-} /* namespace detail */
-
+FPD_NAMESPACE_BEGIN
 
 /// <summary>
 /// A list of all the types that are represented by the <see cref="format" />s
@@ -223,8 +272,7 @@ typedef detail::format_type_list<formats>::type format_types;
 /// <typeparam name="TList"></typeparam>
 /// <typeparam name="Format"></typeparam>
 template<class TList, format Format> struct is_supported_format final
-    : std::integral_constant<bool, detail::in_format_list<TList,
-    Format>::value> { };
+    : std::bool_constant<detail::in_format_list_v<TList, Format>> { };
 
 
 /// <summary>
@@ -234,8 +282,8 @@ template<class TList, format Format> struct is_supported_format final
 /// <typeparam name="TList"></typeparam>
 /// <typeparam name="TValue"></typeparam>
 template<class TList, class TValue> struct is_supported_type final
-    : std::integral_constant<bool, detail::in_format_list<TList,
-    format_reverse_traits<typename std::decay<TValue>::type>::format>::value> { };
+    : std::bool_constant<detail::in_format_list_v<TList,
+    detail::format_reverse_traits<typename std::decay<TValue>::type>::format>> { };
 
 
 /// <summary>
@@ -313,3 +361,5 @@ inline const TChar *const to_string(_In_ const format format) {
 }
 
 FPD_NAMESPACE_END
+
+#endif /* !defined(_FPD_FORMAT_TRAITS_H_) */

@@ -1,5 +1,5 @@
 ﻿// <copyright file="format_variant.inl" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 - 2024 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
@@ -199,7 +199,7 @@ template<template<class> class TFunc,
 void FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::invoke0(
         _In_ format_list<Fmt, Fmts...>,
         _In_ TArgs&&... args) {
-    typedef typename format_forward_traits<Fmt>::type value_type;
+    typedef typename detail::format_forward_traits<Fmt>::type value_type;
     if (Fmt == this->_format) {
         FPD_NAMESPACE::invoke(TFunc<value_type>(),
             this->try_get<value_type>(),

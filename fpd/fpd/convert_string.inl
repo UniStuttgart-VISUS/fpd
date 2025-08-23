@@ -1,5 +1,5 @@
 ﻿// <copyright file="convert_string.inl" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 - 2024 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
@@ -8,363 +8,208 @@
 /*
  * FPD_NAMESPACE::convert_string
  */
-inline std::size_t FPD_NAMESPACE::convert_string(
-        _Out_writes_to_opt_(cnt_dst, return) wchar_t *dst,
-        _In_ std::size_t cnt_dst,
-        _In_reads_or_z_(cnt_src) const char16_t *src,
-        _In_ const std::ptrdiff_t cnt_src,
-        _In_ const code_page code_page) {
-    if (src == nullptr) {
-        throw std::invalid_argument("The string to be converted cannot be "
-            "null.");
-    }
-
-#if defined(_WIN32)
-    static_assert(sizeof(wchar_t) == sizeof(char16_t), "wchar_t is UTF-16.");
-    return convert_string(dst, cnt_dst,
-        reinterpret_cast<const wchar_t *>(src), cnt_src,
-        code_page);
-
-#elif defined(ICU_FOUND)
-    static_assert(sizeof(wchar_t) == sizeof(UChar32), "wchar_t is UTF-32.");
-    icu::UnicodeString unicode(src);
-    UErrorCode status = U_ZERO_ERROR;
-
-    // Convert from UTF-16 to UTF-32.
-    auto retval = unicode.toUTF32(reinterpret_cast<UChar32 *>(dst),
-        static_cast<std::int32_t>(cnt_dst), status);
-    switch (status) {
-        case U_ZERO_ERROR:
-        case U_BUFFER_OVERFLOW_ERROR:
-            break;
-
-        default:
-            throw std::system_error(status, detail::icu_category());
-    }
-
-    return retval;
-#else /* defined(_WIN32) */
-#error "libicu is required on non-Windows systems."
-#endif /* defined(_WIN32) */
-}
-
-
-/*
- * FPD_NAMESPACE::convert_string
- */
-inline std::size_t FPD_NAMESPACE::convert_string(
-        _Out_writes_to_opt_(cnt_dst, return) char16_t *dst,
-        _In_ std::size_t cnt_dst,
-        _In_reads_or_z_(cnt_src) const wchar_t *src,
-        _In_ const std::ptrdiff_t cnt_src,
-        _In_ const code_page code_page) {
-    if (src == nullptr) {
-        throw std::invalid_argument("The string to be converted cannot be "
-            "null.");
-    }
-
-#if defined(_WIN32)
-    static_assert(sizeof(wchar_t) == sizeof(char16_t), "wchar_t is UTF-16.");
-    return convert_string(reinterpret_cast<wchar_t *>(dst), cnt_dst,
-        src, cnt_src,
-        code_page);
-
-#elif defined(ICU_FOUND)
-    // Convert to UTF-16 via construction.
-    icu::UnicodeString unicode(src);
-    UErrorCode status = U_ZERO_ERROR;
-
-    // Extract the UTF-16 characters to the caller's buffer.
-    auto retval = unicode.extract(reinterpret_cast<Char16Ptr>(dst),
-        static_cast<std::int32_t>(cnt_dst), status);
-    switch (status) {
-        case U_ZERO_ERROR:
-        case U_BUFFER_OVERFLOW_ERROR:
-            break;
-
-        default:
-            throw std::system_error(status, detail::icu_category());
-    }
-
-    return retval;
-#else /* defined(_WIN32) */
-#error "libicu is required on non-Windows systems."
-#endif /* defined(_WIN32) */
-}
-
-
-/*
- * FPD_NAMESPACE::convert_string
- */
-inline std::size_t FPD_NAMESPACE::convert_string(
-        _Out_writes_to_opt_(cnt_dst, return) char16_t *dst,
+template<class TUnicode>
+std::enable_if_t<sizeof(TUnicode) == sizeof(FPD_NAMESPACE::utf16_type)
+    && std::is_same_v<TUnicode, FPD_NAMESPACE::utf16_type>, std::size_t>
+FPD_NAMESPACE::convert_string(
+        _Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
         _In_ std::size_t cnt_dst,
         _In_reads_or_z_(cnt_src) const char *src,
-        _In_ const std::ptrdiff_t cnt_src,
+        _In_ int cnt_src,
         _In_ const code_page code_page) {
-#if defined(_WIN32)
-    static_assert(sizeof(wchar_t) == sizeof(char16_t), "wchar_t is UTF-16.");
-    return convert_string(reinterpret_cast<wchar_t *>(dst), cnt_dst,
+    if (dst == nullptr) {
+        // Make sure that the output buffer size is zero if the output
+        // buffer is invalid, such that we get the required buffer size.
+        cnt_dst = 0;
+    }
+    if (src == nullptr) {
+        // Likewise, if the source is invalid, bail out directly.
+        return 0;
+    }
+
+    if ((cnt_src < 0) && (src != nullptr)) {
+        // User requested us to measure the input, do so now.
+        cnt_src = static_cast<int>(std::char_traits<char>::length(src)) + 1;
+    }
+
+    assert(src != nullptr);
+    assert(cnt_src > 0);
+
+    auto status = U_ZERO_ERROR;
+
+    // Create a converter for the code page specified by the caller.
+    std::unique_ptr<UConverter, decltype(&::ucnv_close)> conv(
+        ::ucnv_open(code_page, &status), ::ucnv_close);
+    detail::throw_if_icu_failed(status);
+
+    // Perform a stream conversion, possibly into an intermediate buffer just
+    // for measuring.
+    auto dst_cur = reinterpret_cast<utf16_type *>(dst);
+    auto dst_end = dst_cur + cnt_dst;
+    auto src_cur = src;
+    auto src_end = src + cnt_src;
+
+    ::ucnv_toUnicode(conv.get(),
+        &dst_cur, dst_end,
+        &src_cur, src_end,
+        nullptr, true, &status);
+
+    auto retval = (dst_cur - reinterpret_cast<utf16_type *>(dst));
+
+    if (status == U_BUFFER_OVERFLOW_ERROR) {
+        // If the output buffer was too small, create an intermediate one and
+        // measure how much we need. ICU typically uses 1024 for this case, so
+        // we do so, too.
+        std::array<utf16_type, 1024> buffer;
+        dst_end = buffer.data() + buffer.size();
+
+        do {
+            dst_cur = buffer.data();
+            status = U_ZERO_ERROR;
+            ::ucnv_toUnicode(conv.get(),
+                &dst_cur, dst_end,
+                &src_cur, src_end,
+                nullptr, true, &status);
+            retval += dst_cur - buffer.data();
+        } while (status == U_BUFFER_OVERFLOW_ERROR);
+    }
+
+    // If we are still in an error state here, something other than too little
+    // output storage must have gone wrong.
+    detail::throw_if_icu_failed(status);
+
+    // 'retval' should now be the number of output characters.
+    return retval;
+}
+
+
+/*
+ * FPD_NAMESPACE::convert_string
+ */
+template<class TUnicode>
+std::enable_if_t<sizeof(TUnicode) == sizeof(char32_t), std::size_t>
+FPD_NAMESPACE::convert_string(
+        _Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
+        _In_ std::size_t cnt_dst,
+        _In_reads_or_z_(cnt_src) const char *src,
+        _In_ int cnt_src,
+        _In_ const code_page code_page) {
+    static constexpr auto wchar_code_page = (endian::system == endian::big)
+        ? code_pages::utf32be
+        : code_pages::utf32le;
+
+    auto d = reinterpret_cast<const std::uint8_t *>(dst);
+    if (cnt_dst > 0) {
+        cnt_dst *= sizeof(char32_t);
+    }
+
+    auto retval = convert_string(d, cnt_dst, wchar_code_page,
         src, cnt_src, code_page);
-
-#elif defined(ICU_FOUND)
-    UErrorCode status = U_ZERO_ERROR;
-
-    // Create a converter for the code page specified by the caller.
-    std::unique_ptr<UConverter, decltype(&::ucnv_close)> conv(
-        ::ucnv_open(code_page, &status), ::ucnv_close);
-    if (U_FAILURE(status)) {
-        throw std::system_error(status, detail::icu_category());
-    }
-
-    // Perform the conversion.
-    icu::UnicodeString unicode(src, s, conv.get(), status);
-    if (U_FAILURE(status)) {
-        throw std::system_error(status, detail::icu_category());
-    }
-
-    // Extract the characters to the caller's buffer.
-    auto retval = unicode.extract(reinterpret_cast<Char16Ptr>(dst),
-        static_cast<std::int32_t>(cnt_dst), status);
-    switch (status) {
-        case U_ZERO_ERROR:
-        case U_BUFFER_OVERFLOW_ERROR:
-            break;
-
-        default:
-            throw std::system_error(status, detail::icu_category());
-    }
+    assert((retval % sizeof(char32_t)) == 0);
+    retval %= sizeof(char32_t);
 
     return retval;
-#else /* defined(_WIN32) */
-#error "libicu is required on non-Windows systems."
-#endif /* defined(_WIN32) */
 }
 
 
 /*
  * FPD_NAMESPACE::convert_string
  */
-inline std::size_t FPD_NAMESPACE::convert_string(
-        _Out_writes_to_opt_(cnt_dst, return) wchar_t *dst,
-        _In_ std::size_t cnt_dst,
-        _In_reads_or_z_(cnt_src) const char *src,
-        _In_ const std::ptrdiff_t cnt_src,
-        _In_ const code_page code_page) {
-    if (src == nullptr) {
-        throw std::invalid_argument("The string to be converted cannot be "
-            "null.");
-    }
-
-    const auto s = static_cast<int>(cnt_src);
-
-#if defined(_WIN32)
-    _try{
-        if (dst == nullptr) {
-            // Make sure that the output buffer size is zero if the output
-            // buffer is invalid, such that we get the required buffer size.
-            cnt_dst = 0;
-        }
-
-        auto retval = ::MultiByteToWideChar(static_cast<UINT>(code_page), 0,
-            src, s,
-            dst, static_cast<int>(cnt_dst));
-
-        if (retval <= 0) {
-            auto error = ::GetLastError();
-            throw std::system_error(error, std::system_category());
-        }
-
-        return retval;
-    } _except(EXCEPTION_EXECUTE_HANDLER) {
-        throw std::system_error(ERROR_NOACCESS, std::system_category());
-    }
-
-#elif defined(ICU_FOUND)
-    UErrorCode status = U_ZERO_ERROR;
-
-    // Create a converter for the code page specified by the caller.
-    std::unique_ptr<UConverter, decltype(&::ucnv_close)> conv(
-        ::ucnv_open(code_page, &status), ::ucnv_close);
-    if (U_FAILURE(status)) {
-        throw std::system_error(status, detail::icu_category());
-    }
-
-    // From https://unicode-org.github.io/icu/userguide/strings/: "The Unicode
-    // standard defines a default encoding based on 16-bit code units. This is
-    // supported in ICU by the definition of the UChar to be an unsigned 16-bit
-    // integer type. This is the base type for character arrays for strings in
-    // ICU." This means that libicu is using UTF-16 like Win32. Unfortunately,
-    // wchar_t is UTF-32 on Linux, which means that we first need to convert to
-    // UTF-16 in 'unicode' and from there to UTF-32. Even more unfortunate, we
-    // need to do both conversions even for measuring the output buffer. While
-    // it is highly unlikely that users of the library will use characters that
-    // require two UTF-16 code units, relying on that would be similar to the
-    // "MegaMol way" of "defining" that all strings are UTF-8 and hoping that
-    // callers are using only 7-bit ASCII for it to actually work ...
-    icu::UnicodeString unicode(src, s, conv.get(), status);
-    if (U_FAILURE(status)) {
-        throw std::system_error(status, detail::icu_category());
-    }
-
-    // Convert from UTF-16 to UTF-32.
-    auto retval = unicode.toUTF32(reinterpret_cast<UChar32 *>(dst),
-        static_cast<std::int32_t>(cnt_dst), status);
-    switch (status) {
-        case U_ZERO_ERROR:
-        case U_BUFFER_OVERFLOW_ERROR:
-            break;
-
-        default:
-            throw std::system_error(status, detail::icu_category());
-    }
-
-    return retval;
-#else /* defined(_WIN32) */
-#error "libicu is required on non-Windows systems."
-#endif /* defined(_WIN32) */
-}
-
-
-/*
- * FPD_NAMESPACE::convert_string
- */
-inline std::size_t FPD_NAMESPACE::convert_string(
+template<class TUnicode>
+std::enable_if_t<sizeof(TUnicode) == sizeof(FPD_NAMESPACE::utf16_type)
+    && std::is_same_v<TUnicode, FPD_NAMESPACE::utf16_type>, std::size_t>
+FPD_NAMESPACE::convert_string(
         _Out_writes_to_opt_(cnt_dst, return) char *dst,
         _In_ std::size_t cnt_dst,
-        _In_reads_or_z_(cnt_src) const char16_t *src,
-        _In_ const std::ptrdiff_t cnt_src,
-        _In_ const code_page code_page) {
+        _In_reads_or_z_(cnt_src) const TUnicode *src,
+        _In_ int cnt_src,
+        _In_opt_z_ const code_page code_page) {
+    if (dst == nullptr) {
+        // Make sure that the output buffer size is zero if the output
+        // buffer is invalid, such that we get the required buffer size.
+        cnt_dst = 0;
+    }
     if (src == nullptr) {
-        throw std::invalid_argument("The string to be converted cannot be "
-            "null.");
+        // Likewise, if the source is invalid, bail out directly.
+        return 0;
     }
 
-    const auto s = static_cast<int>(cnt_src);
+    if ((cnt_src < 0) && (src != nullptr)) {
+        // User requested us to measure the input, do so now.
+        cnt_src = static_cast<int>(std::char_traits<TUnicode>::length(src)) + 1;
+    }
 
-#if defined(_WIN32)
-    static_assert(sizeof(wchar_t) == sizeof(char16_t), "wchar_t is UTF-16.");
-    return convert_string(dst, cnt_dst,
-        reinterpret_cast<const wchar_t *>(src), cnt_src,
-        code_page);
+    assert(src != nullptr);
+    assert(cnt_src > 0);
 
-#elif defined(ICU_FOUND)
-    icu::UnicodeString unicode(src);
-    UErrorCode status = U_ZERO_ERROR;
+    auto status = U_ZERO_ERROR;
 
     // Create a converter for the code page specified by the caller.
     std::unique_ptr<UConverter, decltype(&::ucnv_close)> conv(
         ::ucnv_open(code_page, &status), ::ucnv_close);
-    if (U_FAILURE(status)) {
-        throw std::system_error(status, detail::icu_category());
+    detail::throw_if_icu_failed(status);
+
+    // Perform a stream conversion, possibly into an intermediate buffer just
+    // for measuring.
+    auto cur_dst = dst;
+    auto dst_end = dst + cnt_dst;
+    auto cur_src = reinterpret_cast<const utf16_type *>(src);
+    auto src_end = cur_src + cnt_src;
+
+    ::ucnv_fromUnicode(conv.get(),
+        &cur_dst, dst_end,
+        &cur_src, src_end,
+        nullptr, true, &status);
+
+    auto retval = (cur_dst - dst);
+
+    if (status == U_BUFFER_OVERFLOW_ERROR) {
+        // If the output buffer was too small, create an intermediate one and
+        // measure how much we need. ICU typically uses 1024 for this case, so
+        // we do so, too.
+        std::array<char, 1024> buffer;
+        dst_end = buffer.data() + buffer.size();
+
+        do {
+            cur_dst = buffer.data();
+            status = U_ZERO_ERROR;
+            ::ucnv_fromUnicode(conv.get(),
+                &cur_dst, dst_end,
+                &cur_src, src_end,
+                nullptr, true, &status);
+            retval += cur_dst - buffer.data();
+        } while (status == U_BUFFER_OVERFLOW_ERROR);
     }
 
-    // Extract using the converter.
-    auto retval = unicode.extract(dst, static_cast<std::int32_t>(cnt_dst),
-        conv.get(), status);
-    switch (status) {
-        case U_ZERO_ERROR:
-        case U_BUFFER_OVERFLOW_ERROR:
-            break;
-
-        default:
-            throw std::system_error(status, detail::icu_category());
-    }
+    // If we are still in an error state here, something other than too little
+    // output storage must have gone wrong.
+    detail::throw_if_icu_failed(status);
 
     return retval;
-#else /* defined(_WIN32) */
-#error "libicu is required on non-Windows systems."
-#endif /* defined(_WIN32) */
 }
 
 
 /*
  * FPD_NAMESPACE::convert_string
  */
-inline std::size_t FPD_NAMESPACE::convert_string(
+template<class TUnicode>
+std::enable_if_t<sizeof(TUnicode) == sizeof(char32_t), std::size_t>
+FPD_NAMESPACE::convert_string(
         _Out_writes_to_opt_(cnt_dst, return) char *dst,
         _In_ std::size_t cnt_dst,
-        _In_reads_or_z_(cnt_src) const wchar_t *src,
-        _In_ const std::ptrdiff_t cnt_src,
-        _In_ const code_page code_page) {
-    if (src == nullptr) {
-        throw std::invalid_argument("The string to be converted cannot be "
-            "null.");
+        _In_reads_or_z_(cnt_src) const TUnicode *src,
+        _In_ int cnt_src,
+        _In_opt_z_ const code_page code_page) {
+    static constexpr auto wchar_code_page = (endian::system == endian::big)
+        ? code_pages::utf32be
+        : code_pages::utf32le;
+
+    auto s = reinterpret_cast<const std::uint8_t *>(src);
+    if (cnt_src > 0) {
+        cnt_src *= sizeof(char32_t);
     }
 
-    const auto s = static_cast<int>(cnt_src);
-
-#if defined(_WIN32)
-    _try {
-        if (dst == nullptr) {
-            // Make sure that the output buffer size is zero if the output
-            // buffer is invalid, such that we get the required buffer size.
-            cnt_dst = 0;
-        }
-
-        BOOL replacement = FALSE;
-        const auto cp = static_cast<UINT>(code_page);
-        const auto r = ((cp != CP_UTF7) && (cp != CP_UTF8))
-            ? &replacement
-            : nullptr;
-
-        auto retval = ::WideCharToMultiByte(cp,
-            0,
-            src, s,
-            dst, static_cast<int>(cnt_dst),
-            nullptr, r);
-
-        if (retval <= 0) {
-            auto error = ::GetLastError();
-            throw std::system_error(error, std::system_category());
-        }
-
-        if (replacement) {
-            // The input cannot be represented in the requested code page.
-            throw std::system_error(ERROR_INVALID_PARAMETER,
-                std::system_category());
-        }
-
-        return retval;
-    } _except(EXCEPTION_EXECUTE_HANDLER) {
-        throw std::system_error(ERROR_NOACCESS, std::system_category());
-    }
-
-#elif defined(ICU_FOUND)
-    static_assert(sizeof(wchar_t) == sizeof(UChar32), "wchar_t is UTF-32.");
-    UErrorCode status = U_ZERO_ERROR;
-
-    // Create a UnicodeString, which we can subsequently convert to whatever
-    // code page the user requested.
-    auto unicode = icu::UnicodeString::fromUTF32(
-        reinterpret_cast<const UChar32 *>(src), s);
-    if (U_FAILURE(status)) {
-        throw std::system_error(status, detail::icu_category());
-    }
-
-    // Create a converter for the code page specified by the caller.
-    std::unique_ptr<UConverter, decltype(&::ucnv_close)> conv(
-        ::ucnv_open(code_page, &status), ::ucnv_close);
-    if (U_FAILURE(status)) {
-        throw std::system_error(status, detail::icu_category());
-    }
-
-    // Extract using the converter
-    auto retval = unicode.extract(dst, static_cast<std::int32_t>(cnt_dst),
-        conv.get(), status);
-    switch (status) {
-        case U_ZERO_ERROR:
-        case U_BUFFER_OVERFLOW_ERROR:
-            break;
-
-        default:
-            throw std::system_error(status, detail::icu_category());
-    }
-
-    return retval;
-#else /* defined(_WIN32) */
-#error "libicu is required on non-Windows systems."
-#endif /* defined(_WIN32) */
+    return convert_string(dst, cnt_dst, code_page, s, cnt_src, wchar_code_page);
 }
 
 
@@ -376,22 +221,116 @@ std::size_t FPD_NAMESPACE::convert_string(
         _Out_writes_to_opt_(cnt_dst, return) TChar *dst,
         _In_ const std::size_t cnt_dst,
         _In_reads_or_z_(cnt_src) const TChar *src,
-        _In_ std::ptrdiff_t cnt_src,
+        _In_ int cnt_src,
         _In_ const code_page code_page) {
+    if (dst == nullptr) {
+        // Make sure that the output buffer size is zero if the output
+        // buffer is invalid, such that we get the required buffer size.
+        cnt_dst = 0;
+    }
     if (src == nullptr) {
-        throw std::invalid_argument("The string to be converted cannot be "
-            "null.");
+        // Likewise, if the source is invalid, bail out directly.
+        return 0;
     }
 
-    if (cnt_src < 0) {
+    if ((cnt_src < 0) && (src != nullptr)) {
+        // User requested us to measure the input, do so now.
         cnt_src = std::char_traits<TChar>::length(src) + 1;
     }
 
-    if (dst != nullptr) {
-        assert(cnt_src >= 0);
-        const auto cnt = (std::min)(cnt_dst, static_cast<std::size_t>(cnt_src));
-        ::memcpy(dst, src, cnt * sizeof(TChar));
-    }
+    const auto cnt = (std::min)(cnt_dst, static_cast<std::size_t>(cnt_src));
+    ::memcpy(dst, src, cnt * sizeof(TChar));
 
     return cnt_src;
+}
+
+
+
+/*
+ * FPD_NAMESPACE::convert_string
+ */
+template<class TTo, class TFrom>
+typename std::enable_if<(sizeof(TTo) == 1) && (sizeof(TFrom) == 1),
+    std::size_t>::type
+FPD_NAMESPACE::convert_string(
+        _Out_writes_to_opt_(cnt_dst, return) TTo *dst,
+        _In_ std::size_t cnt_dst,
+        _In_opt_z_ const code_page dst_code_page,
+        _In_reads_or_z_(cnt_src) const TFrom *src,
+        _In_ int cnt_src,
+        _In_opt_z_ const code_page src_code_page) {
+    if (dst == nullptr) {
+        // Make sure that the output buffer size is zero if the output
+        // buffer is invalid, such that we get the required buffer size.
+        cnt_dst = 0;
+    }
+    if (src == nullptr) {
+        // Likewise, if the source is invalid, bail out directly.
+        return 0;
+    }
+
+    assert(src != nullptr);
+    assert(cnt_dst <= (std::numeric_limits<std::int32_t>::max)());
+    assert(cnt_src <= (std::numeric_limits<std::int32_t>::max)());
+    auto status = U_ZERO_ERROR;
+
+    auto retval = ::ucnv_convert(dst_code_page, src_code_page,
+        reinterpret_cast<char *>(dst), static_cast<std::int32_t>(cnt_dst),
+        reinterpret_cast<const char *>(src), static_cast<int32_t>(cnt_src),
+        &status);
+
+    if ((status != U_BUFFER_OVERFLOW_ERROR) || (cnt_dst > 0)) {
+        // Throw if an error other than insufficient was encountered.
+        detail::throw_if_icu_failed(status);
+    }
+
+    return retval;
+}
+
+
+
+/*
+ * FPD_NAMESPACE::convert_string
+ */
+template<class TDstChar, class TSrcChar>
+std::basic_string<TDstChar> FPD_NAMESPACE::convert_string(
+        _In_reads_or_z_(cnt_src) const TSrcChar *src,
+        _In_ int cnt_src,
+        _In_ const code_page code_page) {
+    const auto cnt_dst = measure_string<TDstChar>(src, cnt_src, code_page);
+    std::basic_string<TDstChar> retval(cnt_dst, static_cast<TDstChar>(0));
+
+    if (cnt_dst > 0) {
+        convert_string(
+            std::addressof(retval[0]), cnt_dst,
+            src, cnt_src,
+            code_page);
+        auto end = std::remove(retval.begin(),
+            retval.end(),
+            static_cast<TDstChar>(0));
+        retval.erase(end, retval.end());
+    }
+
+    return retval;
+}
+
+
+/*
+ * FPD_NAMESPACE::convert_string
+ */
+template<class TChar>
+std::basic_string<TChar> FPD_NAMESPACE::convert_string(
+        _In_reads_or_z_(cnt_src) const TChar *src,
+        _In_ int cnt_src,
+        _In_ const code_page code_page) {
+    if ((src == nullptr) || (cnt_src == 0)) {
+        return std::basic_string<TChar>();
+    }
+
+    if (cnt_src < 0) {
+        return src;
+    }
+
+    assert(cnt_src <= std::char_traits<TChar>::length(src));
+    return std::basic_string<TChar>(src, cnt_src);
 }

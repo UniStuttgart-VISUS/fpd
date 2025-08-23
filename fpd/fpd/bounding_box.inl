@@ -1,5 +1,5 @@
 ﻿// <copyright file="bounding_box.inl" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
@@ -14,7 +14,7 @@ FPD_NAMESPACE::bounding_box::bounding_box(
         _In_ const TValue min_x, _In_ const TValue min_y,
         _In_ const TValue min_z, _In_ const TValue max_x,
         _In_ const TValue max_y, _In_ const TValue max_z)
-        : _format(format_reverse_traits<TValue>::format) {
+        : _format(detail::format_v<TValue>) {
     if (!std::is_arithmetic<TValue>::value
             || (to_components(this->_format) != 1)) {
         throw std::logic_error("A bounding box must comprise only scalar "
@@ -39,7 +39,7 @@ FPD_NAMESPACE::bounding_box::bounding_box(
  */
 template<class TValue>
 TValue FPD_NAMESPACE::bounding_box::get(_In_ const value v) const {
-    if (format_reverse_traits<TValue>::format != this->_format) {
+    if (detail::format_v<TValue> != this->_format) {
         throw std::logic_error("The requested format of the values does "
             "not match their actual format.");
     }

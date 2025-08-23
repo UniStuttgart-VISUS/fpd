@@ -1,9 +1,11 @@
 ﻿// <copyright file="endian.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
+#if !defined(_FPD_ENDIAN_H)
+#define _FPD_ENDIAN_H
 #pragma once
 
 #include "fpd/swap_bytes.h"
@@ -38,7 +40,6 @@ enum class endian : std::uint16_t {
     /// Endian of the system the code is running on.
     /// </summary>
     system = '\1\2'
-
 };
 
 
@@ -145,6 +146,7 @@ template<class TValue> void swap_endian(_Inout_updates_(cnt) TValue *values,
     }
 }
 
+
 /// <summary>
 /// Interprets <paramref name="value" /> as <typeparamref name="TValue" /> and
 /// swaps its byte order if <paramref name="endian" /> is valid and not equal to
@@ -191,3 +193,5 @@ inline TValue swap_enum_endian(_In_ const void *value,
 }
 
 FPD_NAMESPACE_END
+
+#endif /* !defined(_FPD_ENDIAN_H) */

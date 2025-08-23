@@ -1,9 +1,11 @@
 ﻿// <copyright file="abi.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
+#if !defined(_FPD_ABI_H_)
+#define _FPD_ABI_H_
 #pragma once
 
 #include <cinttypes>
@@ -54,3 +56,24 @@
 /// Marks the end of the current ABI namespace.
 /// </summary>
 #define FPD_NAMESPACE_END } }
+
+
+/// <summary>
+/// Create the name of the current namespace for implementation details
+/// </summary>
+#define FPD_DETAIL_NAMESPACE FPD_NAMESPACE::detail
+
+
+/// <summary>
+/// Marks the begin of the current namespace for implementation details.
+/// </summary>
+#define FPD_DETAIL_NAMESPACE_BEGIN FPD_NAMESPACE_BEGIN\
+    namespace detail {
+
+
+/// <summary>
+/// Marks the end of the current namespace for implementation details.
+/// </summary>
+#define FPD_DETAIL_NAMESPACE_END } FPD_NAMESPACE_END
+
+#endif /* !defined(_FPD_ABI_H_) */

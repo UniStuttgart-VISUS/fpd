@@ -483,7 +483,10 @@ FPD_NAMESPACE::meta_data<TChar>::to_string(_In_ const char16_t *begin,
     swap_endian(string.data(), begin, string.size(), this->endian());
 
     // Convert the character type or the meta data.
-    return convert_string<char_type>(string.data(), string.size(),
+    assert(string.size() <= static_cast<std::size_t>(INT_MAX));
+    return convert_string<char_type>(
+        string.data(),
+        static_cast<int>(string.size()),
         this->code_page());
 }
 

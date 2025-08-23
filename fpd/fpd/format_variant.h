@@ -1,9 +1,11 @@
 ﻿// <copyright file="format_variant.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 - 2024 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
+#if !defined(_FPD_FORMAT_VARIANT_H)
+#define _FPD_FORMAT_VARIANT_H
 #pragma once
 
 #include <array>
@@ -17,6 +19,46 @@
 #include "fpd/type_list.h"
 
 
+FPD_DETAIL_NAMESPACE_BEGIN
+
+template<class TValue> struct format_value_ctor final {
+
+    template<class TArg>
+    typename std::enable_if<std::is_convertible<TValue, TArg>::value>::type
+    operator ()(_In_ TValue *target, _In_ TArg&& value) {
+        assert(target != nullptr);
+        new (target) TValue(static_cast<TValue>(value));
+    }
+
+    template<class TArg>
+    typename std::enable_if<!std::is_convertible<TValue, TArg>::value>::type
+    operator ()(_In_ TValue *target, _In_ TArg&& value) {
+        assert(target != nullptr);
+        assert(false);  // This should never be called by invoke.
+        new (target) TValue();
+    }
+};
+
+template<class TValue> struct format_value_runtime_ctor final {
+    inline void operator ()(_In_ TValue *target,
+            _In_reads_(cnt) const void *value,
+            _In_ std::size_t cnt) {
+        assert(target != nullptr);
+        assert(cnt >= sizeof(TValue));
+        new (target) TValue(*reinterpret_cast<const TValue *>(value));
+    }
+};
+
+template<class TValue> struct format_value_dtor final {
+    inline void operator ()(TValue *target) noexcept {
+        assert(target != nullptr);
+        target->~TValue();
+    }
+};
+
+FPD_DETAIL_NAMESPACE_END
+
+
 FPD_NAMESPACE_BEGIN
 
 /// <summary>
@@ -26,47 +68,6 @@ FPD_NAMESPACE_BEGIN
 /// <typeparam name="Formats">An instantiation of <see name="format_list" />
 /// specifying all formats that can be stored in the variant.</typeparam>
 template<class Formats> class basic_format_variant;
-
-
-namespace detail {
-
-    template<class TValue> struct format_value_ctor final {
-
-        template<class TArg>
-        typename std::enable_if<std::is_convertible<TValue, TArg>::value>::type
-        operator ()(_In_ TValue *target, _In_ TArg&& value) {
-            assert(target != nullptr);
-            new (target) TValue(static_cast<TValue>(value));
-        }
-
-        template<class TArg>
-        typename std::enable_if<!std::is_convertible<TValue, TArg>::value>::type
-        operator ()(_In_ TValue *target, _In_ TArg&& value) {
-            assert(target != nullptr);
-            assert(false);  // This should never be called by invoke.
-            new (target) TValue();
-        }
-    };
-
-    template<class TValue> struct format_value_runtime_ctor final {
-        inline void operator ()(_In_ TValue *target,
-                _In_reads_(cnt) const void *value,
-                _In_ std::size_t cnt) {
-            assert(target != nullptr);
-            assert(cnt >= sizeof(TValue));
-            new (target) TValue(*reinterpret_cast<const TValue *>(value));
-        }
-    };
-
-    template<class TValue> struct format_value_dtor final {
-        inline void operator ()(TValue *target) noexcept {
-            assert(target != nullptr);
-            target->~TValue();
-        }
-    };
-
-} /* namespace detail */
-
 
 /// <summary>
 /// A variant type that can hold variables matching all of the given
@@ -116,7 +117,7 @@ public:
     inline basic_format_variant(_In_ TValue&& value,
             _In_opt_ typename std::enable_if<
             is_supported_type<formats, TValue>::value>::type * = nullptr)
-            : _format(format_reverse_traits<TValue>::format) {
+            : _format(detail::format_reverse_traits<TValue>::format) {
         assert(this->supports(this->_format));
         this->invoke<detail::format_value_ctor>(std::forward<TValue>(value));
     }
@@ -190,8 +191,10 @@ public:
     /// <exception cref="std::logic_error">If <typeparamref name="Format" /> is
     /// not the format of the current value in the variant.</exception>
     template<format_type Format>
-    inline const typename format_forward_traits<Format>::type& get(void) const {
-        return this->get<typename format_forward_traits<Format>::type>();
+    inline const typename detail::format_forward_traits<Format>::type& get(
+            void) const {
+        typedef typename detail::format_forward_traits<Format>::type value_type;
+        return this->get<value_type>();
     }
 
     /// <summary>
@@ -201,8 +204,9 @@ public:
     /// <exception cref="std::logic_error">If <typeparamref name="Format" /> is
     /// not the format of the current value in the variant.</exception>
     template<format_type Format>
-    inline typename format_forward_traits<Format>::type& get(void) {
-        return this->get<typename format_forward_traits<Format>::type>();
+    inline typename detail::format_forward_traits<Format>::type& get(void) {
+        typedef typename detail::format_forward_traits<Format>::type value_type;
+        return this->get<value_type>();
     }
 
     /// <summary>
@@ -273,9 +277,10 @@ public:
     /// <returns>The value of the variant, or <c>nullptr</c> if the value does
     /// not have the requested format.</returns>
     template<format_type Format>
-    inline const typename format_forward_traits<Format>::type *try_get(
+    inline const typename detail::format_forward_traits<Format>::type *try_get(
             void) const noexcept {
-        return this->try_get<typename format_forward_traits<Format>::type>();
+        typedef typename detail::format_forward_traits<Format>::type value_type;
+        return this->try_get<value_type>();
     }
 
     /// <summary>
@@ -284,9 +289,10 @@ public:
     /// <returns>The value of the variant, or <c>nullptr</c> if the value does
     /// not have the requested format.</returns>
     template<format_type Format>
-    inline typename format_forward_traits<Format>::type *try_get(
+    inline typename detail::format_forward_traits<Format>::type *try_get(
             void) noexcept {
-        return this->try_get<typename format_forward_traits<Format>::type>();
+        typedef typename detail::format_forward_traits<Format>::type value_type;
+        return this->try_get<value_type>();
     }
 
     /// <summary>
@@ -298,7 +304,7 @@ public:
     /// not have the requested type.</returns>
     template<class TValue> inline const TValue *try_get(void) const noexcept {
         auto retval = static_cast<bool>(*this) ? this->_data.data() : nullptr;
-        return (format_reverse_traits<TValue>::format == this->_format)
+        return (detail::format_reverse_traits<TValue>::format == this->_format)
             ? reinterpret_cast<const TValue *>(retval)
             : nullptr;
     }
@@ -312,7 +318,7 @@ public:
     /// not have the requested type.</returns>
     template<class TValue> inline TValue *try_get(void) noexcept {
         auto retval = static_cast<bool>(*this) ? this->_data.data() : nullptr;
-        return (format_reverse_traits<TValue>::format == this->_format)
+        return (detail::format_reverse_traits<TValue>::format == this->_format)
             ? reinterpret_cast<TValue *>(retval)
             : nullptr;
     }
@@ -355,7 +361,7 @@ public:
         basic_format_variant>::type&
     operator =(_In_ TValue&& value) {
         this->invoke<detail::format_value_dtor>();
-        this->_format = format_reverse_traits<TValue>::format;
+        this->_format = detail::format_reverse_traits<TValue>::format;
         assert(this->supports(this->_format));
         this->invoke<detail::format_value_ctor>(std::forward<TValue>(value));
         return *this;
@@ -412,3 +418,5 @@ typedef basic_format_variant<formats> format_variant;
 FPD_NAMESPACE_END
 
 #include "fpd/format_variant.inl"
+
+#endif /* !defined(_FPD_FORMAT_VARIANT_H) */

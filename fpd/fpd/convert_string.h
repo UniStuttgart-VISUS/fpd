@@ -1,182 +1,292 @@
 ﻿// <copyright file="convert_string.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 - 2024 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <cassert>
+#include <memory>
 #include <string>
-#include <system_error>
-
-#if defined(ICU_FOUND)
-#include <unicode/ucnv.h>
-#include <unicode/unistr.h>
-#include <unicode/ustring.h>
-#include <unicode/utypes.h>
-#endif /* defined(ICU_FOUND) */
+#include <type_traits>
 
 #include "fpd/code_page.h"
+#include "fpd/endian.h"
 #include "fpd/icu_category.h"
 
 
 FPD_NAMESPACE_BEGIN
 
+#if defined(_WIN32) && (NTDDI_VERSION < NTDDI_WIN10_RS2)
 /// <summary>
-/// Converts a wide string to UTF-16.
+/// The representation of a UTF-16 code unit.
 /// </summary>
-/// <param name="dst">A buffer to receive the output that can hold at least
-/// <paramref name="cnt_dst" /> characters. This can be <c>nullptr</c> if
-/// <paramref name="cnt_dst" /> is zero.</param>
-/// <param name="cnt_dst">The number of elements that can be stored to
-/// <paramref name="dst" />.</param>
-/// <param name="src">The source string.</param>
-/// <param name="cnt_src">The length of the source string, which can be negative
-/// if <paramref name="src" /> is null-terminated.</param>
-/// <param name="code_page">This parameter is unused and is only for API
-/// compatibility.</param>
-/// <returns>The number of characters required for the output string,
-/// including the terminating zero.</returns>
-/// <exception cref="std::invalid_argument">If <paramref name="src" /> is
-/// <c>nullptr</c>.</exception>
-/// <exception cref="std::system_error">If the conversion failed.
-/// </exception>
-std::size_t convert_string(_Out_writes_to_opt_(cnt_dst, return) char16_t *dst,
-    _In_ std::size_t cnt_dst,
-    _In_reads_or_z_(cnt_src) const wchar_t *src,
-    _In_ const std::ptrdiff_t cnt_src,
-    _In_ const code_page code_page);
+/// <remarks>
+/// From https://unicode-org.github.io/icu/userguide/strings/: &quot;The Unicode
+/// standard defines a default encoding based on 16-bit code units. This is
+/// supported in ICU by the definition of the UChar to be an unsigned 16-bit
+/// integer type. This is the base type for character arrays for strings in
+/// ICU.&quot; This means that libicu is using UTF-16 like Win32 wherefore we
+/// need an intermediate step via <c>char16_t</c> on Linux. This typedef ensures
+/// that we can have the same interface declarations on all platforms.
+/// </remarks>
+typedef wchar_t utf16_type;
 
+#else /* defined(_WIN32) && (NTDDI_VERSION < NTDDI_WIN10_RS2) */
 /// <summary>
-/// Converts a UTF-16 string to a wide string.
+/// The representation of a UTF-16 code unit.
 /// </summary>
-/// <param name="dst">A buffer to receive the output that can hold at least
-/// <paramref name="cnt_dst" /> characters. This can be <c>nullptr</c> if
-/// <paramref name="cnt_dst" /> is zero.</param>
-/// <param name="cnt_dst">The number of elements that can be stored to
-/// <paramref name="dst" />.</param>
-/// <param name="src">The source string.</param>
-/// <param name="cnt_src">The length of the source string, which can be negative
-/// if <paramref name="src" /> is null-terminated.</param>
-/// <param name="code_page">The code page used for the narrow string.</param>
-/// <returns>The number of characters required for the output string,
-/// including the terminating zero.</returns>
-/// <exception cref="std::invalid_argument">If <paramref name="src" /> is
-/// <c>nullptr</c>.</exception>
-/// <exception cref="std::system_error">If the conversion failed.
-/// </exception>
-std::size_t convert_string(_Out_writes_to_opt_(cnt_dst, return) wchar_t *dst,
-    _In_ std::size_t cnt_dst,
-    _In_reads_or_z_(cnt_src) const char16_t *src,
-    _In_ const std::ptrdiff_t cnt_src,
-    _In_ const code_page code_page);
+/// <remarks>
+/// From https://unicode-org.github.io/icu/userguide/strings/: &quot;The Unicode
+/// standard defines a default encoding based on 16-bit code units. This is
+/// supported in ICU by the definition of the UChar to be an unsigned 16-bit
+/// integer type. This is the base type for character arrays for strings in
+/// ICU.&quot; This means that libicu is using UTF-16 like Win32 wherefore we
+/// need an intermediate step via <c>char16_t</c> on Linux. This typedef ensures
+/// that we can have the same interface declarations on all platforms.
+/// </remarks>
+typedef char16_t utf16_type;
+#endif /* defined(_WIN32) && (NTDDI_VERSION < NTDDI_WIN10_RS2) */
+
 
 /// <summary>
 /// Converts a multi-byte string of the given encoding into an UTF-16
 /// string.
 /// </summary>
+/// <typeparam name="TUnicode">The type used to represent a UTF-16 character,
+/// which must be <see cref="utf16_type" /> or a binary compatible type. On
+/// Windows, this can be <c>wchar_t</c>, but on Linux, it cannot as it uses
+/// UTF-32 for <c>wchar_t</c>.</typeparam>
 /// <param name="dst">A buffer to receive the output that can hold at least
-/// <paramref name="cnt_dst" /> characters. This can be <c>nullptr</c> if
-/// <paramref name="cnt_dst" /> is zero.</param>
+/// <paramref name="cnt_dst" /> characters. This can be
+/// <see langword="nullptr" /> if <paramref name="cnt_dst" /> is zero.</param>
 /// <param name="cnt_dst">The number of elements that can be stored to
 /// <paramref name="dst" />.</param>
 /// <param name="src">The source string.</param>
-/// <param name="cnt_src">The length of the source string, which can be negative
+/// <param name="cnt_src">The length of the source string, which can be -1
 /// if <paramref name="src" /> is null-terminated.</param>
-/// <param name="code_page">The code page used for the narrow string.</param>
+/// <param name="encoding">The code page used for the narrow string.</param>
 /// <returns>The number of characters required for the output string,
 /// including the terminating zero.</returns>
-/// <exception cref="std::invalid_argument">If <paramref name="src" /> is
-/// <c>nullptr</c>.</exception>
 /// <exception cref="std::system_error">If the conversion failed.
 /// </exception>
-std::size_t convert_string(_Out_writes_to_opt_(cnt_dst, return) char16_t *dst,
+template<class TUnicode>
+std::enable_if_t<sizeof(TUnicode) == sizeof(utf16_type)
+    && std::is_same_v<TUnicode, utf16_type>, std::size_t>
+convert_string(_Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
     _In_ std::size_t cnt_dst,
     _In_reads_or_z_(cnt_src) const char *src,
-    _In_ const std::ptrdiff_t cnt_src,
-    _In_ const code_page code_page);
+    _In_ int cnt_src,
+    _In_opt_z_ const code_page code_page);
+
 
 /// <summary>
-/// Converts a multi-byte string of the given encoding into a wide
+/// Converts a multi-byte string of the given encoding into an UTF-16
 /// string.
 /// </summary>
+/// <typeparam name="TUnicode">The type used to represent a UTF-16 character,
+/// which must be <see cref="utf16_type" /> or a binary compatible type. On
+/// Windows, this can be <c>wchar_t</c>, but on Linux, it cannot as it uses
+/// UTF-32 for <c>wchar_t</c>.</typeparam>
 /// <param name="dst">A buffer to receive the output that can hold at least
-/// <paramref name="cnt_dst" /> characters. This can be <c>nullptr</c> if
-/// <paramref name="cnt_dst" /> is zero.</param>
+/// <paramref name="cnt_dst" /> characters. This can be
+/// <see langword="nullptr" /> if <paramref name="cnt_dst" /> is zero.</param>
 /// <param name="cnt_dst">The number of elements that can be stored to
 /// <paramref name="dst" />.</param>
 /// <param name="src">The source string.</param>
-/// <param name="cnt_src">The length of the source string, which can be negative
+/// <param name="cnt_src">The length of the source string, which can be -1
 /// if <paramref name="src" /> is null-terminated.</param>
-/// <param name="code_page">The code page used for the narrow string.</param>
+/// <param name="encoding">The code page used for the narrow string.</param>
 /// <returns>The number of characters required for the output string,
 /// including the terminating zero.</returns>
-/// <exception cref="std::invalid_argument">If <paramref name="src" /> is
-/// <c>nullptr</c>.</exception>
 /// <exception cref="std::system_error">If the conversion failed.
 /// </exception>
-std::size_t convert_string(_Out_writes_to_opt_(cnt_dst, return) wchar_t *dst,
+template<class TUnicode>
+inline std::enable_if_t<sizeof(TUnicode) == sizeof(utf16_type)
+    && !std::is_same_v<TUnicode, utf16_type>, std::size_t>
+convert_string(_Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
+        _In_ std::size_t cnt_dst,
+        _In_reads_or_z_(cnt_src) const char *src,
+        _In_ int cnt_src,
+        _In_opt_z_ const code_page code_page) {
+    return convert_string(reinterpret_cast<utf16_type *>(dst), cnt_dst,
+        src, cnt_src,
+        code_page);
+}
+
+
+/// <summary>
+/// Converts a multi-byte string of the given encoding into an UTF-32
+/// string.
+/// </summary>
+/// <typeparam name="TUnicode">The type used to represent a UTF-16 character,
+/// which must be <see cref="utf16_type" /> or a binary compatible type. On
+/// Windows, this can be <c>wchar_t</c>, but on Linux, it cannot as it uses
+/// UTF-32 for <c>wchar_t</c>.</typeparam>
+/// <param name="dst">A buffer to receive the output that can hold at least
+/// <paramref name="cnt_dst" /> characters. This can be
+/// <see langword="nullptr" /> if <paramref name="cnt_dst" /> is zero.</param>
+/// <param name="cnt_dst">The number of elements that can be stored to
+/// <paramref name="dst" />.</param>
+/// <param name="src">The source string.</param>
+/// <param name="cnt_src">The length of the source string, which can be -1
+/// if <paramref name="src" /> is null-terminated.</param>
+/// <param name="encoding">The code page used for the narrow string.</param>
+/// <returns>The number of characters required for the output string,
+/// including the terminating zero.</returns>
+/// <exception cref="std::system_error">If the conversion failed.
+/// </exception>
+template<class TUnicode>
+std::enable_if_t<sizeof(TUnicode) == sizeof(char32_t), std::size_t>
+convert_string(_Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
     _In_ std::size_t cnt_dst,
     _In_reads_or_z_(cnt_src) const char *src,
-    _In_ const std::ptrdiff_t cnt_src,
-    _In_ const code_page code_page);
+    _In_ int cnt_src,
+    _In_opt_z_ const code_page code_page);
+
 
 /// <summary>
 /// Converts a UTF-16 string to a string of the given encoding.
 /// </summary>
+/// <typeparam name="TUnicode">The type used to represent a UTF-16 character,
+/// which must be <see cref="utf16_type" /> or a binary compatible type. On
+/// Windows, this can be <c>wchar_t</c>, but on Linux, it cannot as it uses
+/// UTF-32 for <c>wchar_t</c>.</typeparam>
 /// <param name="dst">A buffer to receive the output that can hold at least
-/// <paramref name="cnt_dst" /> characters. This can be <c>nullptr</c> if
-/// <paramref name="cnt_dst" /> is zero.</param>
+/// <paramref name="cnt_dst" /> characters. This can be
+/// <see langword="nullptr" /> if <paramref name="cnt_dst" /> is zero.</param>
 /// <param name="cnt_dst">The number of elements that can be stored to
 /// <paramref name="dst" />.</param>
 /// <param name="src">The source string.</param>
-/// <param name="cnt_src">The length of the source string, which can be negative
+/// <param name="cnt_src">The length of the source string, which can be -1
 /// if <paramref name="src" /> is null-terminated.</param>
-/// <param name="code_page">The code page used for the narrow string.</param>
+/// <param name="encoding">The code page used for the narrow string.</param>
 /// <returns>The number of characters required for the output string,
 /// including the terminating zero.</returns>
-/// <exception cref="std::invalid_argument">If <paramref name="src" /> is
-/// <c>nullptr</c>.</exception>
 /// <exception cref="std::system_error">If the conversion failed.
 /// </exception>
-std::size_t convert_string(_Out_writes_to_opt_(cnt_dst, return) char *dst,
+template<class TUnicode>
+std::enable_if_t<sizeof(TUnicode) == sizeof(char16_t)
+    && std::is_same_v<TUnicode, utf16_type>, std::size_t>
+convert_string(_Out_writes_to_opt_(cnt_dst, return) char *dst,
     _In_ std::size_t cnt_dst,
-    _In_reads_or_z_(cnt_src) const char16_t *src,
-    _In_ const std::ptrdiff_t cnt_src,
-    _In_ const code_page code_page);
+    _In_reads_or_z_(cnt_src) const TUnicode *src,
+    _In_ int cnt_src,
+    _In_opt_z_ const code_page code_page);
+
 
 /// <summary>
-/// Converts a wide string to a string of the given encoding.
+/// Converts a UTF-16 string to a string of the given encoding.
 /// </summary>
+/// <typeparam name="TUnicode">The type used to represent a UTF-16 character,
+/// which must be <see cref="utf16_type" /> or a binary compatible type. On
+/// Windows, this can be <c>wchar_t</c>, but on Linux, it cannot as it uses
+/// UTF-32 for <c>wchar_t</c>.</typeparam>
 /// <param name="dst">A buffer to receive the output that can hold at least
-/// <paramref name="cnt_dst" /> characters. This can be <c>nullptr</c> if
-/// <paramref name="cnt_dst" /> is zero.</param>
+/// <paramref name="cnt_dst" /> characters. This can be
+/// <see langword="nullptr" /> if <paramref name="cnt_dst" /> is zero.</param>
 /// <param name="cnt_dst">The number of elements that can be stored to
 /// <paramref name="dst" />.</param>
 /// <param name="src">The source string.</param>
-/// <param name="cnt_src">The length of the source string, which can be negative
+/// <param name="cnt_src">The length of the source string, which can be -1
 /// if <paramref name="src" /> is null-terminated.</param>
-/// <param name="code_page">The code page used for the narrow string.</param>
+/// <param name="encoding">The code page used for the narrow string.</param>
 /// <returns>The number of characters required for the output string,
 /// including the terminating zero.</returns>
-/// <exception cref="std::invalid_argument">If <paramref name="src" /> is
-/// <c>nullptr</c>.</exception>
 /// <exception cref="std::system_error">If the conversion failed.
 /// </exception>
-std::size_t convert_string(_Out_writes_to_opt_(cnt_dst, return) char *dst,
+template<class TUnicode>
+inline std::enable_if_t<sizeof(TUnicode) == sizeof(utf16_type)
+    && !std::is_same_v<TUnicode, utf16_type>, std::size_t>
+convert_string(_Out_writes_to_opt_(cnt_dst, return) char *dst,
+        _In_ std::size_t cnt_dst,
+        _In_reads_or_z_(cnt_src) const TUnicode *src,
+        _In_ int cnt_src,
+        _In_opt_z_ const code_page code_page) {
+    return convert_string(dst, cnt_dst,
+        reinterpret_cast<const utf16_type *>(src), cnt_src,
+        code_page);
+}
+
+
+/// <summary>
+/// Converts a UTF-32 string to a string of the given encoding.
+/// </summary>
+/// <typeparam name="TUnicode">The type used to represent a UTF-16 character,
+/// which must be <see cref="utf16_type" /> or a binary compatible type. On
+/// Windows, this can be <c>wchar_t</c>, but on Linux, it cannot as it uses
+/// UTF-32 for <c>wchar_t</c>.</typeparam>
+/// <param name="dst">A buffer to receive the output that can hold at least
+/// <paramref name="cnt_dst" /> characters. This can be
+/// <see langword="nullptr" /> if <paramref name="cnt_dst" /> is zero.</param>
+/// <param name="cnt_dst">The number of elements that can be stored to
+/// <paramref name="dst" />.</param>
+/// <param name="src">The source string.</param>
+/// <param name="cnt_src">The length of the source string, which can be -1
+/// if <paramref name="src" /> is null-terminated.</param>
+/// <param name="encoding">The code page used for the narrow string.</param>
+/// <returns>The number of characters required for the output string,
+/// including the terminating zero.</returns>
+/// <exception cref="std::system_error">If the conversion failed.
+/// </exception>
+template<class TUnicode>
+std::enable_if_t<sizeof(TUnicode) == sizeof(char32_t), std::size_t>
+convert_string(_Out_writes_to_opt_(cnt_dst, return) char *dst,
     _In_ std::size_t cnt_dst,
-    _In_reads_or_z_(cnt_src) const wchar_t *src,
-    _In_ const std::ptrdiff_t cnt_src,
-    _In_ const code_page code_page);
+    _In_reads_or_z_(cnt_src) const TUnicode *src,
+    _In_ int cnt_src,
+    _In_opt_z_ const code_page code_page);
+
+
+/// <summary>
+/// Convert a string from one encoding to another using an intermediate
+/// step via UTF-16.
+/// </summary>
+/// <remarks>
+/// <para>While this function can convert between arbitrary encodings, it uses
+/// <see cref="ucnv_convert" /> under the hood, which pivots to the canonical
+/// UTF-16 to perform the task. The conversion therefore might be rather
+/// expensive. If you can use UTF-16 directly, the other overloads of this
+/// function might be more appropriate for the task.</para>
+/// <para>Please be aware that LibICU will output a BOM when converting to
+/// UTF-16 or UTF-32 without specifying the byte order in the encodings.</para>
+/// </remarks>
+/// <typeparam name="TTo">The type used to represent a byte in the output
+/// encoding, which must be one byte in length.</typeparam>
+/// <typeparam name="TFrom">The type used to represent a byte in the input
+/// encoding, which must be one byte in length.</typeparam>
+/// <param name="dst">The destination buffer used to store the converted
+/// data. If this is <see langword="nullptr" />, the required buffer size will
+/// be measured, but nothing will be written.</param>
+/// <param name="cnt_dst">The size of <paramref name="dst" /> in bytes.</param>
+/// <param name="dst_code_page">The encoding to convert to.</param>
+/// <param name="src">The input string, which may be null-terminated.</param>
+/// <param name="cnt_src">The length of the input string in bytes or -1 if the
+/// input is null-terminated.</param>
+/// <param name="src_code_page">The encoding of <paramref name="src" />.</param>
+/// <returns>The number of bytes required to store the output</returns>
+template<class TTo, class TFrom>
+typename std::enable_if<(sizeof(TTo) == 1) && (sizeof(TFrom) == 1),
+    std::size_t>::type
+convert_string(_Out_writes_to_opt_(cnt_dst, return) TTo *dst,
+    _In_ std::size_t cnt_dst,
+    _In_opt_z_ const code_page dst_code_page,
+    _In_reads_or_z_(cnt_src) const TFrom *src,
+    _In_ int cnt_src,
+    _In_opt_z_ const code_page src_code_page);
+
 
 /// <summary>
 /// Performs a trivial conversion (<see cref="memcpy" />).
 /// </summary>
-/// <typeparam name="TChar"></typeparam>
+/// <typeparam name="TChar">The type of the characters used for the string.
+/// </typeparam>
 /// <param name="dst">A buffer to receive the output that can hold at least
-/// <paramref name="cnt_dst" /> characters. This can be <c>nullptr</c> if
-/// <paramref name="cnt_dst" /> is zero.</param>
+/// <paramref name="cnt_dst" /> characters. This can be
+/// <see langword="nullptr" /> if <paramref name="cnt_dst" /> is zero.</param>
 /// <param name="cnt_dst">The number of elements that can be stored to
 /// <paramref name="dst" />.</param>
 /// <param name="src">The source string.</param>
@@ -185,215 +295,176 @@ std::size_t convert_string(_Out_writes_to_opt_(cnt_dst, return) char *dst,
 /// <param name="code_page">This parameter is ignored.</param>
 /// <returns>The number of characters required for the output string,
 /// including the terminating zero.</returns>
-/// <exception cref="std::invalid_argument">If <paramref name="src" /> is
-/// <c>nullptr</c>.</exception>
 /// <exception cref="std::system_error">If the conversion failed.
 /// </exception>
 template<class TChar> std::size_t convert_string(
     _Out_writes_to_opt_(cnt_dst, return) TChar *dst,
     _In_ const std::size_t cnt_dst,
     _In_reads_or_z_(cnt_src) const TChar *src,
-    _In_ std::ptrdiff_t cnt_src,
-    _In_ const code_page code_page);
+    _In_ int cnt_src,
+    _In_opt_z_ const code_page code_page);
+
 
 /// <summary>
-/// Converts a C-style string into an STL string.
+/// Performs a conversion to an STL string.
 /// </summary>
-/// <typeparam name="TChar">The type of the characters.</typeparam>
-/// <param name="src">The source string.</param>
-/// <param name="cnt_src">The number of characters in the source string to
-/// convert or zero for converting a full null-terminated string.</param>
-/// <param name="code_page">This parameter is unused and is only for API
-/// compatibility.</param>
-/// <returns>The converted string.</returns>
-template<class TChar> inline std::basic_string<TChar> convert(
-        _In_reads_or_z_(cnt_src) const TChar *src,
-        _In_ const std::ptrdiff_t cnt_src,
-        _In_ const code_page code_page) {
-    assert(src != nullptr);
-    return (cnt_src > 0)
-        ? std::basic_string<TChar>(src, src + cnt_src)
-        : std::basic_string<TChar>(src);
-}
-
-/// <summary>
-/// Converts a C-style string into an STL string.
-/// </summary>
-/// <typeparam name="TDstChar">The type of the target characters.</typeparam>
-/// <typeparam name="TSrcChar">The type of the source caracters.</typeparam>
+/// <typeparam name="TDstChar"></typeparam>
+/// <typeparam name="TSrcChar"></typeparam>
 /// <param name="src"></param>
 /// <param name="cnt_src"></param>
-/// <param name="code_page">The code page to be used if any of the strings is
-/// a narrow character.</param>
-/// <returns>The converted string.</returns>
+/// <param name="code_page"></param>
+/// <returns></returns>
 template<class TDstChar, class TSrcChar>
-inline std::basic_string<TDstChar> convert_string(
-        _In_reads_or_z_(cnt_src) const TSrcChar *src,
-        _In_ const std::ptrdiff_t cnt_src,
-        _In_ const code_page code_page) {
-    std::vector<TDstChar> buffer(convert_string(
-        static_cast<TDstChar *>(nullptr), 0,
-        src, cnt_src,
-        code_page));
-    auto cnt = convert_string(buffer.data(), buffer.size(),
-        src, cnt_src,
-        code_page);
-    return std::basic_string<TDstChar>(buffer.data(),
-        buffer.data() + cnt - 1);
-}
+std::basic_string<TDstChar> convert_string(
+    _In_reads_or_z_(cnt_src) const TSrcChar *src,
+    _In_ int cnt_src,
+    _In_opt_z_ const code_page code_page);
+
 
 /// <summary>
-/// Conversion between STL strings.
+/// Performs a trivial conversion to an STL string.
 /// </summary>
-/// <typeparam name="TChar">The type of characters.</typeparam>
-/// <typeparam name="TTraits">The character traits.</typeparam>
-/// <typeparam name="TAlloc">The string allocator.</typeparam>
-/// <param name="src">The source string.</param>
-/// <param name="cnt_src">The number of characters to convert. This can be
-/// -1 to return all of <pararmef name="src" />.</param>
-/// <returns>The first <paramref name="cnt_src" /> characters of the input
-/// string or the whole input string, if <paramref name="cnt_src" /> is -1.
-/// </returns>
-template<class TChar, class TTraits, class TAlloc>
-inline std::basic_string<TChar> convert_string(
-        _In_ const std::basic_string<TChar, TTraits, TAlloc>& src,
-        _In_ const std::ptrdiff_t cnt_src,
-        _In_ const code_page) {
-    assert(cnt_src <= src.size());
-    return (cnt_src < 0) ? src : src.substr(0, cnt_src);
-}
+/// <typeparam name="TChar"></typeparam>
+/// <param name="src"></param>
+/// <param name="cnt_src"></param>
+/// <param name="reserved"></param>
+/// <returns></returns>
+template<class TChar>
+std::basic_string<TChar> convert_string(
+    _In_reads_or_z_(cnt_src) const TChar *src,
+    _In_ int cnt_src,
+    _In_opt_z_ const code_page reserved);
+
 
 /// <summary>
-/// Conversion between STL strings.
+/// Passes through the input string.
 /// </summary>
-/// <typeparam name="TChar">The type of characters.</typeparam>
-/// <typeparam name="TTraits">The character traits.</typeparam>
-/// <typeparam name="TAlloc">The string allocator.</typeparam>
-/// <param name="src">The source string.</param>
-/// <param name="code_page">This parameter is unused and is only for API
-/// compatibility.</param>
-/// <returns>The first <paramref name="</returns>
+/// <typeparam name="TChar"></typeparam>
+/// <typeparam name="TTraits"></typeparam>
+/// <typeparam name="TAlloc"></typeparam>
+/// <param name="src"></param>
+/// <param name="reserved0"></param>
+/// <param name="reserved1"></param>
+/// <returns></returns>
 template<class TChar, class TTraits, class TAlloc>
-inline std::basic_string<TChar>& convert_string(
+const std::basic_string<TChar, TTraits, TAlloc>& convert_string(
         _In_ const std::basic_string<TChar, TTraits, TAlloc>& src,
-        _In_ const code_page code_page) {
+        _In_ int reserved0,
+        _In_opt_z_ const code_page reserved1) {
     return src;
 }
 
+
 /// <summary>
-/// Convert between STL strings.
+/// Measures how many code units of <typeparamref name="TDstChar" /> are
+/// required for <paramref name="str" />.
 /// </summary>
-/// <typeparam name="TDstChar">The type of the target characters.</typeparam>
-/// <typeparam name="TSrcChar">The type of the source caracters.</typeparam>
-/// <typeparam name="TSrcTraits">The character traits of the source string.
-/// </typeparam>
-/// <typeparam name="TSrcAlloc">The allocator of the source string.</typeparam>
+/// <remarks>
+/// This is a convenience function for <see cref="convert_string" /> without
+/// a valid output buffer.
+/// </remarks>
+/// <typeparam name="TDstChar">The character type to convert to.</typeparam>
+/// <typeparam name="TSrcChar">The character type to convert from.</typeparam>
 /// <param name="src">The source string.</param>
-/// <param name="cnt_src">The length of the source string, which can be -1 for
-/// using the size of the string object.</param>
-/// <param name="code_page">The code page of the MBCS string.</param>
-/// <returns>The converted string.</returns>
-template<class TDstChar, class TSrcChar, class TSrcTraits, class TSrcAlloc>
-inline std::basic_string<TDstChar> convert_string(
-        _In_ const std::basic_string<TSrcChar, TSrcTraits, TSrcAlloc>& src,
-        _In_ const std::ptrdiff_t cnt_src,
-        _In_ const code_page code_page) {
-    assert(cnt_src <= src.size());
-    std::vector<TDstChar> buffer(convert_string(
+/// <param name="cnt_src">The length of the source string, which can be -1
+/// if <paramref name="src" /> is null-terminated.</param>
+/// <param name="code_page"></param>
+/// <returns>The number of characters required for the converted string,
+/// including the terminating zero.</returns>
+/// <exception cref="std::invalid_argument">If <paramref name="src" /> is
+/// <c>nullptr</c>.</exception>
+/// <exception cref="std::system_error">If the conversion is not possible.
+/// </exception>
+template<class TDstChar, class TSrcChar>
+inline std::size_t measure_string(
+        _In_reads_or_z_(cnt_src) const TSrcChar *str,
+        _In_ const int cnt,
+        _In_opt_z_ const code_page code_page) {
+    return convert_string(
         static_cast<TDstChar *>(nullptr), 0,
-        src.data(), (cnt_src < 0) ? src.size() : cnt_src,
-        code_page));
-    auto cnt = convert_string(buffer.data(), buffer.size(),
-        src.data(), (cnt_src < 0) ? src.size() : cnt_src,
+        str, cnt,
         code_page);
-    return std::basic_string<TDstChar>(buffer.data(),
-        buffer.data() + cnt - 1);
 }
 
+
 /// <summary>
-/// Convert between STL strings.
+/// Measures how many code units of <typeparamref name="TDstChar" /> are
+/// required for <paramref name="str" />.
 /// </summary>
-/// <typeparam name="TDstChar">The type of the target characters.</typeparam>
-/// <typeparam name="TSrcChar">The type of the source caracters.</typeparam>
-/// <typeparam name="TSrcTraits">The character traits of the source string.
+/// <remarks>
+/// This is a convenience function for <see cref="convert_string" /> without
+/// a valid output buffer.
+/// </remarks>
+/// <typeparam name="TDstChar">The character type to convert to.</typeparam>
+/// <typeparam name="TSrcChar">The character type to convert from.</typeparam>
+/// <param name="src">The source string, which must be null-terminated.</param>
+/// <param name="code_page"></param>
+/// <returns>The number of characters required for the converted string,
+/// including the terminating zero.</returns>
+/// <exception cref="std::invalid_argument">If <paramref name="src" /> is
+/// <c>nullptr</c>.</exception>
+/// <exception cref="std::system_error">If the conversion is not possible.
+/// </exception>
+template<class TDstChar, class TSrcChar>
+inline std::size_t measure_string(
+        _In_z_ const TSrcChar *str,
+        _In_opt_z_ const code_page code_page) {
+    return convert_string(
+        static_cast<TDstChar *>(nullptr), static_cast<std::size_t>(0),
+        str, -1,
+        code_page);
+}
+
+
+/// <summary>
+/// Measure the length of the given <paramref name="str" /> or
+/// <paramref name="cnt" />.
+/// </summary>
+/// <typeparam name="TChar"></typeparam>
+/// <param name="str">The string to be measured if <paramref name="cnt "/> is
+/// -1,</param>
+/// <param name="cnt">If not negative, the return value.</param>
+/// <param name="reserved">This parameter is ignored.</param>
+/// <returns>The length of <paramref name="str" /> including the terminating
+/// null character, or <paramref name="cnt" /> if it is not -1.</returns>
+template<class TChar> inline std::size_t measure_string(
+        _In_reads_or_z_(cnt) const TChar *str,
+        _In_ const int cnt,
+        _In_opt_z_ const code_page reserved) {
+    return (cnt >= 0) ? cnt : measure_string(str, reserved);
+}
+
+
+/// <summary>
+/// Measure the length of the given <paramref name="str" />.
+/// </summary>
+/// <typeparam name="TChar"></typeparam>
+/// <param name="str"></param>
+/// <param name="reserved"></param>
+/// <returns>The length of <paramref name="str" /> including the terminating
+/// null character.</returns>
+template<class TChar> inline std::size_t measure_string(
+        _In_z_ const TChar *str,
+        _In_opt_z_ const code_page reserved) {
+    return std::char_traits<TChar>::length(str) + 1;
+}
+
+
+/// <summary>
+/// Measures how many code units of <typeparamref name="TDstChar" /> are
+/// required for <paramref name="str" />.
+/// </summary>
+/// <remarks>
+/// This is a convenience function for <see cref="convert_string" /> without
+/// a valid output buffer.
+/// </remarks>
+/// <typeparam name="TDstChar">The character type to convert to.</typeparam>
+/// <typeparam name="TSrcChar">The character type to convert from.</typeparam>
+/// <typeparam name="TSrcTraits">The character traits used by the source string.
 /// </typeparam>
-/// <typeparam name="TSrcAlloc">The allocator of the source string.</typeparam>
+/// <typeparam name="TSrcAlloc">The allocator used by the source string.
+/// </typeparam>
 /// <param name="src">The source string.</param>
-/// <param name="code_page">The code page of the MBCS string.</param>
-/// <returns>The converted string.</returns>
-template<class TDstChar, class TSrcChar, class TSrcTraits, class TSrcAlloc>
-inline std::basic_string<TDstChar> convert_string(
-        _In_ const std::basic_string<TSrcChar, TSrcTraits, TSrcAlloc>& src,
-        _In_ const code_page code_page) {
-    return convert_string(src, -1, code_page);
-}
-
-
-/// <summary>
-/// Measures how many code units of <typeparamref name="TDstChar" /> are
-/// required for <paramref name="str" />.
-/// </summary>
-/// <remarks>
-/// This is a convenience function for <see cref="convert_string" /> without
-/// a valid output buffer.
-/// </remarks>
-/// <typeparam name="TDstChar"></typeparam>
-/// <typeparam name="TSrcChar"></typeparam>
-/// <param name="str"></param>
-/// <param name="cnt"></param>
-/// <param name="code_page"></param>
-/// <returns>The number of characters required for the converted string,
-/// including the terminating zero.</returns>
-/// <exception cref="std::invalid_argument">If <paramref name="src" /> is
-/// <c>nullptr</c>.</exception>
-/// <exception cref="std::system_error">If the conversion is not possible.
-/// </exception>
-template<class TDstChar, class TSrcChar>
-inline std::size_t measure_string(_In_reads_or_z_(cnt_src) const TSrcChar *str,
-        _In_ const std::ptrdiff_t cnt,
-        _In_ const code_page code_page) {
-    return convert_string(static_cast<TDstChar *>(nullptr), 0, str, cnt,
-        code_page);
-}
-
-/// <summary>
-/// Measures how many code units of <typeparamref name="TDstChar" /> are
-/// required for <paramref name="str" />.
-/// </summary>
-/// <remarks>
-/// This is a convenience function for <see cref="convert_string" /> without
-/// a valid output buffer.
-/// </remarks>
-/// <typeparam name="TDstChar"></typeparam>
-/// <typeparam name="TSrcChar"></typeparam>
-/// <param name="str"></param>
-/// <param name="code_page"></param>
-/// <returns>The number of characters required for the converted string,
-/// including the terminating zero.</returns>
-/// <exception cref="std::invalid_argument">If <paramref name="src" /> is
-/// <c>nullptr</c>.</exception>
-/// <exception cref="std::system_error">If the conversion is not possible.
-/// </exception>
-template<class TDstChar, class TSrcChar>
-inline std::size_t measure_string(_In_reads_or_z_(cnt_src) const TSrcChar *str,
-        _In_ const code_page code_page) {
-    return convert_string(static_cast<TDstChar *>(nullptr), 0, str, -1,
-        code_page);
-}
-
-/// <summary>
-/// Measures how many code units of <typeparamref name="TDstChar" /> are
-/// required for <paramref name="str" />.
-/// </summary>
-/// <remarks>
-/// This is a convenience function for <see cref="convert_string" /> without
-/// a valid output buffer.
-/// </remarks>
-/// <typeparam name="TDstChar"></typeparam>
-/// <typeparam name="TSrcChar"></typeparam>
-/// <typeparam name="TSrcTraits"></typeparam>
-/// <typeparam name="TSrcAlloc"></typeparam>
-/// <param name="str"></param>
 /// <param name="code_page"></param>
 /// <returns>The number of characters required for the converted string,
 /// including the terminating zero.</returns>
@@ -402,10 +473,13 @@ inline std::size_t measure_string(_In_reads_or_z_(cnt_src) const TSrcChar *str,
 template<class TDstChar, class TSrcChar, class TSrcTraits, class TSrcAlloc>
 inline std::size_t measure_string(
         _In_ const std::basic_string<TSrcChar, TSrcTraits, TSrcAlloc>& str,
-        _In_ const code_page code_page) {
-    return convert_string(static_cast<TDstChar *>(nullptr), 0, str.c_str(), -1,
+        _In_opt_z_ const code_page code_page) {
+    return convert_string(
+        static_cast<TDstChar *>(nullptr), 0,
+        str.c_str(), str.size() + 1,
         code_page);
 }
+
 
 /// <summary>
 /// Answer the number of characters in the given string.
@@ -415,20 +489,22 @@ inline std::size_t measure_string(
 /// but uses the conversion interface, therefore optimising the actual call
 /// to <see cref="convert_string" /> away if the string is not being converted.
 /// </remarks>
-/// <typeparam name="TChar"></typeparam>
-/// <typeparam name="TTraits"></typeparam>
-/// <typeparam name="TAlloc"></typeparam>
-/// <param name="str"></param>
-/// <param name="code_page"></param>
+/// <typeparam name="TDstChar">The character type to convert to.</typeparam>
+/// <typeparam name="TSrcChar">The character type to convert from.</typeparam>
+/// <typeparam name="TSrcTraits">The character traits used by the source string.
+/// </typeparam>
+/// <typeparam name="TSrcAlloc">The allocator used by the source string.
+/// </typeparam>
+/// <param name="src">The source string.</param>
+/// <param name="reserved">This parameter is ignored.</param>
 /// <returns>The number of characters required for the string, including the
 /// terminating zero.</returns>
 template<class TChar, class TTraits, class TAlloc>
 inline std::size_t measure_string(
         _In_ const std::basic_string<TChar, TTraits, TAlloc>& str,
-        _In_ const code_page code_page) {
+        _In_opt_z_ const code_page reserved) {
     return (str.size() + 1);
 }
-
 
 FPD_NAMESPACE_END
 

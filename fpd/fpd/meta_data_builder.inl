@@ -10,7 +10,7 @@
  */
 template<class TChar>
 FPD_NAMESPACE::meta_data_builder<TChar>::meta_data_builder(void)
-    : with_code_page(code_page_type::oem),
+    : with_code_page(code_pages::oem),
       _endian(endian::system),
       _version(std::make_pair(FPD_FILE_MAJOR, FPD_FILE_MINOR)) { }
 
@@ -35,7 +35,7 @@ FPD_NAMESPACE::meta_data_builder<TChar>::build(void) {
         this->_bounding_boxes.erase(this->_bounding_boxes.begin());
     }
 
-    this->code_page(code_page::oem);
+    this->code_page(code_pages::oem);
 
     retval._description = std::move(this->_description);
     assert(this->_description.empty());

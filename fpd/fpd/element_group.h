@@ -1,9 +1,11 @@
 ﻿// <copyright file="element_group.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 - 2024 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
+#if !defined(_FPD_ELEMENT_GROUP_H)
+#define _FPD_ELEMENT_GROUP_H
 #pragma once
 
 #include <algorithm>
@@ -223,3 +225,5 @@ private:
 FPD_NAMESPACE_END
 
 #include "fpd/element_group.inl"
+
+#endif /* !defined(_FPD_ELEMENT_GROUP_H) */

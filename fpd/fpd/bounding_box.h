@@ -1,9 +1,11 @@
 ﻿// <copyright file="bounding_box.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
+#if !defined(_FPD_BOUNDING_BOX_H_)
+#define _FPD_BOUNDING_BOX_H_
 #pragma once
 
 #include <algorithm>
@@ -22,6 +24,11 @@ FPD_NAMESPACE_BEGIN
 /// <summary>
 /// Representation of a 3D bounding box.
 /// </summary>
+/// <remarks>
+/// The bounding box class type-erases the actual type of the coordinates.
+/// Before retrieving data, the <see cref="format" /> must be checked to
+/// interpret the data correctly.
+/// </remarks>
 class bounding_box final {
 
 public:
@@ -284,3 +291,5 @@ private:
 FPD_NAMESPACE_END
 
 #include "fpd/bounding_box.inl"
+
+#endif /* !defined(_FPD_BOUNDING_BOX_H_) */

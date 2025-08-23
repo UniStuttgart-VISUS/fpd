@@ -1,69 +1,81 @@
 ﻿// <copyright file="code_page.h" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
+#if !defined(_FPD_CODE_PAGE_H_)
+#define _FPD_CODE_PAGE_H_
 #pragma once
 
-#if defined(_WIN32)
-#include <Windows.h>
-#endif /* defined(_WIN32) */
 
 #include "fpd/abi.h"
 
 
 FPD_NAMESPACE_BEGIN
 
-#if defined(_WIN32)
-
 /// <summary>
-/// Possible code pages for narrow strings.
+/// The type used to specify a code page.
 /// </summary>
-enum class code_page : UINT {
+typedef const char *code_page;
+
+
+namespace code_pages {
 
     /// <summary>
-    /// The ANSI code page.
+    /// The constant identifying ASCII encoding.
     /// </summary>
-    ansi = CP_ACP,
+    constexpr const code_page ascii = "US-ASCII";
 
     /// <summary>
-    /// The OEM code page used by the console.
+    /// The constant identifiyng the ANSI code page.
     /// </summary>
-    oem = CP_OEMCP,
-
-    ///// <summary>
-    ///// UTF-7 encoding.
-    ///// </summary>
-    //utf7 = CP_UTF7,
-
-    /// <summary>
-    /// UTF-8 encoding.
-    /// </summary>
-    utf8 = CP_UTF8
-};
-
-#else /* defined(_WIN32) */
-
-namespace code_page {
-
-    /// <summary>
-    /// The ANSI code page.
-    /// </summary>
-    constexpr const char *const ansi = "ANSI";
+    constexpr const code_page ansi = "CP1252";
 
     /// <summary>
     /// The default code page of the system.
     /// </summary>
-    constexpr const char *const oem = nullptr;
+    constexpr const code_page oem = nullptr;
 
     /// <summary>
-    /// UTF-8 encoding.
+    /// The constant identifiyng the UTF-16 encoding using big endian.
     /// </summary>
-    constexpr const char *const ansi = "UTF-8";
+    /// <remarks>
+    /// Note that LibICU will include a BOMs when converting to UTF-16
+    /// repesentations that do not specify the endian. Therefore, we do not
+    /// provide constants without it here as this poses a great risk of
+    /// unexpected effects.
+    /// </remarks>
+    constexpr const code_page utf16be = "UTF-16BE";
+
+    /// <summary>
+    /// The constant identifiyng the UTF-16 encoding using little endian.
+    /// </summary>
+    /// <remarks>
+    /// Note that LibICU will include a BOMs when converting to UTF-16
+    /// repesentations that do not specify the endian. Therefore, we do not
+    /// provide constants without it here as this poses a great risk of
+    /// unexpected effects.
+    /// </remarks>
+    constexpr const code_page utf16le = "UTF-16LE";
+
+    /// <summary>
+    /// The constant identifiyng the UTF-32 encoding using big endian.
+    /// </summary>
+    constexpr const code_page utf32be = "UTF-32BE";
+
+    /// <summary>
+    /// The constant identifiyng the UTF-32 encoding using little endian.
+    /// </summary>
+    constexpr const code_page utf32le = "UTF-32LE";
+
+    /// <summary>
+    /// The constant identifiyng the UTF-8 encoding.
+    /// </summary>
+    constexpr const code_page utf8 = "UTF-8";
 
 } /* namespace encoding */
 
-#endif /* defined(_WIN32) */
-
 FPD_NAMESPACE_END
+
+#endif /* !defined(_FPD_CODE_PAGE_H_) */

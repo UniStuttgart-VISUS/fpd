@@ -37,7 +37,7 @@ public:
     /// </summary>
     /// <returns><see cref="code_page::ansi" />.</returns>
     inline constexpr code_page_type code_page(void) const noexcept {
-        return code_page_type::ansi;
+        return code_pages::ansi;
     }
 
     /// <summary>
@@ -97,7 +97,7 @@ protected:
     /// </summary>
     /// <param name="code_page">The initial value of the code page.</param>
     inline with_code_page(_In_ const code_page_type code_page
-        = code_page_type::oem) noexcept : _code_page(code_page) { }
+        = code_pages::oem) noexcept : _code_page(code_page) { }
 
 private:
 

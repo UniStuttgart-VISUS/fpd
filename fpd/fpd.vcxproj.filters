@@ -87,9 +87,6 @@
     <ClInclude Include="fpd\posix_io.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="fpd\icu_category.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="fpd\invoke.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -118,6 +115,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="fpd\pkd_tree_builder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fpd\icu_category.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -153,6 +153,9 @@
       <Filter>Header Files</Filter>
     </None>
     <None Include="fpd\pkd_tree_builder.inl">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="fpd\icu_category.inl">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>

@@ -58,7 +58,7 @@ public:
     inline std::string message(_In_ int hr) const override {
         _com_error e(hr);
 #if (defined(UNICODE) || defined(_UNICODE))
-        return convert_string<char>(e.ErrorMessage(), -1, code_page::ansi);
+        return convert_string<char>(e.ErrorMessage(), -1, code_pages::oem);
 #else /* (defined(UNICODE) || defined(_UNICODE)) */
         return e.ErrorMessage();
 #endif /* (defined(UNICODE) || defined(_UNICODE)) */
