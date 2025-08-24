@@ -344,8 +344,7 @@ convert_string(_In_reads_or_z_opt_(cnt_src) const TFrom *src,
 /// <param name="reserved">This parameter is ignored.</param>
 /// <returns>A new string containing <paramref name="src" /> or a substring
 /// thereof.</returns>
-template<class TChar>
-inline std::basic_string<TChar> convert_string(
+template<class TChar> inline std::basic_string<TChar> convert_string(
         _In_reads_or_z_opt_(cnt_src) const TChar *src,
         _In_ int cnt_src,
         _In_opt_z_ const code_page reserved) {
@@ -380,25 +379,25 @@ std::basic_string<TChar, TTraits, TAlloc> convert_string(
 /// This is a convenience function for <see cref="convert_string" /> without
 /// a valid output buffer.
 /// </remarks>
-/// <typeparam name="TDstChar">The character type to convert to.</typeparam>
-/// <typeparam name="TSrcChar">The character type to convert from.</typeparam>
+/// <typeparam name="TTo">The character type to convert to.</typeparam>
+/// <typeparam name="TFrom">The character type to convert from.</typeparam>
 /// <param name="src">The source string.</param>
 /// <param name="cnt_src">The length of the source string, which can be -1
 /// if <paramref name="src" /> is null-terminated.</param>
-/// <param name="code_page"></param>
+/// <param name="code_page">The code page to be assumed if either of the
+/// character types indicates an MBCS string.</param>
 /// <returns>The number of characters required for the converted string,
 /// including the terminating zero.</returns>
 /// <exception cref="std::invalid_argument">If <paramref name="src" /> is
 /// <c>nullptr</c>.</exception>
 /// <exception cref="std::system_error">If the conversion is not possible.
 /// </exception>
-template<class TDstChar, class TSrcChar>
-inline std::size_t measure_string(
-        _In_reads_or_z_opt_(cnt_src) const TSrcChar *str,
+template<class TTo, class TFrom> inline std::size_t measure_string(
+        _In_reads_or_z_opt_(cnt_src) const TFrom *str,
         _In_ const int cnt,
         _In_opt_z_ const code_page code_page) {
     return convert_string(
-        static_cast<TDstChar *>(nullptr), 0,
+        static_cast<TTo *>(nullptr), 0,
         str, cnt,
         code_page);
 }
@@ -423,8 +422,7 @@ inline std::size_t measure_string(
 /// <c>nullptr</c>.</exception>
 /// <exception cref="std::system_error">If the conversion is not possible.
 /// </exception>
-template<class TTo, class TFrom>
-inline std::size_t measure_string(
+template<class TTo, class TFrom> inline std::size_t measure_string(
         _In_opt_z_ const TFrom *str,
         _In_opt_z_ const code_page code_page) {
     return convert_string(
@@ -446,8 +444,7 @@ inline std::size_t measure_string(
 /// <param name="src_code_page"></param>
 /// <returns>The number of <i>bytes</i> the input string would require in
 /// the output encoding.</returns>
-template<class TChar>
-std::size_t measure_string(
+template<class TChar> std::size_t measure_string(
     _In_opt_z_ const code_page dst_code_page,
     _In_ const TChar *str,
     _In_ int cnt,
