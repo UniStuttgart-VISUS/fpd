@@ -28,13 +28,13 @@ enum class endian : std::uint16_t {
     /// Little endian representation with least significant byte coming
     /// first in memory.
     /// </summary>
-    little = 0x0201,
+    little = 0x0102,
 
     /// <summary>
     /// Big endian representation with most significant byte coming first in
     /// memory.
     /// </summary>
-    big = 0x0102,
+    big = 0x0201,
 
     /// <summary>
     /// Endian of the system the code is running on.
