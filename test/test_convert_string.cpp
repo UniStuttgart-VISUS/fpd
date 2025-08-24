@@ -83,6 +83,7 @@ namespace fpd {
                 // This is incredibly hard to test without messing the constants ...
                 // Reference from https://onlineutf8tools.com/convert-utf8-to-bytes.
                 const std::vector<std::uint8_t> expected { 0xd0, 0xbf, 0xd1, 0x80, 0xd0, 0xb8, 0xd0, 0xb2, 0xd0, 0xb5, 0xd1, 0x82, 0 };
+                Assert::AreEqual(std::size_t(13), expected.size(), L"expected size", LINE_INFO());
                 const auto input = L"привет";
                 const auto actual = convert_string<dst_type>(input, -1, cp);
                 Assert::AreEqual(0, ::memcmp(expected.data(), actual.c_str(), expected.size()), L"non-ASCII conversion", LINE_INFO());
@@ -195,7 +196,13 @@ namespace fpd {
             {
                 typedef char dst_type;
                 const auto input = L"привет";
-                Assert::AreEqual(std::size_t(13), measure_string(code_pages::utf8, input, code_pages::utf16le), L"привет as utf8", LINE_INFO());
+                Assert::AreEqual(std::size_t(7), measure_string(input, code_pages::utf16le), L"привет as utf16", LINE_INFO());
+            }
+
+            {
+                typedef char dst_type;
+                const auto input = L"привет";
+                Assert::AreEqual(std::size_t(13), measure_string<char>(input, code_pages::utf8), L"привет as utf8", LINE_INFO());
             }
         }
 
@@ -211,6 +218,12 @@ namespace fpd {
                 typedef char dst_type;
                 const auto input = L"input";
                 Assert::AreEqual(std::size_t(6), measure_string(code_pages::ansi, input, -1, code_pages::utf16le), L"utf16 as ANSI", LINE_INFO());
+            }
+
+            {
+                typedef char dst_type;
+                const auto input = L"привет";
+                Assert::AreEqual(std::size_t(13), measure_string(code_pages::utf8, input, code_pages::utf16le), L"привет as utf8", LINE_INFO());
             }
         }
     };

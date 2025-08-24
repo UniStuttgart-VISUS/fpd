@@ -405,29 +405,30 @@ inline std::size_t measure_string(
 
 
 /// <summary>
-/// Measures how many code units of <typeparamref name="TDstChar" /> are
+/// Measures how many code units of <typeparamref name="TTo" /> are
 /// required for <paramref name="str" />.
 /// </summary>
 /// <remarks>
 /// This is a convenience function for <see cref="convert_string" /> without
 /// a valid output buffer.
 /// </remarks>
-/// <typeparam name="TDstChar">The character type to convert to.</typeparam>
-/// <typeparam name="TSrcChar">The character type to convert from.</typeparam>
+/// <typeparam name="TTo">The character type to convert to.</typeparam>
+/// <typeparam name="TFrom">The character type to convert from.</typeparam>
 /// <param name="src">The source string, which must be null-terminated.</param>
-/// <param name="code_page"></param>
+/// <param name="code_page">The code page to be assumed if either of the
+/// character types indicates an MBCS string.</param>
 /// <returns>The number of characters required for the converted string,
 /// including the terminating zero.</returns>
 /// <exception cref="std::invalid_argument">If <paramref name="src" /> is
 /// <c>nullptr</c>.</exception>
 /// <exception cref="std::system_error">If the conversion is not possible.
 /// </exception>
-template<class TDstChar, class TSrcChar>
+template<class TTo, class TFrom>
 inline std::size_t measure_string(
-        _In_opt_z_ const TSrcChar *str,
+        _In_opt_z_ const TFrom *str,
         _In_opt_z_ const code_page code_page) {
     return convert_string(
-        static_cast<TDstChar *>(nullptr), static_cast<std::size_t>(0),
+        static_cast<TTo *>(nullptr), static_cast<std::size_t>(0),
         str, -1,
         code_page);
 }
