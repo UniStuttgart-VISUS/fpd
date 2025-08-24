@@ -139,5 +139,38 @@ namespace fpd {
                 Assert::IsTrue(convert_string<dst_type>(input, -1, cp).empty(), L"nullptr conversion", LINE_INFO());
             }
         }
+
+
+        TEST_METHOD(utf32to8) {
+            const auto cp = code_pages::utf8;
+            typedef wchar_t src_type;
+            typedef char dst_type;
+
+            {
+                const std::basic_string<dst_type> expected = u8"input";
+                const auto input = L"input";
+                const auto actual = convert_string<dst_type>(input, -1, cp);
+                Assert::AreEqual(expected, actual, L"standard input", LINE_INFO());
+            }
+
+            {
+                const std::basic_string<dst_type> expected = u8"";
+                const auto input = L"";
+                const auto actual = convert_string<dst_type>(input, -1, cp);
+                Assert::AreEqual(expected, actual, L"empty conversion", LINE_INFO());
+            }
+
+            {
+                const std::basic_string<dst_type> expected = u8"привет";
+                const auto input = L"привет";
+                const auto actual = convert_string<dst_type>(input, -1, cp);
+                Assert::AreEqual(expected, actual, L"non-ASCII conversion", LINE_INFO());
+            }
+
+            {
+                const auto input = static_cast<src_type *>(nullptr);
+                Assert::IsTrue(convert_string<dst_type>(input, -1, cp).empty(), L"nullptr conversion", LINE_INFO());
+            }
+        }
     };
 }

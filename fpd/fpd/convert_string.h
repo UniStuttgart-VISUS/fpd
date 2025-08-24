@@ -249,7 +249,8 @@ convert_string(_Out_writes_to_opt_(cnt_dst, return) char *dst,
 
 
 /// <summary>
-/// Performs a trivial conversion (<see cref="memcpy" />).
+/// Performs a trivial conversion (<see cref="memcpy" />) of bitwise equivalent
+/// types.
 /// </summary>
 /// <typeparam name="TTo">The character type to convert to.</typeparam>
 /// <typeparam name="TFrom">The character type to convert from.</typeparam>
@@ -261,7 +262,7 @@ convert_string(_Out_writes_to_opt_(cnt_dst, return) char *dst,
 /// <param name="src">The source string.</param>
 /// <param name="cnt_src">The length of the source string, which can be -1
 /// if <paramref name="src" /> is null-terminated.</param>
-/// <param name="code_page">This parameter is ignored.</param>
+/// <param name="reserved">This parameter is ignored.</param>
 /// <returns>The number of characters required for the output string,
 /// including the terminating zero.</returns>
 /// <exception cref="std::system_error">If the conversion failed.
@@ -272,7 +273,7 @@ std::enable_if_t<sizeof(TTo) == sizeof(TFrom), std::size_t> convert_string(
     _In_ std::size_t cnt_dst,
     _In_reads_or_z_opt_(cnt_src) const TFrom *src,
     _In_ int cnt_src,
-    _In_opt_z_ const code_page code_page);
+    _In_opt_z_ const code_page reserved);
 
 
 /// <summary>
@@ -390,7 +391,7 @@ std::basic_string<TChar, TTraits, TAlloc> convert_string(
 /// </exception>
 template<class TDstChar, class TSrcChar>
 inline std::size_t measure_string(
-        _In_reads_or_z_(cnt_src) const TSrcChar *str,
+        _In_reads_or_z_opt_(cnt_src) const TSrcChar *str,
         _In_ const int cnt,
         _In_opt_z_ const code_page code_page) {
     return convert_string(
@@ -420,7 +421,7 @@ inline std::size_t measure_string(
 /// </exception>
 template<class TDstChar, class TSrcChar>
 inline std::size_t measure_string(
-        _In_z_ const TSrcChar *str,
+        _In_opt_z_ const TSrcChar *str,
         _In_opt_z_ const code_page code_page) {
     return convert_string(
         static_cast<TDstChar *>(nullptr), static_cast<std::size_t>(0),
@@ -441,7 +442,7 @@ inline std::size_t measure_string(
 /// <returns>The length of <paramref name="str" /> including the terminating
 /// null character, or <paramref name="cnt" /> if it is not -1.</returns>
 template<class TChar> inline std::size_t measure_string(
-        _In_reads_or_z_(cnt) const TChar *str,
+        _In_reads_or_z_opt_(cnt) const TChar *str,
         _In_ const int cnt,
         _In_opt_z_ const code_page reserved) {
     return (cnt >= 0) ? cnt : measure_string(str, reserved);
@@ -457,7 +458,7 @@ template<class TChar> inline std::size_t measure_string(
 /// <returns>The length of <paramref name="str" /> including the terminating
 /// null character.</returns>
 template<class TChar> inline std::size_t measure_string(
-        _In_z_ const TChar *str,
+        _In_opt_z_ const TChar *str,
         _In_opt_z_ const code_page reserved) {
     return std::char_traits<TChar>::length(str) + 1;
 }
