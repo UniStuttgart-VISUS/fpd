@@ -8,8 +8,7 @@
 #define _FPD_CODE_PAGE_H_
 #pragma once
 
-
-#include "fpd/abi.h"
+#include "fpd/endian.h"
 
 
 FPD_NAMESPACE_BEGIN
@@ -60,6 +59,12 @@ namespace code_pages {
     constexpr const code_page utf16le = "UTF-16LE";
 
     /// <summary>
+    /// Identifies the UTF-16 for the native endianness of the system.
+    /// </summary>
+    constexpr const code_page utf16 = (endian::system == endian::big)
+        ? utf16be : utf16le;
+
+    /// <summary>
     /// The constant identifiyng the UTF-32 encoding using big endian.
     /// </summary>
     constexpr const code_page utf32be = "UTF-32BE";
@@ -68,6 +73,12 @@ namespace code_pages {
     /// The constant identifiyng the UTF-32 encoding using little endian.
     /// </summary>
     constexpr const code_page utf32le = "UTF-32LE";
+
+    /// <summary>
+    /// Identifies the UTF-32 for the native endianness of the system.
+    /// </summary>
+    constexpr const code_page utf32 = (endian::system == endian::big)
+        ? utf32be : utf32le;
 
     /// <summary>
     /// The constant identifiyng the UTF-8 encoding.

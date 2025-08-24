@@ -196,7 +196,7 @@ namespace fpd {
             {
                 typedef char dst_type;
                 const auto input = L"привет";
-                Assert::AreEqual(std::size_t(7), measure_string(input, code_pages::utf16le), L"привет as utf16", LINE_INFO());
+                Assert::AreEqual(std::size_t(7), measure_string(input, code_pages::utf16), L"привет as utf16", LINE_INFO());
             }
 
             {
@@ -217,13 +217,13 @@ namespace fpd {
             {
                 typedef char dst_type;
                 const auto input = L"input";
-                Assert::AreEqual(std::size_t(6), measure_string(code_pages::ansi, input, -1, code_pages::utf16le), L"utf16 as ANSI", LINE_INFO());
+                Assert::AreEqual(std::size_t(6), measure_string(code_pages::ansi, input, -1, code_pages::utf16), L"utf16 as ANSI", LINE_INFO());
             }
 
             {
                 typedef char dst_type;
                 const auto input = L"привет";
-                Assert::AreEqual(std::size_t(13), measure_string(code_pages::utf8, input, code_pages::utf16le), L"привет as utf8", LINE_INFO());
+                Assert::AreEqual(std::size_t(13), measure_string(code_pages::utf8, input, code_pages::utf16), L"привет as utf8", LINE_INFO());
             }
         }
     };
