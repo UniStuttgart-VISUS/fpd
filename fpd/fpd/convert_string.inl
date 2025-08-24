@@ -9,8 +9,8 @@
  * FPD_NAMESPACE::convert_string
  */
 template<class TUnicode>
-std::enable_if_t<sizeof(TUnicode) == sizeof(FPD_NAMESPACE::utf16_type)
-    && std::is_same_v<TUnicode, FPD_NAMESPACE::utf16_type>, std::size_t>
+std::enable_if_t<sizeof(TUnicode) == sizeof(FPD_NAMESPACE::utf16_type),
+    std::size_t>
 FPD_NAMESPACE::convert_string(
         _Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
         _In_ std::size_t cnt_dst,
@@ -87,41 +87,12 @@ FPD_NAMESPACE::convert_string(
  * FPD_NAMESPACE::convert_string
  */
 template<class TUnicode>
-std::enable_if_t<sizeof(TUnicode) == sizeof(char32_t), std::size_t>
-FPD_NAMESPACE::convert_string(
-        _Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
-        _In_ std::size_t cnt_dst,
-        _In_reads_or_z_(cnt_src) const char *src,
-        _In_ int cnt_src,
-        _In_ const code_page code_page) {
-    static constexpr auto wchar_code_page = (endian::system == endian::big)
-        ? code_pages::utf32be
-        : code_pages::utf32le;
-
-    auto d = reinterpret_cast<const std::uint8_t *>(dst);
-    if (cnt_dst > 0) {
-        cnt_dst *= sizeof(char32_t);
-    }
-
-    auto retval = convert_string(d, cnt_dst, wchar_code_page,
-        src, cnt_src, code_page);
-    assert((retval % sizeof(char32_t)) == 0);
-    retval %= sizeof(char32_t);
-
-    return retval;
-}
-
-
-/*
- * FPD_NAMESPACE::convert_string
- */
-template<class TUnicode>
-std::enable_if_t<sizeof(TUnicode) == sizeof(FPD_NAMESPACE::utf16_type)
-    && std::is_same_v<TUnicode, FPD_NAMESPACE::utf16_type>, std::size_t>
+std::enable_if_t<sizeof(TUnicode) == sizeof(FPD_NAMESPACE::utf16_type),
+    std::size_t>
 FPD_NAMESPACE::convert_string(
         _Out_writes_to_opt_(cnt_dst, return) char *dst,
         _In_ std::size_t cnt_dst,
-        _In_reads_or_z_(cnt_src) const TUnicode *src,
+        _In_reads_or_z_opt_(cnt_src) const TUnicode *src,
         _In_ int cnt_src,
         _In_opt_z_ const code_page code_page) {
     if (dst == nullptr) {
@@ -192,63 +163,6 @@ FPD_NAMESPACE::convert_string(
 /*
  * FPD_NAMESPACE::convert_string
  */
-template<class TUnicode>
-std::enable_if_t<sizeof(TUnicode) == sizeof(char32_t), std::size_t>
-FPD_NAMESPACE::convert_string(
-        _Out_writes_to_opt_(cnt_dst, return) char *dst,
-        _In_ std::size_t cnt_dst,
-        _In_reads_or_z_(cnt_src) const TUnicode *src,
-        _In_ int cnt_src,
-        _In_opt_z_ const code_page code_page) {
-    static constexpr auto wchar_code_page = (endian::system == endian::big)
-        ? code_pages::utf32be
-        : code_pages::utf32le;
-
-    auto s = reinterpret_cast<const std::uint8_t *>(src);
-    if (cnt_src > 0) {
-        cnt_src *= sizeof(char32_t);
-    }
-
-    return convert_string(dst, cnt_dst, code_page, s, cnt_src, wchar_code_page);
-}
-
-
-/*
- * FPD_NAMESPACE::convert_string
- */
-template<class TChar>
-std::size_t FPD_NAMESPACE::convert_string(
-        _Out_writes_to_opt_(cnt_dst, return) TChar *dst,
-        _In_ std::size_t cnt_dst,
-        _In_reads_or_z_(cnt_src) const TChar *src,
-        _In_ int cnt_src,
-        _In_ const code_page code_page) {
-    if (dst == nullptr) {
-        // Make sure that the output buffer size is zero if the output
-        // buffer is invalid, such that we get the required buffer size.
-        cnt_dst = 0;
-    }
-    if (src == nullptr) {
-        // Likewise, if the source is invalid, bail out directly.
-        return 0;
-    }
-
-    if ((cnt_src < 0) && (src != nullptr)) {
-        // User requested us to measure the input, do so now.
-        cnt_src = static_cast<int>(std::char_traits<TChar>::length(src)) + 1;
-    }
-
-    const auto cnt = (std::min)(cnt_dst, static_cast<std::size_t>(cnt_src));
-    ::memcpy(dst, src, cnt * sizeof(TChar));
-
-    return cnt_src;
-}
-
-
-
-/*
- * FPD_NAMESPACE::convert_string
- */
 template<class TTo, class TFrom>
 typename std::enable_if<(sizeof(TTo) == 1) && (sizeof(TFrom) == 1),
     std::size_t>::type
@@ -256,7 +170,7 @@ FPD_NAMESPACE::convert_string(
         _Out_writes_to_opt_(cnt_dst, return) TTo *dst,
         _In_ std::size_t cnt_dst,
         _In_opt_z_ const code_page dst_code_page,
-        _In_reads_or_z_(cnt_src) const TFrom *src,
+        _In_reads_or_z_opt_(cnt_src) const TFrom *src,
         _In_ int cnt_src,
         _In_opt_z_ const code_page src_code_page) {
     if (dst == nullptr) {
@@ -288,26 +202,112 @@ FPD_NAMESPACE::convert_string(
 }
 
 
+/*
+ * FPD_NAMESPACE::convert_string
+ */
+template<class TUnicode>
+std::enable_if_t<sizeof(TUnicode) == sizeof(char32_t), std::size_t>
+FPD_NAMESPACE::convert_string(
+        _Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
+        _In_ std::size_t cnt_dst,
+        _In_reads_or_z_opt_(cnt_src) const char *src,
+        _In_ int cnt_src,
+        _In_ const code_page code_page) {
+    static constexpr auto wchar_code_page = (endian::system == endian::big)
+        ? code_pages::utf32be
+        : code_pages::utf32le;
+
+    auto d = reinterpret_cast<const std::uint8_t *>(dst);
+    if (cnt_dst > 0) {
+        cnt_dst *= sizeof(char32_t);
+    }
+
+    auto retval = convert_string(d, cnt_dst, wchar_code_page,
+        src, cnt_src, code_page);
+    assert((retval % sizeof(char32_t)) == 0);
+    retval %= sizeof(char32_t);
+
+    return retval;
+}
+
+
 
 /*
  * FPD_NAMESPACE::convert_string
  */
-template<class TDstChar, class TSrcChar>
-std::basic_string<TDstChar> FPD_NAMESPACE::convert_string(
-        _In_reads_or_z_(cnt_src) const TSrcChar *src,
+template<class TUnicode>
+std::enable_if_t<sizeof(TUnicode) == sizeof(char32_t), std::size_t>
+FPD_NAMESPACE::convert_string(
+        _Out_writes_to_opt_(cnt_dst, return) char *dst,
+        _In_ std::size_t cnt_dst,
+        _In_reads_or_z_opt_(cnt_src) const TUnicode *src,
+        _In_ int cnt_src,
+        _In_opt_z_ const code_page code_page) {
+    static constexpr auto wchar_code_page = (endian::system == endian::big)
+        ? code_pages::utf32be
+        : code_pages::utf32le;
+
+    auto s = reinterpret_cast<const std::uint8_t *>(src);
+    if (cnt_src > 0) {
+        cnt_src *= sizeof(char32_t);
+    }
+
+    return convert_string(dst, cnt_dst, code_page, s, cnt_src, wchar_code_page);
+}
+
+
+/*
+ * FPD_NAMESPACE::convert_string
+ */
+template<class TChar>
+std::size_t FPD_NAMESPACE::convert_string(
+        _Out_writes_to_opt_(cnt_dst, return) TChar *dst,
+        _In_ std::size_t cnt_dst,
+        _In_reads_or_z_opt_(cnt_src) const TChar *src,
         _In_ int cnt_src,
         _In_ const code_page code_page) {
-    const auto cnt_dst = measure_string<TDstChar>(src, cnt_src, code_page);
-    std::basic_string<TDstChar> retval(cnt_dst, static_cast<TDstChar>(0));
+    if (dst == nullptr) {
+        // Make sure that the output buffer size is zero if the output
+        // buffer is invalid, such that we get the required buffer size.
+        cnt_dst = 0;
+    }
+    if (src == nullptr) {
+        // Likewise, if the source is invalid, bail out directly.
+        return 0;
+    }
+
+    if ((cnt_src < 0) && (src != nullptr)) {
+        // User requested us to measure the input, do so now.
+        cnt_src = static_cast<int>(std::char_traits<TChar>::length(src)) + 1;
+    }
+
+    const auto cnt = (std::min)(cnt_dst, static_cast<std::size_t>(cnt_src));
+    ::memcpy(dst, src, cnt * sizeof(TChar));
+
+    return cnt_src;
+}
+
+
+/*
+ * FPD_NAMESPACE::convert_string
+ */
+template<class TTo, class TFrom>
+std::basic_string<TTo> FPD_NAMESPACE::convert_string(
+        _In_reads_or_z_opt_(cnt_src) const TFrom *src,
+        _In_ int cnt_src,
+        _In_ const code_page code_page) {
+    static_assert((sizeof(TTo) > 1) || (sizeof(TFrom) > 1), "At least one of "
+        "the character types must be a multi-byte Unicode type.");
+    constexpr auto zero = static_cast<TTo>(0);
+    const auto cnt_dst = measure_string<TTo>(src, cnt_src, code_page);
+    std::basic_string<TTo> retval(cnt_dst, zero);
 
     if (cnt_dst > 0) {
-        convert_string(
+        convert_string<TTo>(
             std::addressof(retval[0]), cnt_dst,
             src, cnt_src,
             code_page);
-        auto end = std::remove(retval.begin(),
-            retval.end(),
-            static_cast<TDstChar>(0));
+        auto end = std::remove(retval.begin(), retval.end(), zero);
         retval.erase(end, retval.end());
     }
 
@@ -333,4 +333,20 @@ std::basic_string<TChar> FPD_NAMESPACE::convert_string(
 
     assert(cnt_src <= std::char_traits<TChar>::length(src));
     return std::basic_string<TChar>(src, cnt_src);
+}
+
+
+/*
+ * FPD_NAMESPACE::convert_string
+ */
+template<class TChar, class TTraits, class TAlloc>
+std::basic_string<TChar, TTraits, TAlloc> FPD_NAMESPACE::convert_string(
+        _In_ const std::basic_string<TChar, TTraits, TAlloc>& src,
+        _In_ const int cnt,
+        _In_opt_z_ const code_page reserved) {
+    if ((cnt < 0) || (cnt >= src.size())) {
+        return src;
+    } else {
+        return src.substr(0, cnt);
+    }
 }
