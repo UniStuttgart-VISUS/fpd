@@ -160,6 +160,34 @@ convert_string(_Out_writes_to_opt_(cnt_dst, return) TTo *dst,
     _In_opt_z_ const code_page src_code_page);
 
 
+//template<class TUnicode>
+//inline std::enable_if_t<!std::is_same_v<TUnicode, utf16_type>
+//    && sizeof(TUnicode) == sizeof(utf16_type), std::size_t>
+//convert_string(_Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
+//        _In_ std::size_t cnt_dst,
+//        _In_reads_or_z_opt_(cnt_src) const char *src,
+//        _In_ int cnt_src,
+//        _In_opt_z_ const code_page code_page) {
+//    return convert_string(reinterpret_cast<utf16_type *>(dst), cnt_dst,
+//        src, cnt_src,
+//        code_page);
+//}
+//
+//
+//template<class TUnicode>
+//inline std::enable_if_t<!std::is_same_v<TUnicode, utf16_type>
+//    && sizeof(TUnicode) == sizeof(utf16_type), std::size_t>
+//convert_string(_Out_writes_to_opt_(cnt_dst, return) char *dst,
+//        _In_ std::size_t cnt_dst,
+//        _In_reads_or_z_opt_(cnt_src) const TUnicode *src,
+//        _In_ int cnt_src,
+//        _In_opt_z_ const code_page code_page) {
+//    return convert_string(dst, cnt_dst,
+//        reinterpret_cast<const utf16_type *>(src), cnt_src,
+//        code_page);
+//}
+
+
 /// <summary>
 /// Converts a multi-byte string of the given encoding into an UTF-32
 /// string.
@@ -264,8 +292,35 @@ template<class TChar> std::size_t convert_string(
 /// <exception cref="std::system_error">If the conversion failed.
 /// </exception>
 template<class TTo, class TFrom>
-std::basic_string<TTo> convert_string(
-    _In_reads_or_z_opt_(cnt_src) const TFrom *src,
+std::enable_if_t<sizeof(TTo) != sizeof(TFrom), std::basic_string<TTo>>
+convert_string(_In_reads_or_z_opt_(cnt_src) const TFrom *src,
+    _In_ int cnt_src,
+    _In_opt_z_ const code_page code_page);
+
+
+/// <summary>
+/// Performs a trivial conversion to an STL string.
+/// </summary>
+/// <remarks>
+/// This overload is used to convert between bitwise identical types such as
+/// <see langword="wchar_t" /> and <see langword="char16_t" /> on Windows or
+/// <see langword="wchar_t" /> and <see langword="char32_t" /> on Linux.
+/// </remarks>
+/// <typeparam name="TTo">The character type to convert to.</typeparam>
+/// <typeparam name="TFrom">The character type to convert from.</typeparam>
+/// <param name="src">The string to be converted. It is safe to pass
+/// <see langword="nullptr" />, in which case the result will be an empty
+/// string.</param>
+/// <param name="cnt_src">The length of the source string, which can be -1
+/// if <paramref name="src" /> is null-terminated.</param>
+/// <param name="code_page">The code page used for the multi-byte character
+/// string.</param>
+/// <returns>The converted string.</returns>
+/// <exception cref="std::system_error">If the conversion failed.
+/// </exception>
+template<class TTo, class TFrom>
+std::enable_if_t<sizeof(TTo) == sizeof(TFrom), std::basic_string<TTo>>
+convert_string(_In_reads_or_z_opt_(cnt_src) const TFrom *src,
     _In_ int cnt_src,
     _In_opt_z_ const code_page code_page);
 
@@ -285,10 +340,12 @@ std::basic_string<TTo> convert_string(
 /// <returns>A new string containing <paramref name="src" /> or a substring
 /// thereof.</returns>
 template<class TChar>
-std::basic_string<TChar> convert_string(
-    _In_reads_or_z_opt_(cnt_src) const TChar *src,
-    _In_ int cnt_src,
-    _In_opt_z_ const code_page reserved);
+inline std::basic_string<TChar> convert_string(
+        _In_reads_or_z_opt_(cnt_src) const TChar *src,
+        _In_ int cnt_src,
+        _In_opt_z_ const code_page reserved) {
+    return convert_string<TChar>(src, cnt_src, reserved);
+}
 
 
 /// <summary>

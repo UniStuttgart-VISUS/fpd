@@ -292,7 +292,8 @@ std::size_t FPD_NAMESPACE::convert_string(
  * FPD_NAMESPACE::convert_string
  */
 template<class TTo, class TFrom>
-std::basic_string<TTo> FPD_NAMESPACE::convert_string(
+std::enable_if_t<sizeof(TTo) != sizeof(TFrom), std::basic_string<TTo>>
+FPD_NAMESPACE::convert_string(
         _In_reads_or_z_opt_(cnt_src) const TFrom *src,
         _In_ int cnt_src,
         _In_ const code_page code_page) {
@@ -303,7 +304,7 @@ std::basic_string<TTo> FPD_NAMESPACE::convert_string(
     std::basic_string<TTo> retval(cnt_dst, zero);
 
     if (cnt_dst > 0) {
-        convert_string<TTo>(
+        convert_string(
             std::addressof(retval[0]), cnt_dst,
             src, cnt_src,
             code_page);
@@ -318,21 +319,23 @@ std::basic_string<TTo> FPD_NAMESPACE::convert_string(
 /*
  * FPD_NAMESPACE::convert_string
  */
-template<class TChar>
-std::basic_string<TChar> FPD_NAMESPACE::convert_string(
-        _In_reads_or_z_opt_(cnt_src) const TChar *src,
+template<class TTo, class TFrom>
+std::enable_if_t<sizeof(TTo) == sizeof(TFrom), std::basic_string<TTo>>
+FPD_NAMESPACE::convert_string(
+        _In_reads_or_z_opt_(cnt_src) const TFrom *src,
         _In_ int cnt_src,
         _In_ const code_page code_page) {
     if ((src == nullptr) || (cnt_src == 0)) {
-        return std::basic_string<TChar>();
+        return std::basic_string<TTo>();
     }
 
-    if (cnt_src < 0) {
-        return src;
+    auto s = reinterpret_cast<const TTo *>(src);
+
+    if ((cnt_src < 0) || (cnt_src >= std::char_traits<TFrom>::length(src))) {
+        return s;
     }
 
-    assert(cnt_src <= std::char_traits<TChar>::length(src));
-    return std::basic_string<TChar>(src, cnt_src);
+    return std::basic_string<TTo>(s, cnt_src);
 }
 
 
