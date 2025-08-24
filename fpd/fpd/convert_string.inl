@@ -259,11 +259,12 @@ FPD_NAMESPACE::convert_string(
 /*
  * FPD_NAMESPACE::convert_string
  */
-template<class TChar>
-std::size_t FPD_NAMESPACE::convert_string(
-        _Out_writes_to_opt_(cnt_dst, return) TChar *dst,
+template<class TTo, class TFrom>
+std::enable_if_t<sizeof(TTo) == sizeof(TFrom), std::size_t>
+FPD_NAMESPACE::convert_string(
+        _Out_writes_to_opt_(cnt_dst, return) TTo *dst,
         _In_ std::size_t cnt_dst,
-        _In_reads_or_z_opt_(cnt_src) const TChar *src,
+        _In_reads_or_z_opt_(cnt_src) const TFrom *src,
         _In_ int cnt_src,
         _In_ const code_page code_page) {
     if (dst == nullptr) {
@@ -278,11 +279,11 @@ std::size_t FPD_NAMESPACE::convert_string(
 
     if ((cnt_src < 0) && (src != nullptr)) {
         // User requested us to measure the input, do so now.
-        cnt_src = static_cast<int>(std::char_traits<TChar>::length(src)) + 1;
+        cnt_src = static_cast<int>(std::char_traits<TFrom>::length(src)) + 1;
     }
 
     const auto cnt = (std::min)(cnt_dst, static_cast<std::size_t>(cnt_src));
-    ::memcpy(dst, src, cnt * sizeof(TChar));
+    ::memcpy(dst, src, cnt * sizeof(TFrom));
 
     return cnt_src;
 }
@@ -324,7 +325,7 @@ std::enable_if_t<sizeof(TTo) == sizeof(TFrom), std::basic_string<TTo>>
 FPD_NAMESPACE::convert_string(
         _In_reads_or_z_opt_(cnt_src) const TFrom *src,
         _In_ int cnt_src,
-        _In_ const code_page code_page) {
+        _In_opt_z_ const code_page code_page) {
     if ((src == nullptr) || (cnt_src == 0)) {
         return std::basic_string<TTo>();
     }

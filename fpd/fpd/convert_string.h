@@ -251,8 +251,8 @@ convert_string(_Out_writes_to_opt_(cnt_dst, return) char *dst,
 /// <summary>
 /// Performs a trivial conversion (<see cref="memcpy" />).
 /// </summary>
-/// <typeparam name="TChar">The type of the characters used for the string.
-/// </typeparam>
+/// <typeparam name="TTo">The character type to convert to.</typeparam>
+/// <typeparam name="TFrom">The character type to convert from.</typeparam>
 /// <param name="dst">A buffer to receive the output that can hold at least
 /// <paramref name="cnt_dst" /> characters. This can be
 /// <see langword="nullptr" /> if <paramref name="cnt_dst" /> is zero.</param>
@@ -266,10 +266,11 @@ convert_string(_Out_writes_to_opt_(cnt_dst, return) char *dst,
 /// including the terminating zero.</returns>
 /// <exception cref="std::system_error">If the conversion failed.
 /// </exception>
-template<class TChar> std::size_t convert_string(
-    _Out_writes_to_opt_(cnt_dst, return) TChar *dst,
+template<class TTo, class TFrom>
+std::enable_if_t<sizeof(TTo) == sizeof(TFrom), std::size_t> convert_string(
+    _Out_writes_to_opt_(cnt_dst, return) TTo *dst,
     _In_ std::size_t cnt_dst,
-    _In_reads_or_z_opt_(cnt_src) const TChar *src,
+    _In_reads_or_z_opt_(cnt_src) const TFrom *src,
     _In_ int cnt_src,
     _In_opt_z_ const code_page code_page);
 
