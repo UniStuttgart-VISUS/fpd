@@ -172,5 +172,46 @@ namespace fpd {
                 Assert::IsTrue(convert_string<dst_type>(input, -1, cp).empty(), L"nullptr conversion", LINE_INFO());
             }
         }
+
+        TEST_METHOD(measure) {
+            {
+                Assert::AreEqual(std::size_t(0), measure_string<wchar_t>(nullptr, code_pages::utf8), L"nullptr", LINE_INFO());
+                Assert::AreEqual(std::size_t(0), measure_string<wchar_t>(nullptr, -1, code_pages::utf8), L"nullptr", LINE_INFO());
+                Assert::AreEqual(std::size_t(0), measure_string<wchar_t>(nullptr, 42, code_pages::utf8), L"nullptr", LINE_INFO());
+            }
+
+            {
+                typedef char dst_type;
+                const auto input = L"input";
+                Assert::AreEqual(std::size_t(6), measure_string(input, code_pages::utf8), L"wchar_t as utf8", LINE_INFO());
+            }
+
+            {
+                typedef char dst_type;
+                const auto input = L"input";
+                Assert::AreEqual(std::size_t(3), measure_string(input, 3, code_pages::utf8), L"limited wchar_t as utf8", LINE_INFO());
+            }
+
+            {
+                typedef char dst_type;
+                const auto input = L"привет";
+                Assert::AreEqual(std::size_t(13), measure_string(code_pages::utf8, input, code_pages::utf16le), L"привет as utf8", LINE_INFO());
+            }
+        }
+
+        TEST_METHOD(measure_bugs) {
+
+            //{
+            //    typedef char dst_type;
+            //    const auto input = "input";
+            //    Assert::AreEqual(std::size_t(6), measure_string(code_pages::ansi, input, -1, code_pages::utf8), L"utf8 as ANSI", LINE_INFO());
+            //}
+
+            {
+                typedef char dst_type;
+                const auto input = L"input";
+                Assert::AreEqual(std::size_t(6), measure_string(code_pages::ansi, input, -1, code_pages::utf16le), L"utf16 as ANSI", LINE_INFO());
+            }
+        }
     };
 }

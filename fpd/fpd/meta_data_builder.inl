@@ -92,16 +92,18 @@ FPD_NAMESPACE::meta_data_builder<TChar>::size(void) const {
     if (!this->_user_defined_semantics.empty()) {
         retval += sizeof(header_segment);
         for (auto& s : this->_user_defined_semantics) {
-            retval += measure_string<char16_t>(s.c_str(), this->code_page())
-                * sizeof(char16_t);
+            retval += measure_string(code_pages::utf8,
+                s.c_str(),
+                this->code_page());
         }
     }
 
     // Optional file description (0x04).
     if (!this->_description.empty()) {
         retval += sizeof(header_segment);
-        retval += measure_string<char16_t>(this->_description.c_str(),
-            this->code_page()) * sizeof(char16_t);
+        retval += measure_string(code_pages::utf8,
+            this->_description.c_str(),
+            this->code_page());
     }
 
     // Optional bounding boxes (0x05).

@@ -111,6 +111,14 @@ public:
         this->read_meta_data(expected_header_size);
     }
 
+    /// <summary>
+    /// Gets the meta data of the FPD file.
+    /// </summary>
+    /// <returns>The meta data read from the begin of the file.</returns>
+    inline const meta_data_type& meta_data(void) const noexcept {
+        return this->_meta_data;
+    }
+
 private:
 
     void read(_Out_writes_all_(cnt) std::uint8_t *dst,

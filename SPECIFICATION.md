@@ -59,14 +59,14 @@ The format description describes the semantics and layout of the particles. A fo
 | uint16   | 2 Bytes | The size of the element in bytes. If zero, the `format` will be used to determine the size.                                      |
 
 ### User-defined semantic description (0x03)
-This segment is optional any only present if any of the format descriptions uses a custom semantic.
+This segment is optional and only present if any of the format descriptions uses a custom semantic.
 
-All strings in this segment are null-terminated UTF-16 strings. For each user-defined semantic used in the format description, there must be a matching entry in this array.
+All strings in this segment are null-terminated UTF-8 strings. For each user-defined semantic used in the format description, there must be a matching entry in this array.
 
 ### File description (0x04)
 This segment is optional.
 
-This segments holds a single UTF-16 string with a human-readable description of the contents of the file. The string may not be null-terminated, but end just at the border of the segment.
+This segments holds a single UTF-8 string with a human-readable description of the contents of the file. The string may not be null-terminated, but end just at the border of the segment.
 
 ### Bounding box (0x05)
 This segment is optional.
@@ -77,7 +77,7 @@ The segment starts with the `format` (4 bytes) of the bounding box. This must be
 
 | Type     | Length   | Description                                                                                                                          |
 |----------|----------|--------------------------------------------------------------------------------------------------------------------------------------|
-| format   | 4 Bytes  | The format used to specifiy the locations of the borders of the bounding box, which must be a scalare from the enumerated `format`s. |
+| format   | 4 Bytes  | The format used to specifiy the locations of the borders of the bounding box, which must be a scalar from the enumerated `format`s.  |
 | [format] | Variable | The minimum location on the x-axis. This must have the format specified before.                                                      |
 | [format] | Variable | The minimum location on the y-axis. This must have the format specified before.                                                      |
 | [format] | Variable | The minimum location on the z-axis. This must have the format specified before.                                                      |

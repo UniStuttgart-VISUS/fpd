@@ -180,6 +180,7 @@
     <ClCompile Include="test_format_variant.cpp" />
     <ClCompile Include="test_invoke.cpp" />
     <ClCompile Include="test_io.cpp" />
+    <ClCompile Include="test_make_unsigned.cpp" />
     <ClCompile Include="test_meta_data.cpp" />
     <ClCompile Include="test_pkd.cpp" />
     <ClCompile Include="test_semantic.cpp" />

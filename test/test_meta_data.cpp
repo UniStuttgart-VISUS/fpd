@@ -92,7 +92,7 @@ namespace fpd {
 
                     // file description
                     + sizeof(header_segment)
-                    + (::wcslen(L"description") + 1) * sizeof(char16_t);
+                    + (::wcslen(L"description") + 1) * sizeof(char);
 
                 Assert::AreEqual(expected, builder.size(), L"Overall header size", LINE_INFO());
             }
@@ -127,7 +127,7 @@ namespace fpd {
 
                     // User-defined format table.
                     + sizeof(header_segment)
-                    + (::wcslen(L"float3") + 1) * sizeof(char16_t);
+                    + (::wcslen(L"float3") + 1) * sizeof(char);
 
                 Assert::AreEqual(expected, builder.size(), L"Overall header size", LINE_INFO());
             }

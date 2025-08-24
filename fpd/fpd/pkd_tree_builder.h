@@ -16,6 +16,7 @@
 
 #include "fpd/bounding_box.h"
 #include "fpd/format_description.h"
+#include "fpd/make_unsigned.h"
 
 
 FPD_NAMESPACE_BEGIN
@@ -142,8 +143,8 @@ private:
     }
 
     /// <summary>
-    /// Embeds the given <paramref name="axis" /> in the least significant bits
-    /// of the <see cref="_axis_dimension" />th component of
+    /// Embeds the given <paramref name="axis" /> in the three least significant
+    /// bits of the <see cref="_axis_dimension" />th component of
     /// <paramref name="position" />.
     /// </summary>
     template<class TScalar> void embed_axis(_In_ TScalar *position,

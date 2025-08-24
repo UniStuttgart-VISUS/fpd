@@ -75,7 +75,8 @@ typedef char16_t utf16_type;
 /// if <paramref name="src" /> is null-terminated.</param>
 /// <param name="encoding">The code page used for the narrow string.</param>
 /// <returns>The number of characters required for the output string,
-/// including the terminating zero.</returns>
+/// including the terminating zero if the conversion size is not limited
+/// by <paramref name="cnt_src" />.</returns>
 /// <exception cref="std::system_error">If the conversion failed.
 /// </exception>
 template<class TUnicode>
@@ -108,7 +109,8 @@ convert_string(_Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
 /// if <paramref name="src" /> is null-terminated.</param>
 /// <param name="encoding">The code page used for the narrow string.</param>
 /// <returns>The number of characters required for the output string,
-/// including the terminating zero.</returns>
+/// including the terminating zero if the conversion size is not limited
+/// by <paramref name="cnt_src" />.</returns>
 /// <exception cref="std::system_error">If the conversion failed.
 /// </exception>
 template<class TUnicode>
@@ -148,7 +150,8 @@ convert_string(_Out_writes_to_opt_(cnt_dst, return) char *dst,
 /// <param name="cnt_src">The length of the input string in bytes or -1 if the
 /// input is null-terminated.</param>
 /// <param name="src_code_page">The encoding of <paramref name="src" />.</param>
-/// <returns>The number of bytes required to store the output</returns>
+/// <returns>The number of bytes required to store the output string, <i>not</i>
+/// including the terminator.</returns>
 template<class TTo, class TFrom>
 typename std::enable_if<(sizeof(TTo) == 1) && (sizeof(TFrom) == 1),
     std::size_t>::type
@@ -431,36 +434,74 @@ inline std::size_t measure_string(
 
 
 /// <summary>
-/// Measure the length of the given <paramref name="str" /> or
-/// <paramref name="cnt" />.
+/// Measures how many <i>bytes</i> a string in in the given encoding
+/// <paramref name="src_code_page" /> would require in
+/// <paramref name="dst_code_page" />.
 /// </summary>
 /// <typeparam name="TChar"></typeparam>
-/// <param name="str">The string to be measured if <paramref name="cnt "/> is
-/// -1,</param>
-/// <param name="cnt">If not negative, the return value.</param>
+/// <param name="dst_code_page"></param>
+/// <param name="str"></param>
+/// <param name="cnt"></param>
+/// <param name="src_code_page"></param>
+/// <returns>The number of <i>bytes</i> the input string would require in
+/// the output encoding.</returns>
+template<class TChar>
+std::size_t measure_string(
+    _In_opt_z_ const code_page dst_code_page,
+    _In_ const TChar *str,
+    _In_ int cnt,
+    _In_opt_z_ const code_page src_code_page);
+
+
+/// <summary>
+/// Measures how many <i>byte</i> a string in in the given encoding
+/// <paramref name="src_code_page" /> would require in
+/// <paramref name="dst_code_page" />.
+/// </summary>
+/// <typeparam name="TChar"></typeparam>
+/// <param name="dst_code_page"></param>
+/// <param name="str"></param>
+/// <param name="cnt"></param>
+/// <param name="src_code_page"></param>
+/// <returns></returns>
+template<class TChar> inline std::size_t measure_string(
+        _In_opt_z_ const code_page dst_code_page,
+        _In_ const TChar *str,
+        _In_opt_z_ const code_page src_code_page) {
+    return measure_string(dst_code_page, str, -1, src_code_page);
+}
+
+
+/// <summary>
+/// Measure the length of the given <paramref name="str" />, but return at most
+/// <paramref name="cnt" /> if it is non-negative.
+/// </summary>
+/// <typeparam name="TChar"></typeparam>
+/// <param name="str">The string to be measured.</param>
+/// <param name="cnt">If not negative, the maximum return value.</param>
 /// <param name="reserved">This parameter is ignored.</param>
 /// <returns>The length of <paramref name="str" /> including the terminating
-/// null character, or <paramref name="cnt" /> if it is not -1.</returns>
-template<class TChar> inline std::size_t measure_string(
-        _In_reads_or_z_opt_(cnt) const TChar *str,
-        _In_ const int cnt,
-        _In_opt_z_ const code_page reserved) {
-    return (cnt >= 0) ? cnt : measure_string(str, reserved);
-}
+/// null character, but at most <paramref name="cnt" /> if it is not -1.
+/// </returns>
+template<class TChar> std::size_t measure_string(
+    _In_reads_or_z_opt_(cnt) const TChar *str,
+    _In_ const int cnt,
+    _In_opt_z_ const code_page reserved);
 
 
 /// <summary>
 /// Measure the length of the given <paramref name="str" />.
 /// </summary>
 /// <typeparam name="TChar"></typeparam>
-/// <param name="str"></param>
-/// <param name="reserved"></param>
+/// <param name="str">The string to be measured. It is safe to pass
+/// <see langword="nullptr" />, in which case the answer is zero.</param>
+/// <param name="reserved">This parameter is ignored.</param>
 /// <returns>The length of <paramref name="str" /> including the terminating
 /// null character.</returns>
 template<class TChar> inline std::size_t measure_string(
         _In_opt_z_ const TChar *str,
         _In_opt_z_ const code_page reserved) {
-    return std::char_traits<TChar>::length(str) + 1;
+    return (str != nullptr) ? std::char_traits<TChar>::length(str) + 1 : 0;
 }
 
 

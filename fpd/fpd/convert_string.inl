@@ -354,3 +354,39 @@ std::basic_string<TChar, TTraits, TAlloc> FPD_NAMESPACE::convert_string(
         return src.substr(0, cnt);
     }
 }
+
+
+/*
+ * FPD_NAMESPACE::measure_string
+ */
+template<class TChar> std::size_t FPD_NAMESPACE::measure_string(
+        _In_reads_or_z_opt_(cnt) const TChar *str,
+        _In_ const int cnt,
+        _In_opt_z_ const code_page reserved) {
+    if (str == nullptr) {
+        return 0;
+    }
+
+    return (std::min)(static_cast<std::size_t>(cnt),
+        measure_string(str, reserved));
+}
+
+
+
+/*
+ * FPD_NAMESPACE::measure_string
+ */
+template<class TChar>
+std::size_t FPD_NAMESPACE::measure_string(
+        _In_opt_z_ const code_page dst_code_page,
+        _In_ const TChar *str,
+        _In_ int cnt,
+        _In_opt_z_ const code_page src_code_page) {
+    if (cnt > 0) {
+        cnt *= sizeof(TChar);
+    }
+
+    return convert_string(
+        reinterpret_cast<std::uint8_t *>(nullptr), 0, dst_code_page,
+        reinterpret_cast<const std::uint8_t *>(str), cnt, src_code_page);
+}

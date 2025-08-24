@@ -120,6 +120,9 @@
     <ClInclude Include="fpd\icu_category.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fpd\make_unsigned.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\semantic.inl">

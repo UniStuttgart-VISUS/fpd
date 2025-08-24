@@ -306,7 +306,7 @@ private:
     static void parse_user_semantics(_Inout_ meta_data& meta_data,
         _In_ const void *data, _In_ const std::size_t cnt);
 
-    string_type to_string(_In_ const char16_t *begin, _In_ const char16_t *end);
+    string_type to_string(_In_ const char *begin, _In_ const char *end);
 
     string_type to_string(_In_reads_(cnt) const void *data,
         _In_ const std::size_t cnt);

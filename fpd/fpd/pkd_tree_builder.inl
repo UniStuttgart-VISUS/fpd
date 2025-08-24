@@ -1,160 +1,156 @@
 ﻿// <copyright file="pkd_tree_builder.inl" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2024 Visualisierungsinstitut der Universität Stuttgart.
+// Copyright © 2024 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
 
-FPD_NAMESPACE_BEGIN
+FPD_DETAIL_NAMESPACE_BEGIN
 
-namespace detail {
+/// <summary>
+/// Answer whether <paramref name="node" /> is not a valid node in a tree of
+/// <paramref name="cnt" /> particles.
+/// </summary>
+inline constexpr bool ospray_pkd_invalid_node(
+        _In_ const std::size_t node,
+        _In_ const std::size_t cnt) noexcept {
+    return (node >= cnt);
+}
+
+/// <summary>
+/// Gets the index of the left child of <paramref name="node" /> in an
+/// OSPRay-style balanced kd-tree.
+/// </summary>
+inline constexpr std::size_t ospray_pkd_left_child(
+        _In_ const std::size_t node) noexcept {
+    return 2 * node + 1;
+}
+
+/// <summary>
+/// Gets the index of the parent of <paramref name="node" /> in an
+/// OSPRay-style balanced kd-tree.
+/// </summary>
+inline constexpr std::size_t ospray_pkd_parent(
+        _In_ const std::size_t node) noexcept {
+    return (node - 1) >> 1;
+}
+
+/// <summary>
+/// Gets the index of the right child of <paramref name="node" /> in an
+/// OSPRay-style balanced kd-tree.
+/// </summary>
+inline constexpr std::size_t ospray_pkd_right_child(
+        _In_ const std::size_t node) noexcept {
+    return 2 * node + 2;
+}
+
+/// <summary>
+/// Answer whether <paramref name="node" /> is a valid node in a tree of
+/// <paramref name="cnt" /> particles.
+/// </summary>
+inline constexpr bool ospray_pkd_valid_node(
+        _In_ const std::size_t node,
+        _In_ const std::size_t cnt) noexcept {
+    return (node < cnt);
+}
+
+/// <summary>
+/// Iterates over the nodes of a specific subtree in level-order (breadth
+/// first).
+/// </summary>
+/// <remarks>
+/// <para>This iterator assumes a tree layout as used in OSPRay, i.e. for
+/// each node, the left child is located at (2 * node + 1) and the right
+/// child at (2 * node + 2). In this case, the iterator will iterate all
+/// node indices of a node and its children in level-order.</para>
+/// <para>This code was derived from
+/// https://github.com/ingowald/ospray-module-pkd/blob/master/apps/PartiKD.cpp
+/// </para>
+/// </remarks>
+class ospray_pkd_iterator final {
+
+public:
 
     /// <summary>
-    /// Answer whether <paramref name="node" /> is not a valid node in a tree of
-    /// <paramref name="cnt" /> particles.
+    /// Initialises a new instance.
     /// </summary>
-    inline constexpr bool ospray_pkd_invalid_node(
-            _In_ const std::size_t node,
-            _In_ const std::size_t cnt) noexcept {
-        return (node >= cnt);
+    /// <param name="root">The zero-based index of the root node.</param>
+    ospray_pkd_iterator(_In_ const std::size_t root)
+        : _pos(root), _end(1), _cur(0) { }
+
+    /// <summary>
+    /// Increments the iterator.
+    /// </summary>
+    /// <returns><c>*this</c>.</returns>
+    inline ospray_pkd_iterator& operator ++(void) noexcept {
+        ++this->_pos;
+
+        if (++this->_cur == this->_end) {
+            this->_cur = 0;
+            this->_pos = detail::ospray_pkd_left_child(this->_pos - this->_end);
+            this->_end += this->_end;
+        }
+
+        return *this;
     }
 
     /// <summary>
-    /// Gets the index of the left child of <paramref name="node" /> in an
-    /// OSPRay-style balanced kd-tree.
+    /// Postfix-increment the iterator.
     /// </summary>
-    inline constexpr std::size_t ospray_pkd_left_child(
-            _In_ const std::size_t node) noexcept {
-        return 2 * node + 1;
+    /// <returns><c>*this</c> before the increment.</returns>
+    inline ospray_pkd_iterator& operator ++(int) noexcept {
+        auto retval = *this;
+        ++(*this);
+        return retval;
     }
 
     /// <summary>
-    /// Gets the index of the parent of <paramref name="node" /> in an
-    /// OSPRay-style balanced kd-tree.
+    /// Answer the current position of the iterator.
     /// </summary>
-    inline constexpr std::size_t ospray_pkd_parent(
-            _In_ const std::size_t node) noexcept {
-        return (node - 1) >> 1;
+    /// <returns>The current position of the iterator.</returns>
+    inline operator std::size_t(void) const noexcept {
+        return this->_pos;
     }
 
     /// <summary>
-    /// Gets the index of the right child of <paramref name="node" /> in an
-    /// OSPRay-style balanced kd-tree.
+    /// Dereferences the iterator.
     /// </summary>
-    inline constexpr std::size_t ospray_pkd_right_child(
-            _In_ const std::size_t node) noexcept {
-        return 2 * node + 2;
+    /// <returns>The current position of the iterator.</returns>
+    inline std::size_t operator *(void) const noexcept {
+        return this->_pos;
     }
 
     /// <summary>
-    /// Answer whether <paramref name="node" /> is a valid node in a tree of
-    /// <paramref name="cnt" /> particles.
+    /// Test for equality.
     /// </summary>
-    inline constexpr bool ospray_pkd_valid_node(
-            _In_ const std::size_t node,
-            _In_ const std::size_t cnt) noexcept {
-        return (node < cnt);
+    /// <param name="rhs">The object to be compared.</param>
+    /// <returns><c>true</c> if this iterator and <paramref name="rhs" />
+    /// point to the same node, <c>false</c> otherwise.</returns>
+    inline bool operator ==(
+        _In_ const ospray_pkd_iterator& rhs) const noexcept {
+        // Note: if the positions are the same, the rest must match, too.
+        return (this->_pos == rhs._pos);
     }
 
     /// <summary>
-    /// Iterates over the nodes of a specific subtree in level-order (breadth
-    /// first).
+    /// Test for inequality.
     /// </summary>
-    /// <remarks>
-    /// <para>This iterator assumes a tree layout as used in OSPRay, i.e. for
-    /// each node, the left child is located at (2 * node + 1) and the right
-    /// child at (2 * node + 2). In this case, the iterator will iterate all
-    /// node indices of a node and its children in level-order.</para>
-    /// <para>This code was derived from
-    /// https://github.com/ingowald/ospray-module-pkd/blob/master/apps/PartiKD.cpp
-    /// </para>
-    /// </remarks>
-    class ospray_pkd_iterator final {
+    /// <param name="rhs">The object to be compared.</param>
+    /// <returns><c>true</c> if this iterator and <paramref name="rhs" />
+    /// do not point to the same node, <c>false</c> otherwise.</returns>
+    inline bool operator !=(
+        _In_ const ospray_pkd_iterator& rhs) const noexcept {
+        return !(*this == rhs);
+    }
 
-    public:
+private:
 
-        /// <summary>
-        /// Initialises a new instance.
-        /// </summary>
-        /// <param name="root">The zero-based index of the root node.</param>
-        ospray_pkd_iterator(_In_ const std::size_t root)
-            : _pos(root), _end(1), _cur(0) { }
+    std::size_t _cur;
+    std::size_t _end;
+    std::size_t _pos;
+};
 
-        /// <summary>
-        /// Increments the iterator.
-        /// </summary>
-        /// <returns><c>*this</c>.</returns>
-        inline ospray_pkd_iterator& operator ++(void) noexcept {
-            ++this->_pos;
-
-            if (++this->_cur == this->_end) {
-                this->_cur = 0;
-                this->_pos = detail::ospray_pkd_left_child(this->_pos - this->_end);
-                this->_end += this->_end;
-            }
-
-            return *this;
-        }
-
-        /// <summary>
-        /// Postfix-increment the iterator.
-        /// </summary>
-        /// <returns><c>*this</c> before the increment.</returns>
-        inline ospray_pkd_iterator& operator ++(int) noexcept {
-            auto retval = *this;
-            ++(*this);
-            return retval;
-        }
-
-        /// <summary>
-        /// Answer the current position of the iterator.
-        /// </summary>
-        /// <returns>The current position of the iterator.</returns>
-        inline operator std::size_t(void) const noexcept {
-            return this->_pos;
-        }
-
-        /// <summary>
-        /// Dereferences the iterator.
-        /// </summary>
-        /// <returns>The current position of the iterator.</returns>
-        inline std::size_t operator *(void) const noexcept {
-            return this->_pos;
-        }
-
-        /// <summary>
-        /// Test for equality.
-        /// </summary>
-        /// <param name="rhs">The object to be compared.</param>
-        /// <returns><c>true</c> if this iterator and <paramref name="rhs" />
-        /// point to the same node, <c>false</c> otherwise.</returns>
-        inline bool operator ==(
-            _In_ const ospray_pkd_iterator &rhs) const noexcept {
-            // Note: if the positions are the same, the rest must match, too.
-            return (this->_pos == rhs._pos);
-        }
-
-        /// <summary>
-        /// Test for inequality.
-        /// </summary>
-        /// <param name="rhs">The object to be compared.</param>
-        /// <returns><c>true</c> if this iterator and <paramref name="rhs" />
-        /// do not point to the same node, <c>false</c> otherwise.</returns>
-        inline bool operator !=(
-            _In_ const ospray_pkd_iterator &rhs) const noexcept {
-            return !(*this == rhs);
-        }
-
-    private:
-
-        std::size_t _cur;
-        std::size_t _end;
-        std::size_t _pos;
-    };
-
-} /* namespace detail */
-
-FPD_NAMESPACE_END
+FPD_DETAIL_NAMESPACE_END
 
 
 /*
@@ -176,9 +172,10 @@ FPD_NAMESPACE::pkd_tree_builder<TChar>::pkd_tree_builder(void) noexcept
  * FPD_NAMESPACE::pkd_tree_builder<TChar>::build
  */
 template<class TChar>
-FPD_NAMESPACE::pkd_tree_builder<TChar> &
-FPD_NAMESPACE::pkd_tree_builder<TChar>::build(_In_ void *particles,
-    _In_ const std::size_t cnt) {
+FPD_NAMESPACE::pkd_tree_builder<TChar>&
+FPD_NAMESPACE::pkd_tree_builder<TChar>::build(
+        _In_ void *particles,
+        _In_ const std::size_t cnt) {
     if ((cnt > 0) && (particles == nullptr)) {
         throw std::invalid_argument("A valid pointer to the particles must be "
             "provided.");
@@ -272,8 +269,8 @@ void FPD_NAMESPACE::pkd_tree_builder<TChar>::build_ospray(
 
     auto left = detail::ospray_pkd_left_child(node);
     if (detail::ospray_pkd_invalid_node(left, nodes)) {
-        // If there is no left child, there is no child at all, so we are node
-        // for the subtree.
+        // If there is no left child, there is no child at all, so we are the
+        // node for the subtree.
         return;
     }
 
@@ -459,9 +456,16 @@ template<class TChar>
 template<class TScalar>
 void FPD_NAMESPACE::pkd_tree_builder<TChar>::embed_axis(_In_ TScalar *position,
         _In_ const std::size_t axis) const noexcept {
+    typedef detail::make_unsigned<TScalar> mask_type;
+    constexpr auto three = static_cast<mask_type>(3);
+
     if (this->_axis_component < this->_components) {
-        // Determine equivalent UINT
-        throw "TODO";
+        auto a = reinterpret_cast<mask_type *>(position);
+        a += this->_axis_component;
+        // Erase the three least significant bits and and replace them with the
+        // split axis.
+        assert(axis < 3);
+        *a = (*a & ~three) | static_cast<mask_type>(axis);
     }
 }
 

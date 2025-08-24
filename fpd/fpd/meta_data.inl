@@ -294,10 +294,6 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_description(
         throw std::invalid_argument("The file description has already been "
             "parsed.");
     }
-    if ((cnt % sizeof(char16_t)) != 0) {
-        throw std::invalid_argument("The description has an unexpected size.");
-    }
-
     meta_data._description = meta_data.to_string(data, cnt);
 }
 
@@ -448,13 +444,8 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_user_semantics(
         _Inout_ meta_data& meta_data,
         _In_ const void *data,
         _In_ const std::size_t cnt) {
-    if ((cnt % sizeof(char16_t)) != 0) {
-        throw std::invalid_argument("The table of user-semantics has an "
-            "unexpected size.");
-    }
-
-    auto cur = static_cast<const char16_t *>(data);
-    const auto end = cur + (cnt / sizeof(char16_t));
+    auto cur = static_cast<const char *>(data);
+    const auto end = cur + cnt;
 
     while (cur < end) {
         auto next = cur;
@@ -471,23 +462,33 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_user_semantics(
  */
 template<class TChar>
 typename FPD_NAMESPACE::meta_data<TChar>::string_type
-FPD_NAMESPACE::meta_data<TChar>::to_string(_In_ const char16_t *begin,
-        _In_ const char16_t *end) {
+FPD_NAMESPACE::meta_data<TChar>::to_string(_In_ const char *begin,
+        _In_ const char *end) {
     assert(begin != nullptr);
     assert(end != nullptr);
     assert(end >= begin);
-    std::vector<char16_t> string;
-    string.resize(end - begin);
+    constexpr auto zero = static_cast<TChar>(0);
+    const auto cnt_src = static_cast<int>(end - begin);
 
-    // Swap the endian according to what the meta data say.
-    swap_endian(string.data(), begin, string.size(), this->endian());
+    // Measure how many *bytes* we need to store the converted string.
+    auto dst = static_cast<std::uint8_t *>(nullptr);
+    auto cnt_dst = convert_string(
+        dst, 0, this->code_page(),
+        begin, cnt_src, code_pages::utf8);
 
-    // Convert the character type or the meta data.
-    assert(string.size() <= static_cast<std::size_t>(INT_MAX));
-    return convert_string<char_type>(
-        string.data(),
-        static_cast<int>(string.size()),
-        this->code_page());
+    // Allocate the output string.
+    assert(cnt_dst % sizeof(TChar) == 0);
+    string_type retval(cnt_dst / sizeof(TChar), zero);
+    dst = reinterpret_cast<std::uint8_t *>(std::addressof(retval[0]));
+    convert_string(
+        dst, cnt_dst, this->code_page(),
+        begin, cnt_src, code_pages::utf8);
+
+    // Erase all bogus zeros from the output.
+    retval.erase(std::remove(retval.begin(), retval.end(), zero),
+        retval.end());
+
+    return retval;
 }
 
 
@@ -499,7 +500,7 @@ typename FPD_NAMESPACE::meta_data<TChar>::string_type
 FPD_NAMESPACE::meta_data<TChar>::to_string(_In_reads_(cnt) const void *data,
         _In_ const std::size_t cnt) {
     assert(data != nullptr);
-    auto end = static_cast<const std::uint8_t *>(data) + cnt;
-    return this->to_string(static_cast<const char16_t *>(data),
-        reinterpret_cast<const char16_t *>(end));
+    auto beg = static_cast<const char *>(data);
+    auto end = beg + cnt;
+    return this->to_string(beg, end);
 }

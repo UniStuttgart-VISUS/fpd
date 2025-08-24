@@ -268,8 +268,9 @@ public:
     /// </summary>
     /// <remarks>
     /// <para>The endian will only be honoured when writing the meta data. The
-    /// caller is make sure to perform any conversion necessary to match the
-    /// endian of the particle data with the one configured here.</para>
+    /// caller is responsible to make sure to perform any conversion necessary
+    /// to match the endian of the particle data with the one configured here.
+    /// </para>
     /// <para>It is not necessary to set the endian if the data are using the
     /// endian of the system the code is running on as this will be implicitly
     /// assumed.</para>

@@ -66,6 +66,9 @@
     <ClCompile Include="test_pkd.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="test_make_unsigned.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
