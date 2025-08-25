@@ -185,13 +185,25 @@ namespace fpd {
             {
                 std::vector<utf16_type> buffer(convert_string(static_cast<utf16_type *>(nullptr), 0, "input", -1, encodings::utf8));
                 Assert::AreEqual(std::size_t(6), buffer.size(), L"char, \"input\", -1", LINE_INFO());
-                Assert::AreEqual(std::size_t(6), convert_string(static_cast<utf16_type *>(nullptr), 0, "input", -1, encodings::utf8), L"Converted input", LINE_INFO());
+                Assert::AreEqual(std::size_t(6), convert_string(buffer.data(), buffer.size(), "input", -1, encodings::utf8), L"Converted input", LINE_INFO());
             }
 
             {
                 std::vector<utf16_type> buffer(convert_string(static_cast<utf16_type *>(nullptr), 0, "input", 5, encodings::utf8));
                 Assert::AreEqual(std::size_t(5), buffer.size(), L"char, \"input\", 5", LINE_INFO());
-                Assert::AreEqual(std::size_t(5), convert_string(static_cast<utf16_type *>(nullptr), 0, "input", 5, encodings::utf8), L"Converted input", LINE_INFO());
+                Assert::AreEqual(std::size_t(5), convert_string(buffer.data(), buffer.size(), "input", 5, encodings::utf8), L"Converted input", LINE_INFO());
+            }
+
+            {
+                std::vector<utf16_type> buffer(convert_string(static_cast<char *>(nullptr), 0, L"input", -1, encodings::utf8));
+                Assert::AreEqual(std::size_t(6), buffer.size(), L"wchar_t, \"input\", -1", LINE_INFO());
+                Assert::AreEqual(std::size_t(6), convert_string(buffer.data(), buffer.size(), L"input", -1, encodings::utf8), L"Converted input", LINE_INFO());
+            }
+
+            {
+                std::vector<utf16_type> buffer(convert_string(static_cast<char *>(nullptr), 0, L"input", 5, encodings::utf8));
+                Assert::AreEqual(std::size_t(5), buffer.size(), L"wchar_t, \"input\", 5", LINE_INFO());
+                Assert::AreEqual(std::size_t(5), convert_string(buffer.data(), buffer.size(), L"input", 5, encodings::utf8), L"Converted input", LINE_INFO());
             }
 
 
