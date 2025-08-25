@@ -94,9 +94,9 @@ FPD_NAMESPACE::meta_data_builder<TChar>::size(void) const {
         retval += sizeof(header_segment);
         for (auto& s : this->_user_defined_semantics) {
             // TODO: this does not measure correctly.
-            retval += measure_string(encodings::utf8,
-                s.c_str(),
-                this->code_page());
+            //retval += measure_string(encodings::utf8,
+            //    s.c_str(),
+            //    this->code_page());
         }
     }
 
@@ -104,9 +104,9 @@ FPD_NAMESPACE::meta_data_builder<TChar>::size(void) const {
     if (!this->_description.empty()) {
         retval += sizeof(header_segment);
         // TODO: this does not measure correctly.
-        retval += measure_string(encodings::utf8,
-            this->_description.c_str(),
-            this->code_page());
+        //retval += measure_string(encodings::utf8,
+        //    this->_description.c_str(),
+        //    this->code_page());
     }
 
     // Optional bounding boxes (0x05).
