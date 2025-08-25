@@ -13,7 +13,7 @@
 #include <string>
 #include <type_traits>
 
-#include "fpd/code_page.h"
+#include "fpd/encoding.h"
 #include "fpd/endian.h"
 #include "fpd/icu_category.h"
 
@@ -85,7 +85,7 @@ convert_string(_Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
     _In_ std::size_t cnt_dst,
     _In_reads_or_z_opt_(cnt_src) const char *src,
     _In_ int cnt_src,
-    _In_opt_z_ const code_page code_page);
+    _In_opt_z_ const encoding code_page);
 
 
 /// <summary>
@@ -119,7 +119,7 @@ convert_string(_Out_writes_to_opt_(cnt_dst, return) char *dst,
     _In_ std::size_t cnt_dst,
     _In_reads_or_z_opt_(cnt_src) const TUnicode *src,
     _In_ int cnt_src,
-    _In_opt_z_ const code_page code_page);
+    _In_opt_z_ const encoding code_page);
 
 
 /// <summary>
@@ -157,10 +157,10 @@ typename std::enable_if<(sizeof(TTo) == 1) && (sizeof(TFrom) == 1),
     std::size_t>::type
 convert_string(_Out_writes_to_opt_(cnt_dst, return) TTo *dst,
     _In_ std::size_t cnt_dst,
-    _In_opt_z_ const code_page dst_code_page,
+    _In_opt_z_ const encoding dst_code_page,
     _In_reads_or_z_opt_(cnt_src) const TFrom *src,
     _In_ int cnt_src,
-    _In_opt_z_ const code_page src_code_page);
+    _In_opt_z_ const encoding src_code_page);
 
 
 //template<class TUnicode>
@@ -219,7 +219,7 @@ convert_string(_Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
     _In_ std::size_t cnt_dst,
     _In_reads_or_z_opt_(cnt_src) const char *src,
     _In_ int cnt_src,
-    _In_opt_z_ const code_page code_page);
+    _In_opt_z_ const encoding code_page);
 
 
 /// <summary>
@@ -248,7 +248,7 @@ convert_string(_Out_writes_to_opt_(cnt_dst, return) char *dst,
     _In_ std::size_t cnt_dst,
     _In_reads_or_z_opt_(cnt_src) const TUnicode *src,
     _In_ int cnt_src,
-    _In_opt_z_ const code_page code_page);
+    _In_opt_z_ const encoding code_page);
 
 
 /// <summary>
@@ -276,7 +276,7 @@ std::enable_if_t<sizeof(TTo) == sizeof(TFrom), std::size_t> convert_string(
     _In_ std::size_t cnt_dst,
     _In_reads_or_z_opt_(cnt_src) const TFrom *src,
     _In_ int cnt_src,
-    _In_opt_z_ const code_page reserved);
+    _In_opt_z_ const encoding reserved);
 
 
 /// <summary>
@@ -300,7 +300,7 @@ template<class TTo, class TFrom>
 std::enable_if_t<sizeof(TTo) != sizeof(TFrom), std::basic_string<TTo>>
 convert_string(_In_reads_or_z_opt_(cnt_src) const TFrom *src,
     _In_ int cnt_src,
-    _In_opt_z_ const code_page code_page);
+    _In_opt_z_ const encoding code_page);
 
 
 /// <summary>
@@ -327,7 +327,7 @@ template<class TTo, class TFrom>
 std::enable_if_t<sizeof(TTo) == sizeof(TFrom), std::basic_string<TTo>>
 convert_string(_In_reads_or_z_opt_(cnt_src) const TFrom *src,
     _In_ int cnt_src,
-    _In_opt_z_ const code_page code_page);
+    _In_opt_z_ const encoding code_page);
 
 
 /// <summary>
@@ -347,7 +347,7 @@ convert_string(_In_reads_or_z_opt_(cnt_src) const TFrom *src,
 template<class TChar> inline std::basic_string<TChar> convert_string(
         _In_reads_or_z_opt_(cnt_src) const TChar *src,
         _In_ int cnt_src,
-        _In_opt_z_ const code_page reserved) {
+        _In_opt_z_ const encoding reserved) {
     return convert_string<TChar>(src, cnt_src, reserved);
 }
 
@@ -368,7 +368,7 @@ template<class TChar, class TTraits, class TAlloc>
 std::basic_string<TChar, TTraits, TAlloc> convert_string(
     _In_ const std::basic_string<TChar, TTraits, TAlloc>& src,
     _In_ const int cnt,
-    _In_opt_z_ const code_page reserved);
+    _In_opt_z_ const encoding reserved);
 
 
 /// <summary>
@@ -395,7 +395,7 @@ std::basic_string<TChar, TTraits, TAlloc> convert_string(
 template<class TTo, class TFrom> inline std::size_t measure_string(
         _In_reads_or_z_opt_(cnt_src) const TFrom *str,
         _In_ const int cnt,
-        _In_opt_z_ const code_page code_page) {
+        _In_opt_z_ const encoding code_page) {
     return convert_string(
         static_cast<TTo *>(nullptr), 0,
         str, cnt,
@@ -424,7 +424,7 @@ template<class TTo, class TFrom> inline std::size_t measure_string(
 /// </exception>
 template<class TTo, class TFrom> inline std::size_t measure_string(
         _In_opt_z_ const TFrom *str,
-        _In_opt_z_ const code_page code_page) {
+        _In_opt_z_ const encoding code_page) {
     return convert_string(
         static_cast<TTo *>(nullptr), static_cast<std::size_t>(0),
         str, -1,
@@ -445,10 +445,10 @@ template<class TTo, class TFrom> inline std::size_t measure_string(
 /// <returns>The number of <i>bytes</i> the input string would require in
 /// the output encoding.</returns>
 template<class TChar> std::size_t measure_string(
-    _In_opt_z_ const code_page dst_code_page,
+    _In_opt_z_ const encoding dst_code_page,
     _In_ const TChar *str,
     _In_ int cnt,
-    _In_opt_z_ const code_page src_code_page);
+    _In_opt_z_ const encoding src_code_page);
 
 
 /// <summary>
@@ -463,9 +463,9 @@ template<class TChar> std::size_t measure_string(
 /// <param name="src_code_page"></param>
 /// <returns></returns>
 template<class TChar> inline std::size_t measure_string(
-        _In_opt_z_ const code_page dst_code_page,
+        _In_opt_z_ const encoding dst_code_page,
         _In_ const TChar *str,
-        _In_opt_z_ const code_page src_code_page) {
+        _In_opt_z_ const encoding src_code_page) {
     return measure_string(dst_code_page, str, -1, src_code_page);
 }
 
@@ -484,7 +484,7 @@ template<class TChar> inline std::size_t measure_string(
 template<class TChar> std::size_t measure_string(
     _In_reads_or_z_opt_(cnt) const TChar *str,
     _In_ const int cnt,
-    _In_opt_z_ const code_page reserved);
+    _In_opt_z_ const encoding reserved);
 
 
 /// <summary>
@@ -498,7 +498,7 @@ template<class TChar> std::size_t measure_string(
 /// null character.</returns>
 template<class TChar> inline std::size_t measure_string(
         _In_opt_z_ const TChar *str,
-        _In_opt_z_ const code_page reserved) {
+        _In_opt_z_ const encoding reserved) {
     return (str != nullptr) ? std::char_traits<TChar>::length(str) + 1 : 0;
 }
 
@@ -526,7 +526,7 @@ template<class TChar> inline std::size_t measure_string(
 template<class TDstChar, class TSrcChar, class TSrcTraits, class TSrcAlloc>
 inline std::size_t measure_string(
         _In_ const std::basic_string<TSrcChar, TSrcTraits, TSrcAlloc>& str,
-        _In_opt_z_ const code_page code_page) {
+        _In_opt_z_ const encoding code_page) {
     return convert_string(
         static_cast<TDstChar *>(nullptr), 0,
         str.c_str(), str.size() + 1,
@@ -555,7 +555,7 @@ inline std::size_t measure_string(
 template<class TChar, class TTraits, class TAlloc>
 inline std::size_t measure_string(
         _In_ const std::basic_string<TChar, TTraits, TAlloc>& str,
-        _In_opt_z_ const code_page reserved) {
+        _In_opt_z_ const encoding reserved) {
     return (str.size() + 1);
 }
 

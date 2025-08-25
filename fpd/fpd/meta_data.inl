@@ -474,7 +474,7 @@ FPD_NAMESPACE::meta_data<TChar>::to_string(_In_ const char *begin,
     auto dst = static_cast<std::uint8_t *>(nullptr);
     auto cnt_dst = convert_string(
         dst, 0, this->code_page(),
-        begin, cnt_src, code_pages::utf8);
+        begin, cnt_src, encodings::utf8);
 
     // Allocate the output string.
     assert(cnt_dst % sizeof(TChar) == 0);
@@ -482,7 +482,7 @@ FPD_NAMESPACE::meta_data<TChar>::to_string(_In_ const char *begin,
     dst = reinterpret_cast<std::uint8_t *>(std::addressof(retval[0]));
     convert_string(
         dst, cnt_dst, this->code_page(),
-        begin, cnt_src, code_pages::utf8);
+        begin, cnt_src, encodings::utf8);
 
     // Erase all bogus zeros from the output.
     retval.erase(std::remove(retval.begin(), retval.end(), zero),

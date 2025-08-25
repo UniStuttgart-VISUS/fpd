@@ -11,11 +11,12 @@
 #include "CppUnitTest.h"
 
 #include "fpd/bounding_box.h"
-#include "fpd/code_page.h"
 #include "fpd/convert_string.h"
+#include "fpd/dependent_false.h"
 #include "fpd/dstorage_io.h"
 #include "fpd/element.h"
 #include "fpd/element_group.h"
+#include "fpd/encoding.h"
 #include "fpd/endian.h"
 #include "fpd/file.h"
 #include "fpd/format.h"

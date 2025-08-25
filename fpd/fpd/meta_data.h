@@ -140,14 +140,16 @@ public:
     /// <summary>
     /// Initialises a new instance.
     /// </summary>
-    /// <param name="code_page">The code page to convert strings to if
+    /// <param name="encoding">The code page to convert strings to if
     /// <see cref="char_type" /> does not implicitly carry an encoding. Note
     /// to MegaMol users: <c>char</c> is not UTF-8 by definition, it <i>can</i>
     /// be UTF-8 if the data are handled accordingly.</param>
-    explicit inline meta_data(_In_ const FPD_NAMESPACE::code_page code_page
-            = FPD_NAMESPACE::code_pages::oem) noexcept
-        : with_code_page<TChar>(code_page), _endian(endian_type::undefined),
-            _file_size(0), _version(0, 0) { }
+    explicit inline meta_data(_In_ const FPD_NAMESPACE::encoding encoding
+            = FPD_NAMESPACE::encodings::oem) noexcept
+        : with_code_page<TChar>(encoding),
+            _endian(endian_type::undefined),
+            _file_size(0),
+            _version(0, 0) { }
 
     /// <summary>
     /// Gets the endian of the file.

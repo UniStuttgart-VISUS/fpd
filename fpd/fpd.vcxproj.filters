@@ -66,7 +66,7 @@
     <ClInclude Include="fpd\header_segment.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="fpd\code_page.h">
+    <ClInclude Include="fpd\encoding.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="fpd\bounding_box.h">
@@ -121,6 +121,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="fpd\make_unsigned.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fpd\dependent_false.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

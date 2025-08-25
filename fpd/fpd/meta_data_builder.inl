@@ -10,7 +10,7 @@
  */
 template<class TChar>
 FPD_NAMESPACE::meta_data_builder<TChar>::meta_data_builder(void)
-    : with_code_page(code_pages::oem),
+    : with_code_page(encodings::oem),
       _endian(endian::system),
       _version(std::make_pair(FPD_FILE_MAJOR, FPD_FILE_MINOR)) { }
 
@@ -35,7 +35,8 @@ FPD_NAMESPACE::meta_data_builder<TChar>::build(void) {
         this->_bounding_boxes.erase(this->_bounding_boxes.begin());
     }
 
-    this->code_page(code_pages::oem);
+    // TODO: Why?!
+    this->code_page(encodings::oem);
 
     retval._description = std::move(this->_description);
     assert(this->_description.empty());
@@ -92,7 +93,8 @@ FPD_NAMESPACE::meta_data_builder<TChar>::size(void) const {
     if (!this->_user_defined_semantics.empty()) {
         retval += sizeof(header_segment);
         for (auto& s : this->_user_defined_semantics) {
-            retval += measure_string(code_pages::utf8,
+            // TODO: this does not measure correctly.
+            retval += measure_string(encodings::utf8,
                 s.c_str(),
                 this->code_page());
         }
@@ -101,7 +103,8 @@ FPD_NAMESPACE::meta_data_builder<TChar>::size(void) const {
     // Optional file description (0x04).
     if (!this->_description.empty()) {
         retval += sizeof(header_segment);
-        retval += measure_string(code_pages::utf8,
+        // TODO: this does not measure correctly.
+        retval += measure_string(encodings::utf8,
             this->_description.c_str(),
             this->code_page());
     }

@@ -8,9 +8,11 @@
 #define _FPD_WITH_CODE_PAGE_H
 #pragma once
 
+#include <cassert>
+
 #include "fpd/abi.h"
 #include "fpd/annotations.h"
-#include "fpd/code_page.h"
+#include "fpd/encoding.h"
 
 
 FPD_NAMESPACE_BEGIN
@@ -26,7 +28,7 @@ public:
     /// <summary>
     /// The type used to specify a code page.
     /// </summary>
-    typedef FPD_NAMESPACE::code_page code_page_type;
+    typedef FPD_NAMESPACE::encoding encoding_type;
 
     /// <summary>
     /// Indicates that the class does not really store a code page.
@@ -34,19 +36,19 @@ public:
     static constexpr const bool has_code_page = false;
 
     /// <summary>
-    /// Answer the ANSI code page, because the character type does not need this
-    /// information.
+    /// This should not be called, because it is meaningless for UTF-16 and UTF-32.
     /// </summary>
-    /// <returns><see cref="code_page::ansi" />.</returns>
-    inline constexpr code_page_type code_page(void) const noexcept {
-        return code_pages::ansi;
+    /// <returns><see langword="nullptr" />.</returns>
+    inline constexpr _Ret_null_ encoding_type code_page(void) const noexcept {
+        assert(false);
+        return nullptr;
     }
 
     /// <summary>
     /// Does nothing.
     /// </summary>
     /// <param name="code_page">The new code page for narrow strings.</param>
-    inline void code_page(_In_ const code_page_type code_page) noexcept { }
+    inline void code_page(_In_ const encoding_type code_page) noexcept { }
 
 protected:
 
@@ -54,7 +56,7 @@ protected:
     /// Initialises a new instance.
     /// </summary>
     /// <param name="code_page">The initial value of the code page.</param>
-    inline with_code_page(_In_ const code_page_type) noexcept { }
+    inline with_code_page(_In_ const encoding_type) noexcept { }
 
 };
 
@@ -69,7 +71,7 @@ public:
     /// <summary>
     /// The type used to specify a code page.
     /// </summary>
-    typedef FPD_NAMESPACE::code_page code_page_type;
+    typedef FPD_NAMESPACE::encoding encoding_type;
 
     /// <summary>
     /// Indicates that the class actually stores a code page.
@@ -80,7 +82,7 @@ public:
     /// Answer the configured code page for narrow strings.
     /// </summary>
     /// <returns>The configured code page.</returns>
-    inline code_page_type code_page(void) const noexcept {
+    inline encoding_type code_page(void) const noexcept {
         return this->_code_page;
     }
 
@@ -88,7 +90,7 @@ public:
     /// Sets the code page for narrow strings.
     /// </summary>
     /// <param name="code_page">The new code page for narrow strings.</param>
-    inline void code_page(_In_ const code_page_type code_page) noexcept {
+    inline void code_page(_In_ const encoding_type code_page) noexcept {
         this->_code_page = code_page;
     }
 
@@ -98,12 +100,13 @@ protected:
     /// Initialises a new instance.
     /// </summary>
     /// <param name="code_page">The initial value of the code page.</param>
-    inline with_code_page(_In_ const code_page_type code_page
-        = code_pages::oem) noexcept : _code_page(code_page) { }
+    inline with_code_page(
+            _In_ const encoding_type code_page = encodings::oem) noexcept
+        : _code_page(code_page) { }
 
 private:
 
-    code_page_type _code_page;
+    encoding_type _code_page;
 };
 
 FPD_NAMESPACE_END

@@ -67,7 +67,7 @@ public:
     /// <param name="args">The arguments passed to the I/O constructors. This
     /// depends on <see cref="io_type" /> and its constructor.</param>
     template<class... TArgs>
-    explicit inline file(_In_ const code_page cp, _In_ TArgs&&... args)
+    explicit inline file(_In_ const encoding cp, _In_ TArgs&&... args)
             : _io(std::forward<TArgs>(args)...), _meta_data(cp) {
         this->read_meta_data();
     }
@@ -104,7 +104,7 @@ public:
     /// <param name="args">The arguments passed to the I/O constructors. This
     /// depends on <see cref="io_type" /> and its constructor.</param>
     template<class... TArgs>
-    explicit inline file(_In_ const code_page cp,
+    explicit inline file(_In_ const encoding cp,
             _In_ const std::size_t expected_header_size,
             _In_ TArgs&&... args)
             : _io(std::forward<TArgs>(args)...), _meta_data(cp) {

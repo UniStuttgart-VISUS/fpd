@@ -149,11 +149,12 @@
     <ClInclude Include="fpd\compression.h" />
     <ClInclude Include="fpd\com_category.h" />
     <ClInclude Include="fpd\convert_string.h" />
+    <ClInclude Include="fpd\dependent_false.h" />
     <ClInclude Include="fpd\dstorage_io.h" />
     <ClInclude Include="fpd\element.h" />
     <ClInclude Include="fpd\element_group.h" />
     <ClInclude Include="fpd\element_initialiser.h" />
-    <ClInclude Include="fpd\code_page.h" />
+    <ClInclude Include="fpd\encoding.h" />
     <ClInclude Include="fpd\endian.h" />
     <ClInclude Include="fpd\file.h" />
     <ClInclude Include="fpd\format.h" />

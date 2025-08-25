@@ -14,7 +14,7 @@ namespace fpd {
     public:
 
         TEST_METHOD(oem2wchar) {
-            const auto cp = code_pages::oem;
+            const auto cp = encodings::oem;
             typedef char src_type;
             typedef wchar_t dst_type;
 
@@ -38,7 +38,7 @@ namespace fpd {
         }
 
         TEST_METHOD(wchar2oem) {
-            const auto cp = code_pages::oem;
+            const auto cp = encodings::oem;
             typedef wchar_t src_type;
             typedef char dst_type;
 
@@ -61,7 +61,7 @@ namespace fpd {
         }
 
         TEST_METHOD(wchar2utf8) {
-            const auto cp = code_pages::utf8;
+            const auto cp = encodings::utf8;
             typedef wchar_t src_type;
             typedef char dst_type;
 
@@ -96,7 +96,7 @@ namespace fpd {
         }
 
         TEST_METHOD(char162wchar) {
-            const auto cp = code_pages::oem;
+            const auto cp = encodings::oem;
             typedef char16_t src_type;
             typedef wchar_t dst_type;
 
@@ -119,7 +119,7 @@ namespace fpd {
         }
 
         TEST_METHOD(wchar2char16) {
-            const auto cp = code_pages::oem;
+            const auto cp = encodings::oem;
             typedef wchar_t src_type;
             typedef char16_t dst_type;
 
@@ -143,7 +143,7 @@ namespace fpd {
 
 
         TEST_METHOD(utf32to8) {
-            const auto cp = code_pages::utf8;
+            const auto cp = encodings::utf8;
             typedef wchar_t src_type;
             typedef char dst_type;
 
@@ -176,33 +176,38 @@ namespace fpd {
 
         TEST_METHOD(measure) {
             {
-                Assert::AreEqual(std::size_t(0), measure_string<wchar_t>(nullptr, code_pages::utf8), L"nullptr", LINE_INFO());
-                Assert::AreEqual(std::size_t(0), measure_string<wchar_t>(nullptr, -1, code_pages::utf8), L"nullptr", LINE_INFO());
-                Assert::AreEqual(std::size_t(0), measure_string<wchar_t>(nullptr, 42, code_pages::utf8), L"nullptr", LINE_INFO());
+                Assert::AreEqual(std::size_t(0), measure_string<wchar_t>(nullptr, encodings::utf8), L"nullptr", LINE_INFO());
+                Assert::AreEqual(std::size_t(0), measure_string<wchar_t>(nullptr, -1, encodings::utf8), L"nullptr", LINE_INFO());
+                Assert::AreEqual(std::size_t(0), measure_string<wchar_t>(nullptr, 42, encodings::utf8), L"nullptr", LINE_INFO());
             }
 
             {
                 typedef char dst_type;
                 const auto input = L"input";
-                Assert::AreEqual(std::size_t(6), measure_string(input, code_pages::utf8), L"wchar_t as utf8", LINE_INFO());
+                Assert::AreEqual(std::size_t(6), measure_string(input, encodings::utf8), L"wchar_t", LINE_INFO());
+                Assert::AreEqual(std::size_t(6), measure_string(input, encodings::utf16), L"wchar_t", LINE_INFO());
+                Assert::AreEqual(std::size_t(6), measure_string(input, encodings::utf32), L"wchar_t", LINE_INFO());
             }
 
             {
                 typedef char dst_type;
                 const auto input = L"input";
-                Assert::AreEqual(std::size_t(3), measure_string(input, 3, code_pages::utf8), L"limited wchar_t as utf8", LINE_INFO());
+                Assert::AreEqual(std::size_t(3), measure_string(input, 3, encodings::utf8), L"limited wchar_t", LINE_INFO());
+                Assert::AreEqual(std::size_t(3), measure_string(input, 3, encodings::utf16), L"limited wchar_t", LINE_INFO());
+                Assert::AreEqual(std::size_t(3), measure_string(input, 3, encodings::utf32), L"limited wchar_t", LINE_INFO());
+                Assert::AreEqual(std::size_t(6), measure_string(input, 7, encodings::utf8), L"overlimited wchar_t", LINE_INFO());
             }
 
             {
                 typedef char dst_type;
                 const auto input = L"привет";
-                Assert::AreEqual(std::size_t(7), measure_string(input, code_pages::utf16), L"привет as utf16", LINE_INFO());
+                Assert::AreEqual(std::size_t(7), measure_string(input, encodings::utf16), L"привет as wchar_t", LINE_INFO());
             }
 
             {
                 typedef char dst_type;
                 const auto input = L"привет";
-                Assert::AreEqual(std::size_t(13), measure_string<char>(input, code_pages::utf8), L"привет as utf8", LINE_INFO());
+                Assert::AreEqual(std::size_t(13), measure_string<char>(input, encodings::utf8), L"привет as utf8", LINE_INFO());
             }
         }
 
@@ -217,13 +222,13 @@ namespace fpd {
             {
                 typedef char dst_type;
                 const auto input = L"input";
-                Assert::AreEqual(std::size_t(6), measure_string(code_pages::ansi, input, -1, code_pages::utf16), L"utf16 as ANSI", LINE_INFO());
+                Assert::AreEqual(std::size_t(6), measure_string(encodings::ansi, input, -1, encodings::utf16), L"utf16 as ANSI", LINE_INFO());
             }
 
             {
                 typedef char dst_type;
                 const auto input = L"привет";
-                Assert::AreEqual(std::size_t(13), measure_string(code_pages::utf8, input, code_pages::utf16), L"привет as utf8", LINE_INFO());
+                Assert::AreEqual(std::size_t(13), measure_string(encodings::utf8, input, encodings::utf16), L"привет as utf8", LINE_INFO());
             }
         }
     };
