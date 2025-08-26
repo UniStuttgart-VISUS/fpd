@@ -26,7 +26,10 @@ FPD_NAMESPACE::meta_data_builder<TChar>::build(void) {
             "all data that are requried to build the meta data.");
     }
 
-    meta_data_type retval(this->code_page());
+    meta_data_type retval;
+    if (meta_data_builder::has_code_page) {
+        retval.code_page(this->code_page());
+    }
 
     if (this->_bounding_boxes.empty()) {
         retval._bounding_box = bounding_box();
@@ -36,7 +39,7 @@ FPD_NAMESPACE::meta_data_builder<TChar>::build(void) {
     }
 
     // TODO: Why?!
-    this->code_page(encodings::oem);
+    //this->code_page(encodings::oem);
 
     retval._description = std::move(this->_description);
     assert(this->_description.empty());
@@ -93,20 +96,32 @@ FPD_NAMESPACE::meta_data_builder<TChar>::size(void) const {
     if (!this->_user_defined_semantics.empty()) {
         retval += sizeof(header_segment);
         for (auto& s : this->_user_defined_semantics) {
-            // TODO: this does not measure correctly.
-            //retval += measure_string(encodings::utf8,
-            //    s.c_str(),
-            //    this->code_page());
+            if (meta_data_builder::has_code_page) {
+                retval += convert_string(
+                    static_cast<char_type *>(nullptr), 0, this->code_page(),
+                    s.c_str(), -1, encodings::utf8);
+            } else {
+                assert(sizeof(char_type) > 1);
+                retval += convert_string(
+                    static_cast<char_type *>(nullptr), 0,
+                    s.c_str(), -1, encodings::utf8);
+            }
         }
     }
 
     // Optional file description (0x04).
     if (!this->_description.empty()) {
         retval += sizeof(header_segment);
-        // TODO: this does not measure correctly.
-        //retval += measure_string(encodings::utf8,
-        //    this->_description.c_str(),
-        //    this->code_page());
+        if (meta_data_builder::has_code_page) {
+            retval += convert_string(
+                static_cast<char_type *>(nullptr), 0, this->code_page(),
+                this->_description.c_str(), -1, encodings::utf8);
+        } else {
+            assert(sizeof(char_type) > 1);
+            retval += convert_string(
+                static_cast<char_type *>(nullptr), 0,
+                this->_description.c_str(), -1, encodings::utf8);
+        }
     }
 
     // Optional bounding boxes (0x05).
