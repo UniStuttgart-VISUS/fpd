@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <cstring>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -127,68 +128,39 @@ convert_string(_Out_writes_to_opt_(cnt_dst, return) char *dst,
 /// step via UTF-16.
 /// </summary>
 /// <remarks>
-/// <para>While this function can convert between arbitrary encodings, it uses
-/// <see cref="ucnv_convert" /> under the hood, which pivots to the canonical
-/// UTF-16 to perform the task. The conversion therefore might be rather
-/// expensive. If you can use UTF-16 directly, the other overloads of this
-/// function might be more appropriate for the task.</para>
+/// <para>While this function can convert between arbitrary encodings, it pivots
+/// to the canonical UTF-16 to perform the task. The conversion therefore might
+/// be rather expensive. If you can use UTF-16 directly, the other overloads of
+/// this function might be more appropriate for the task.</para>
 /// <para>Please be aware that LibICU will output a BOM when converting to
 /// UTF-16 or UTF-32 without specifying the byte order in the encodings.</para>
-/// <para>Please be aware that the return value of the function is not the
-/// number of characters required, but the number of bytes!</para>
 /// </remarks>
-/// <typeparam name="TTo">The type used to represent a byte in the output
-/// encoding, which must be one byte in length.</typeparam>
-/// <typeparam name="TFrom">The type used to represent a byte in the input
-/// encoding, which must be one byte in length.</typeparam>
+/// <typeparam name="TTo">The type used to represent the output string. It is
+/// important that the size of an individual character matches the size of a
+/// code unit of <paramref name="dst_code_page" />.</typeparam>
+/// <typeparam name="TFrom">The type used to represent the input string. It is
+/// important that the size of an individual character matches the size of a
+/// code unit of <paramref name="src_code_page" />.</typeparam>
 /// <param name="dst">The destination buffer used to store the converted
 /// data. If this is <see langword="nullptr" />, the required buffer size will
 /// be measured, but nothing will be written.</param>
-/// <param name="cnt_dst">The size of <paramref name="dst" /> in bytes.</param>
+/// <param name="cnt_dst">The size of <paramref name="dst" /> in number of
+/// characters of type <typeparamref name="TTo" />.</param>
 /// <param name="dst_code_page">The encoding to convert to.</param>
 /// <param name="src">The input string, which may be null-terminated.</param>
-/// <param name="cnt_src">The length of the input string in bytes or -1 if the
-/// input is null-terminated.</param>
+/// <param name="cnt_src">The length of the input string in number of characters of
+/// type <typeparamref name="TFrom" />, or -1 if the input is null-terminated.
+/// </param>
 /// <param name="src_code_page">The encoding of <paramref name="src" />.</param>
-/// <returns>The number of bytes required to store the output string, <i>not</i>
-/// including the terminator.</returns>
+/// <returns>The number of code units required to store the output string,
+/// including the null terminator if the input was null terminated.</returns>
 template<class TTo, class TFrom>
-typename std::enable_if<(sizeof(TTo) == 1) && (sizeof(TFrom) == 1),
-    std::size_t>::type
-convert_string(_Out_writes_to_opt_(cnt_dst, return) TTo *dst,
+std::size_t convert_string(_Out_writes_to_opt_(cnt_dst, return) TTo *dst,
     _In_ std::size_t cnt_dst,
     _In_opt_z_ const encoding dst_code_page,
     _In_reads_or_z_opt_(cnt_src) const TFrom *src,
     _In_ int cnt_src,
     _In_opt_z_ const encoding src_code_page);
-
-
-//template<class TUnicode>
-//inline std::enable_if_t<!std::is_same_v<TUnicode, utf16_type>
-//    && sizeof(TUnicode) == sizeof(utf16_type), std::size_t>
-//convert_string(_Out_writes_to_opt_(cnt_dst, return) TUnicode *dst,
-//        _In_ std::size_t cnt_dst,
-//        _In_reads_or_z_opt_(cnt_src) const char *src,
-//        _In_ int cnt_src,
-//        _In_opt_z_ const code_page code_page) {
-//    return convert_string(reinterpret_cast<utf16_type *>(dst), cnt_dst,
-//        src, cnt_src,
-//        code_page);
-//}
-//
-//
-//template<class TUnicode>
-//inline std::enable_if_t<!std::is_same_v<TUnicode, utf16_type>
-//    && sizeof(TUnicode) == sizeof(utf16_type), std::size_t>
-//convert_string(_Out_writes_to_opt_(cnt_dst, return) char *dst,
-//        _In_ std::size_t cnt_dst,
-//        _In_reads_or_z_opt_(cnt_src) const TUnicode *src,
-//        _In_ int cnt_src,
-//        _In_opt_z_ const code_page code_page) {
-//    return convert_string(dst, cnt_dst,
-//        reinterpret_cast<const utf16_type *>(src), cnt_src,
-//        code_page);
-//}
 
 
 /// <summary>

@@ -27,7 +27,7 @@ std::size_t from_unicode(
     static_assert(sizeof(TTo) == 1, "TTo must be a single byte type.");
     assert(dst_limit >= dst);
     assert(src != nullptr);
-    assert(src_limit > src);
+    assert(src_limit >= src);
     assert(converter != nullptr);
 
     // Perform a stream conversion, possibly into an intermediate buffer just
@@ -97,14 +97,14 @@ std::size_t from_unicode(
 template<class TFrom>
 std::size_t to_unicode(
     _Out_writes_to_ptr_opt_(dst_limit) utf16_type *dst,
-        _In_opt_ const utf16_type *dst_limit,
+        _In_reads_opt_(0) const utf16_type *dst_limit,
         _In_reads_to_ptr_(src_limit) const TFrom *src,
-        _In_ const TFrom *src_limit,
+        _In_reads_(0) const TFrom *src_limit,
         _In_ UConverter *converter) {
     static_assert(sizeof(TFrom) == 1, "TFrom must be a single byte type.");
     assert(dst_limit >= dst);
     assert(src != nullptr);
-    assert(src_limit > src);
+    assert(src_limit >= src);
     assert(converter != nullptr);
 
     // Perform a stream conversion, possibly into an intermediate buffer just
@@ -156,9 +156,9 @@ std::size_t to_unicode(
 template<class TFrom>
 inline std::size_t to_unicode(
         _Out_writes_to_ptr_opt_(dst_limit) utf16_type *dst,
-        _In_opt_ const utf16_type *dst_limit,
+        _In_reads_opt_(0) const utf16_type *dst_limit,
         _In_reads_to_ptr_(src_limit) const TFrom *src,
-        _In_ const TFrom *src_limit,
+        _In_reads_(0) const TFrom *src_limit,
         _In_opt_z_ const encoding code_page) {
     auto status = U_ZERO_ERROR;
     detail::unique_uconverter conv(::ucnv_open(code_page, &status),
@@ -201,7 +201,6 @@ FPD_NAMESPACE::convert_string(
     }
 
     assert(src != nullptr);
-    assert(cnt_src > 0);
     assert(cnt_src <= std::char_traits<char>::length(src));
     retval += detail::to_unicode(
         reinterpret_cast<utf16_type *>(dst),
@@ -244,7 +243,6 @@ FPD_NAMESPACE::convert_string(
     }
 
     assert(src != nullptr);
-    assert(cnt_src > 0);
     assert(cnt_src <= std::char_traits<TUnicode>::length(src));
     retval += detail::from_unicode(
         dst,
@@ -260,15 +258,26 @@ FPD_NAMESPACE::convert_string(
  * FPD_NAMESPACE::convert_string
  */
 template<class TTo, class TFrom>
-typename std::enable_if<(sizeof(TTo) == 1) && (sizeof(TFrom) == 1),
-    std::size_t>::type
-FPD_NAMESPACE::convert_string(
+std::size_t FPD_NAMESPACE::convert_string(
         _Out_writes_to_opt_(cnt_dst, return) TTo *dst,
         _In_ std::size_t cnt_dst,
         _In_opt_z_ const encoding dst_code_page,
         _In_reads_or_z_opt_(cnt_src) const TFrom *src,
         _In_ int cnt_src,
         _In_opt_z_ const encoding src_code_page) {
+    // Determines whether two names refer to the same encoding.
+    static const auto same_encoding = [](
+            const encoding lhs,
+            const encoding rhs) {
+        if (lhs == rhs) {
+            return true;
+        } else if ((lhs == nullptr) || (rhs == nullptr)) {
+            return false;
+        } else {
+            return (::ucnv_compareNames(lhs, rhs) == 0);
+        }
+    };
+
     if (dst == nullptr) {
         // Make sure that the output buffer size is zero if the output
         // buffer is invalid, such that we get the required buffer size.
@@ -279,53 +288,76 @@ FPD_NAMESPACE::convert_string(
         return 0;
     }
 
-    // Note: there is ucnv_convert which does *almost* the same as this code,
-    // but has the issue that is *never* counts the terminating null even if
-    // -1 is specified for 'cnt_src'. This violates our contract, so we
-    // reimplement the functionality using our own wrappers here.
+    if (same_encoding(dst_code_page, src_code_page)) {
+        // No conversion was requested, to we can pass it to the trivial copy
+        // conversion.
+        assert(sizeof(TTo) == sizeof(TFrom));
+        return convert_string(
+            dst, cnt_dst,
+            reinterpret_cast<const TTo *>(src), cnt_src,
+            dst_code_page);
+    }
+
+    if (same_encoding(dst_code_page, encodings::utf16)) {
+        // Convert from the source encoding to UTF-16, which is a task we can
+        // also pass on to another, more effcient implementation.
+        assert(sizeof(TTo) == sizeof(utf16_type));
+        assert(sizeof(TFrom) == 1);
+        auto s = reinterpret_cast<const char *>(src);
+        return convert_string(dst, cnt_dst, s, cnt_src, src_code_page);
+    }
+
+    if (same_encoding(src_code_page, encodings::utf16)) {
+        // Convert to UTF-16, which is a task we can also pass on to another,
+        // more efficient implementation.
+        assert(sizeof(TTo) == 1);
+        assert(sizeof(TFrom) == sizeof(utf16_type));
+        auto d = reinterpret_cast<char *>(dst);
+        return convert_string(d, cnt_dst, src, cnt_src, dst_code_page);
+    }
+
+    // Note: there is ucnv_convert which does *almost* the same pivot via UTF-16
+    // as this code, but has the issue that is *never* counts the terminating
+    // null even if -1 is specified for 'cnt_src'. This violates our contract,
+    // so we reimplement the functionality using our own wrappers here.
     auto status = U_ZERO_ERROR;
     detail::unique_uconverter conv(::ucnv_open(src_code_page, &status),
         ::ucnv_close);
     detail::throw_if_icu_failed(status);
 
+    std::size_t retval = 0;
     if (cnt_src < 0) {
-        // User requested us to measure the input, so we do that now. As we get
-        // only a byte pointer, we need to find out how many consecutive zero
-        // bytes we need to look for. For UTF-16 this would be two bytes, for
-        // UTF32, four bytes.
-        std::uint8_t found = 0;
-        const auto required = ::ucnv_getMinCharSize(conv.get());
-        assert(required > 0);
-
-        auto s = src;
-        for (; found < required; ++s) {
-            if (*s == 0) {
-                ++found;
-            } else {
-                found = 0;
-            }
-        }
-
-        cnt_src = static_cast<int>(s - src) + 1 - required;
+        // User requested us to measure the input, do so now.
+        assert(::ucnv_getMinCharSize(conv.get()) == sizeof(TFrom));
+        cnt_src = static_cast<int>(std::char_traits<TFrom>::length(src));
+        // If we are measuring, tell the caller about the terminating zero.
+        retval = 1;
     }
 
-    // Measure how big the UTF-16 representation will be.
+    // Otherwise, we need to pivot via UTF-16. First, we measure how big the
+    // UTF-16 representation will be.
+    assert(sizeof(TFrom) == 1);
+    auto s = reinterpret_cast<const char *>(src);
     std::vector<utf16_type> tmp(detail::to_unicode(
         nullptr, nullptr,
-        src, src + cnt_src,
+        s, s + cnt_src,
         conv.get()));
 
     // Create the intermediate UTF-16 representation.
     detail::to_unicode(
         tmp.data(), tmp.data() + tmp.size(),
-        src, src + cnt_src,
+        s, s + cnt_src,
         src_code_page);
 
     // Convert from UTF-16 to target encoding.
-    return detail::from_unicode(
-        dst, dst + cnt_dst,
+    assert(sizeof(TTo) == 1);
+    auto d = reinterpret_cast<char *>(dst);
+    retval += detail::from_unicode(
+        d, d + cnt_dst,
         tmp.data(), tmp.data() + tmp.size(),
         dst_code_page);
+
+    return retval;
 }
 
 
@@ -401,7 +433,9 @@ FPD_NAMESPACE::convert_string(
 
     if ((cnt_src < 0) && (src != nullptr)) {
         // User requested us to measure the input, do so now.
-        cnt_src = static_cast<int>(std::char_traits<TFrom>::length(src)) + 1;
+        cnt_src = static_cast<int>(std::char_traits<TFrom>::length(src));
+        // If we are measuring, tell the caller about the terminating zero.
+        ++cnt_src;
     }
 
     const auto cnt = (std::min)(cnt_dst, static_cast<std::size_t>(cnt_src));

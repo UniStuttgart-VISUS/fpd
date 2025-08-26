@@ -175,89 +175,103 @@ namespace fpd {
         }
 
         TEST_METHOD(measure) {
-            Assert::AreEqual(std::size_t(0), convert_string(static_cast<utf16_type *>(nullptr), 0, static_cast<char *>(nullptr), 0, encodings::utf8), L"char, nullptr, 0", LINE_INFO());
-            Assert::AreEqual(std::size_t(0), convert_string(static_cast<utf16_type *>(nullptr), 0, static_cast<char *>(nullptr), -1, encodings::utf8), L"char, nullptr, -1", LINE_INFO());
-            Assert::AreEqual(std::size_t(0), convert_string(static_cast<utf16_type *>(nullptr), 0, static_cast<char *>(nullptr), 42, encodings::utf8), L"char, nullptr, 42", LINE_INFO());
-            Assert::AreEqual(std::size_t(0), convert_string(static_cast<char *>(nullptr), 0, static_cast<utf16_type *>(nullptr), 0, encodings::utf8), L"wchar_t, nullptr, 0", LINE_INFO());
-            Assert::AreEqual(std::size_t(0), convert_string(static_cast<char *>(nullptr), 0, static_cast<utf16_type *>(nullptr), -1, encodings::utf8), L"wchar_t, nullptr, -1", LINE_INFO());
-            Assert::AreEqual(std::size_t(0), convert_string(static_cast<char *>(nullptr), 0, static_cast<utf16_type *>(nullptr), 42, encodings::utf8), L"wchar_t, nullptr, 42", LINE_INFO());
+            Assert::AreEqual(std::size_t(0), convert_string(static_cast<utf16_type *>(nullptr), 0, static_cast<char *>(nullptr), 0, encodings::utf8), L"UTF-8 to UTF-16 nullptr, 0", LINE_INFO());
+            Assert::AreEqual(std::size_t(0), convert_string(static_cast<utf16_type *>(nullptr), 0, static_cast<char *>(nullptr), -1, encodings::utf8), L"UTF-8 to UTF-16 nullptr, -1", LINE_INFO());
+            Assert::AreEqual(std::size_t(0), convert_string(static_cast<utf16_type *>(nullptr), 0, static_cast<char *>(nullptr), 42, encodings::utf8), L"UTF-8 to UTF-16 nullptr, 42", LINE_INFO());
+
+            Assert::AreEqual(std::size_t(0), convert_string(static_cast<char *>(nullptr), 0, static_cast<utf16_type *>(nullptr), 0, encodings::utf8), L"UTF-16 to UTF-8 nullptr, 0", LINE_INFO());
+            Assert::AreEqual(std::size_t(0), convert_string(static_cast<char *>(nullptr), 0, static_cast<utf16_type *>(nullptr), -1, encodings::utf8), L"UTF-16 to UTF-8 nullptr, -1", LINE_INFO());
+            Assert::AreEqual(std::size_t(0), convert_string(static_cast<char *>(nullptr), 0, static_cast<utf16_type *>(nullptr), 42, encodings::utf8), L"UTF-16 to UTF-8, nullptr, 42", LINE_INFO());
 
             {
                 std::vector<utf16_type> buffer(convert_string(static_cast<utf16_type *>(nullptr), 0, "input", -1, encodings::utf8));
-                Assert::AreEqual(std::size_t(6), buffer.size(), L"char, \"input\", -1", LINE_INFO());
+                Assert::AreEqual(std::size_t(6), buffer.size(), L"UTF-8 to UTF-16 \"input\", -1", LINE_INFO());
                 Assert::AreEqual(std::size_t(6), convert_string(buffer.data(), buffer.size(), "input", -1, encodings::utf8), L"Converted input", LINE_INFO());
             }
 
             {
+                std::vector<utf16_type> buffer(convert_string(static_cast<utf16_type *>(nullptr), 0, "input", 0, encodings::utf8));
+                Assert::AreEqual(std::size_t(0), buffer.size(), L"UTF-8 to UTF-16 \"input\", 0", LINE_INFO());
+                Assert::AreEqual(std::size_t(0), convert_string(buffer.data(), buffer.size(), "input", 0, encodings::utf8), L"Converted input", LINE_INFO());
+            }
+
+            {
                 std::vector<utf16_type> buffer(convert_string(static_cast<utf16_type *>(nullptr), 0, "input", 5, encodings::utf8));
-                Assert::AreEqual(std::size_t(5), buffer.size(), L"char, \"input\", 5", LINE_INFO());
+                Assert::AreEqual(std::size_t(5), buffer.size(), L"UTF-8 to UTF-16 \"input\", 5", LINE_INFO());
                 Assert::AreEqual(std::size_t(5), convert_string(buffer.data(), buffer.size(), "input", 5, encodings::utf8), L"Converted input", LINE_INFO());
             }
 
             {
-                std::vector<utf16_type> buffer(convert_string(static_cast<char *>(nullptr), 0, L"input", -1, encodings::utf8));
-                Assert::AreEqual(std::size_t(6), buffer.size(), L"wchar_t, \"input\", -1", LINE_INFO());
+                std::vector<char> buffer(convert_string(static_cast<char *>(nullptr), 0, L"input", -1, encodings::utf8));
+                Assert::AreEqual(std::size_t(6), buffer.size(), L"UTF-16 to UTF-8 \"input\", -1", LINE_INFO());
                 Assert::AreEqual(std::size_t(6), convert_string(buffer.data(), buffer.size(), L"input", -1, encodings::utf8), L"Converted input", LINE_INFO());
             }
 
             {
-                std::vector<utf16_type> buffer(convert_string(static_cast<char *>(nullptr), 0, L"input", 5, encodings::utf8));
-                Assert::AreEqual(std::size_t(5), buffer.size(), L"wchar_t, \"input\", 5", LINE_INFO());
+                std::vector<char> buffer(convert_string(static_cast<char *>(nullptr), 0, L"input", 5, encodings::utf8));
+                Assert::AreEqual(std::size_t(5), buffer.size(), L"UTF-16 to UTF-8 \"input\", 5", LINE_INFO());
                 Assert::AreEqual(std::size_t(5), convert_string(buffer.data(), buffer.size(), L"input", 5, encodings::utf8), L"Converted input", LINE_INFO());
             }
 
+            {
+                std::vector<char> buffer(convert_string(static_cast<char *>(nullptr), 0, encodings::ascii, "input", -1, encodings::utf8));
+                Assert::AreEqual(std::size_t(6), buffer.size(), L"UTF-8 to ASCII \"input\", -1", LINE_INFO());
+                Assert::AreEqual(std::size_t(6), convert_string(buffer.data(), buffer.size(), encodings::ascii, "input", -1, encodings::utf8), L"Converted input", LINE_INFO());
+            }
 
-            //{
-            //    typedef char dst_type;
-            //    const auto input = L"input";
-            //    Assert::AreEqual(std::size_t(6), measure_string(input, encodings::utf8), L"wchar_t", LINE_INFO());
-            //    Assert::AreEqual(std::size_t(6), measure_string(input, encodings::utf16), L"wchar_t", LINE_INFO());
-            //    Assert::AreEqual(std::size_t(6), measure_string(input, encodings::utf32), L"wchar_t", LINE_INFO());
-            //}
+            {
+                std::vector<char> buffer(convert_string(static_cast<char *>(nullptr), 0, encodings::ascii, "input", 5, encodings::utf8));
+                Assert::AreEqual(std::size_t(5), buffer.size(), L"UTF-8 to ASCII \"input\", 5", LINE_INFO());
+                Assert::AreEqual(std::size_t(5), convert_string(buffer.data(), buffer.size(), encodings::ascii, "input", 5, encodings::utf8), L"Converted input", LINE_INFO());
+            }
 
-            //{
-            //    typedef char dst_type;
-            //    const auto input = L"input";
-            //    Assert::AreEqual(std::size_t(3), measure_string(input, 3, encodings::utf8), L"limited wchar_t", LINE_INFO());
-            //    Assert::AreEqual(std::size_t(3), measure_string(input, 3, encodings::utf16), L"limited wchar_t", LINE_INFO());
-            //    Assert::AreEqual(std::size_t(3), measure_string(input, 3, encodings::utf32), L"limited wchar_t", LINE_INFO());
-            //    Assert::AreEqual(std::size_t(6), measure_string(input, 7, encodings::utf8), L"overlimited wchar_t", LINE_INFO());
-            //}
+            {
+                std::vector<char> buffer(convert_string(static_cast<char *>(nullptr), 0, encodings::utf8, "Müller", -1, encodings::oem));
+                Assert::AreEqual(std::size_t(8), buffer.size(), L"OEM to UTF-8 \"Müller\", -1", LINE_INFO());
+                Assert::AreEqual(std::size_t(8), convert_string(buffer.data(), buffer.size(), encodings::utf8, "Müller", -1, encodings::oem), L"Converted input", LINE_INFO());
+            }
 
-            //{
-            //    typedef char dst_type;
-            //    const auto input = L"привет";
-            //    Assert::AreEqual(std::size_t(7), measure_string(input, encodings::utf16), L"привет as wchar_t", LINE_INFO());
-            //}
+            {
+                std::vector<char> buffer(convert_string(static_cast<char *>(nullptr), 0, encodings::utf8, "Müller", 6, encodings::oem));
+                Assert::AreEqual(std::size_t(7), buffer.size(), L"OEM to UTF-8 \"Müller\", 6", LINE_INFO());
+                Assert::AreEqual(std::size_t(7), convert_string(buffer.data(), buffer.size(), encodings::utf8, "Müller", 6, encodings::oem), L"Converted input", LINE_INFO());
+            }
 
-            //{
-            //    typedef char dst_type;
-            //    const auto input = L"привет";
-            //    Assert::AreEqual(std::size_t(13), measure_string<char>(input, encodings::utf8), L"привет as utf8", LINE_INFO());
-            //}
+            {
+                std::vector<char> buffer(convert_string(static_cast<char *>(nullptr), 0, L"привет", -1, encodings::utf8));
+                Assert::AreEqual(std::size_t(13), buffer.size(), L"UTF-16 to UTF-8 \"привет\", -1", LINE_INFO());
+                Assert::AreEqual(std::size_t(13), convert_string(buffer.data(), buffer.size(), L"привет", -1, encodings::utf8), L"Converted привет", LINE_INFO());
+            }
+
+            {
+                std::vector<char> buffer(convert_string(static_cast<char *>(nullptr), 0, L"привет", 6, encodings::utf8));
+                Assert::AreEqual(std::size_t(12), buffer.size(), L"UTF-16 to UTF-8 \"привет\", 6", LINE_INFO());
+                Assert::AreEqual(std::size_t(12), convert_string(buffer.data(), buffer.size(), L"привет", 6, encodings::utf8), L"Converted привет", LINE_INFO());
+            }
+
+            {
+                std::vector<utf16_type> buffer(convert_string(static_cast<utf16_type *>(nullptr), 0, encodings::utf16, L"привет", -1, encodings::utf16));
+                Assert::AreEqual(std::size_t(7), buffer.size(), L"UTF-16 to UTF-16 \"привет\", -1", LINE_INFO());
+                Assert::AreEqual(std::size_t(7), convert_string(buffer.data(), buffer.size(), encodings::utf16, L"привет", -1, encodings::utf16), L"Converted привет", LINE_INFO());
+            }
+
+            {
+                std::vector<utf16_type> buffer(convert_string(static_cast<utf16_type *>(nullptr), 0, encodings::utf16, L"привет", 6, encodings::utf16));
+                Assert::AreEqual(std::size_t(6), buffer.size(), L"UTF-16 to UTF-16 \"привет\", 6", LINE_INFO());
+                Assert::AreEqual(std::size_t(6), convert_string(buffer.data(), buffer.size(), encodings::utf16, L"привет", 6, encodings::utf16), L"Converted привет", LINE_INFO());
+            }
+
+            {
+                std::vector<utf16_type> buffer(convert_string(static_cast<utf16_type *>(nullptr), 0, encodings::utf16, u8"привет", -1, encodings::utf8));
+                Assert::AreEqual(std::size_t(7), buffer.size(), L"UTF-8 to UTF-16 \"привет\", -1", LINE_INFO());
+                Assert::AreEqual(std::size_t(7), convert_string(buffer.data(), buffer.size(), encodings::utf16, u8"привет", -1, encodings::utf8), L"Converted привет", LINE_INFO());
+            }
+
+            {
+                std::vector<utf16_type> buffer(convert_string(static_cast<utf16_type *>(nullptr), 0, encodings::utf16, u8"привет", int(::strlen(u8"привет")), encodings::utf8));
+                Assert::AreEqual(std::size_t(6), buffer.size(), L"UTF-8 to UTF-16 \"привет\", strlen(\"привет\")", LINE_INFO());
+                Assert::AreEqual(std::size_t(6), convert_string(buffer.data(), buffer.size(), encodings::utf16, u8"привет", int(::strlen(u8"привет")), encodings::utf8), L"Converted привет", LINE_INFO());
+            }
         }
-
-    //    // This method tests stuff that behaved weird due to how ucnv_convert
-    //    // works. Our own implementation should fix the handling of the
-    //    // terminating null.
-    //    TEST_METHOD(measure_bugs) {
-    //        {
-    //            typedef char dst_type;
-    //            const auto input = "input";
-    //            Assert::AreEqual(std::size_t(6), measure_string(encodings::ansi, input, -1, encodings::utf8), L"utf8 as ANSI", LINE_INFO());
-    //        }
-
-    //        {
-    //            typedef char dst_type;
-    //            const auto input = L"input";
-    //            Assert::AreEqual(std::size_t(6), measure_string(encodings::ansi, input, -1, encodings::utf16), L"utf16 as ANSI", LINE_INFO());
-    //        }
-
-    //        {
-    //            typedef char dst_type;
-    //            const auto input = L"привет";
-    //            Assert::AreEqual(std::size_t(13), measure_string(encodings::utf8, input, encodings::utf16), L"привет as utf8", LINE_INFO());
-    //        }
-    //    }
     };
 }

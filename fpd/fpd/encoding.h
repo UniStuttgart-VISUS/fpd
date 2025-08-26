@@ -32,6 +32,11 @@ namespace encodings {
     constexpr const encoding ansi = "CP1252";
 
     /// <summary>
+    /// The constant identifying ISO Latin-1 (ISO 8859-1).
+    /// </summary>
+    constexpr const encoding latin1 = "ISO_8859-1";
+
+    /// <summary>
     /// The default code page of the system.
     /// </summary>
     constexpr const encoding oem = nullptr;
