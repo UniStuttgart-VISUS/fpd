@@ -23,7 +23,7 @@ All changes to the specification must make sure that all readers sharing the sam
 
 
 ## Byte order marker
-The two bytes 0x01 and 0x02 at this position determine how the endian of all subsequent data must be interpreted.
+The two bytes 0x01 and 0x02 at this position determine how the endian of all subsequent data must be interpreted. All numbers in the file greater than one byte must be byte-swapped if this endian is not the native endian of the system.
 
 
 ## Flexible header size
@@ -38,7 +38,7 @@ The segment type enumeration of the reference implementation is defined such tha
 ### Frame table (0x01)
 This segment is mandatory.
 
-The frame table segment holds the absolute offsets (`SEEK_SET`) of all frames in the file. Each offset is represented as `uint64`. The number of frames can be computed by dividing the size of this header by the size of `uint64`.
+The frame table segment holds the offsets of all frames in the file from the end of the headers (the size of the headers must be added when seeking to a frame from the begin of the file). Each offset is represented as `uint64`. The number of frames can be computed by dividing the size of this header by the size of `uint64`.
 
 | Type           | Length   | Description                                      |
 |----------------|----------|--------------------------------------------------|
