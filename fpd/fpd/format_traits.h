@@ -504,6 +504,20 @@ inline std::size_t to_components(_In_ const format format) noexcept {
 }
 
 
+#if defined(_WIN32)
+/// <summary>
+/// Determines the matching DXGI format for <paramref name="format" />.
+/// </summary>
+/// <param name="format">The format to determine the DXGI format for.</param>
+/// <returns>The matching buffer format or <c>DXGI_FORMAT_UNKNOWN</c> if no
+/// matching format could be found.</returns>
+inline /*constexpr*/ DXGI_FORMAT to_dxgi(_In_ const format format) noexcept {
+    throw "TODO";
+    //return detail::to_dxgi(formats(), format);
+}
+#endif /* defined(_WIN32) */
+
+
 /// <summary>
 /// Determines the matching OpenGL scalar format for <paramref name="format" />.
 /// </summary>
@@ -569,6 +583,7 @@ inline const TChar *const to_string(_In_ const format format) {
     typedef format_list_cat<formats, format::unknown> dispatch_type;
     return detail::to_string<TChar>(dispatch_type(), format);
 }
+
 
 #if defined(FPD_WITH_VULKAN)
 /// <summary>

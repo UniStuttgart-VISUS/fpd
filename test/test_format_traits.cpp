@@ -103,6 +103,12 @@ namespace fpd {
             Assert::AreEqual(int(format::uint8xyzw), int(detail::format_v<std::array<std::uint8_t, 4>>), L"uint8xyzw", LINE_INFO());
         }
 
+        TEST_METHOD(test_to_dxgi) {
+            Assert::AreEqual(int(DXGI_FORMAT_R8_SINT), int(to_dxgi(format::int8x)), L"int8x", LINE_INFO());
+            Assert::AreEqual(int(DXGI_FORMAT_R32G32B32_FLOAT), int(to_dxgi(format::float32xyz)), L"float32xyz", LINE_INFO());
+            Assert::AreEqual(int(DXGI_FORMAT_UNKNOWN), int(to_dxgi(format::unknown)), L"unknown", LINE_INFO());
+        }
+
         TEST_METHOD(test_to_opengl) {
             Assert::AreEqual(int(GL_BYTE), int(to_opengl(format::int8x)), L"int8x", LINE_INFO());
             Assert::AreEqual(int(GL_FLOAT), int(to_opengl(format::float32xyz)), L"float32xyz", LINE_INFO());
