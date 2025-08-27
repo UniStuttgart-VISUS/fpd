@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iterator>
+#include <limits>
 #include <string>
 #include <vector>
 

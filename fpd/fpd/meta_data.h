@@ -149,7 +149,7 @@ public:
         : with_code_page<TChar>(encoding),
             _endian(endian_type::undefined),
             _file_size(0),
-            _version(0, 0) { }
+            _version(std::uint8_t(0), std::uint8_t(0)) { }
 
     /// <summary>
     /// Gets the endian of the file.

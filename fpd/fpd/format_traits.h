@@ -120,11 +120,15 @@ template<> struct format_reverse_traits<t> {\
     }\
 }
 
-#define _SPECIALISE_VEC_FMT_TRAITS(f, s, t, d, df, dc, g, vf, vc)\
+// TODO: need to filter out unsupported DXGI 3-component formats.
+#define _SPECIALISE_VEC_FMT_TRAITS(f, s, t, b, d, df, dc, g, vf, vc)\
 template<> struct format_forward_traits<format::f##s> {\
     typedef t scalar;\
     typedef std::array<t, d> type;\
+    /*_FPD_DXGI_FORMAT(__FPD_MTER(dc, d, 0), b, df)*/\
     static constexpr const format format = format::f##s;\
+    _FPD_GL_FORMAT(g)\
+    _FPD_VK_FORMAT(__FPD_MTER(vc, d, 0), b, vf)\
     template<class TChar>\
     static inline constexpr const TChar *name(void) noexcept {\
         return FPD_TPL_LITERAL(TChar, #f#s); \
@@ -133,7 +137,10 @@ template<> struct format_forward_traits<format::f##s> {\
 template<> struct format_reverse_traits<std::array<t, d>> {\
     typedef t scalar;\
     typedef std::array<t, d> type;\
+    /*_FPD_DXGI_FORMAT(__FPD_MTER(dc, d, 0), b, df)*/\
     static constexpr const format format = format::f##s;\
+    _FPD_GL_FORMAT(g)\
+    _FPD_VK_FORMAT(__FPD_MTER(vc, d, 0), b, vf)\
     template<class TChar>\
     static inline constexpr const TChar *name(void) noexcept {\
         return FPD_TPL_LITERAL(TChar, #f#s); \
@@ -142,9 +149,9 @@ template<> struct format_reverse_traits<std::array<t, d>> {\
 
 #define _SPECIALISE_FMT_TRAITS(f, t, b, df, dc, g, vf, vc)\
 _SPECIALISE_SCALAR_FMT_TRAITS(f##x, t, b, df, dc, g, vf, vc);\
-_SPECIALISE_VEC_FMT_TRAITS(f, xy, t, 2, df, dc, g, vf, vc);\
-_SPECIALISE_VEC_FMT_TRAITS(f, xyz, t, 3, df, dc, g, vf, vc);\
-_SPECIALISE_VEC_FMT_TRAITS(f, xyzw, t, 4, df, dc, g, vf, vc)
+_SPECIALISE_VEC_FMT_TRAITS(f, xy, t, b, 2, df, dc, g, vf, vc);\
+_SPECIALISE_VEC_FMT_TRAITS(f, xyz, t, b, 3, df, dc, g, vf, vc);\
+_SPECIALISE_VEC_FMT_TRAITS(f, xyzw, t, b, 4, df, dc, g, vf, vc)
 
 _SPECIALISE_SCALAR_FMT_TRAITS(unknown, void, 0,
     UNKNOWN, 0,
