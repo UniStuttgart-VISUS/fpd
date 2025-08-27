@@ -83,14 +83,30 @@ inline constexpr std::uint64_t swap_bytes(_In_ const std::uint64_t v) noexcept {
 /// <summary>
 /// Swaps the byte order of a <typeparamref name="TType" />.
 /// </summary>
-/// <typeparam name="TType">An signed numeric type.</typeparam>
+/// <typeparam name="TType">An signed integral type.</typeparam>
 /// <param name="v">The value to swap the byte order of.</param>
 /// <returns>The value when the byte order is swapped.</returns>
 template<class TType>
-inline constexpr std::enable_if_t<std::is_signed_v<TType>, TType> swap_bytes(
-        _In_ const TType v) noexcept {
+inline constexpr std::enable_if_t<std::is_signed_v<TType>
+        && std::is_integral_v<TType>, TType>
+swap_bytes(_In_ const TType v) noexcept {
     typedef detail::make_unsigned_t<TType> uint_type;
     return static_cast<TType>(swap_bytes(static_cast<uint_type>(v)));
+}
+
+
+/// <summary>
+/// Swaps the byte order of a <typeparamref name="TType" />.
+/// </summary>
+/// <typeparam name="TType">An floating-point type.</typeparam>
+/// <param name="v">The value to swap the byte order of.</param>
+/// <returns>The value when the byte order is swapped.</returns>
+template<class TType>
+inline constexpr std::enable_if_t<std::is_floating_point_v<TType>, TType>
+swap_bytes(_In_ const TType v) noexcept {
+    typedef detail::make_unsigned_t<TType> uint_type;
+    auto retval = swap_bytes(reinterpret_cast<const uint_type&>(v));
+    return reinterpret_cast<TType&>(retval);
 }
 
 
