@@ -86,9 +86,10 @@ public:
     /// <param name="format">The scalar format of the bounding box.</param>
     explicit inline bounding_box(_In_ const format_type format)
             : _format(format) {
+        constexpr auto zero = static_cast<std::uint8_t>(0);
         this->_values.resize(6 * to_size(this->_format));
         assert(*this);
-        std::fill(this->_values.begin(), this->_values.end(), 0);
+        std::fill(this->_values.begin(), this->_values.end(), zero);
         assert(this->empty());
     }
 

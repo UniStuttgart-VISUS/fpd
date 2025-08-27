@@ -275,8 +275,8 @@ void FPD_NAMESPACE::pkd_tree_builder<TChar>::build_ospray(
     }
 
     const auto position = this->position<TScalar>(particles, node, indices);
-    const auto node_pos = position[split];
     const auto split = depth % this->_dimensions;
+    const auto node_pos = position[split];
     // const size_t dim = maxDim(bounds.size());
 
     auto right = detail::ospray_pkd_right_child(node);

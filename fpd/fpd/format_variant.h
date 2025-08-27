@@ -32,7 +32,7 @@ template<class TValue> struct format_value_ctor final {
 
     template<class TArg>
     typename std::enable_if<!std::is_convertible<TValue, TArg>::value>::type
-    operator ()(_In_ TValue *target, _In_ TArg&& value) {
+    operator ()(_In_ TValue *target, _In_ TArg&&) {
         assert(target != nullptr);
         assert(false);  // This should never be called by invoke.
         new (target) TValue();

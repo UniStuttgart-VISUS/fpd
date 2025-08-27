@@ -12,9 +12,10 @@
 #include <cassert>
 #include <cinttypes>
 #include <memory>
+#include <typeindex>
 
 #include "fpd/abi.h"
-#include "fpd/annotations.h"
+#include "fpd/make_unsigned.h"
 
 
 FPD_NAMESPACE_BEGIN
@@ -50,16 +51,6 @@ inline constexpr std::uint16_t swap_bytes(_In_ const std::uint16_t v) noexcept {
 
 
 /// <summary>
-/// Swaps the byte order of a <see cref="std::int16_t" />.
-/// </summary>
-/// <param name="v">The value to swap the byte order of.</param>
-/// <returns>The value when the byte order is swapped.</returns>
-inline constexpr std::int16_t swap_bytes(_In_ const std::int16_t v) noexcept {
-    return static_cast<std::int16_t>(swap_bytes(static_cast<std::uint16_t>(v)));
-}
-
-
-/// <summary>
 /// Swaps the byte order of a <see cref="std::uint32_t" />.
 /// </summary>
 /// <param name="v">The value to swap the byte order of.</param>
@@ -69,16 +60,6 @@ inline constexpr std::uint32_t swap_bytes(_In_ const std::uint32_t v) noexcept {
         | ((v & 0x00FF0000) >> 8)
         | ((v & 0x0000FF00) << 8)
         | ((v & 0x000000FF) << 24);
-}
-
-
-/// <summary>
-/// Swaps the byte order of a <see cref="std::int32_t" />.
-/// </summary>
-/// <param name="v">The value to swap the byte order of.</param>
-/// <returns>The value when the byte order is swapped.</returns>
-inline constexpr std::int32_t swap_bytes(_In_ const std::int32_t v) noexcept {
-    return static_cast<std::int32_t>(swap_bytes(static_cast<std::uint32_t>(v)));
 }
 
 
@@ -100,12 +81,16 @@ inline constexpr std::uint64_t swap_bytes(_In_ const std::uint64_t v) noexcept {
 
 
 /// <summary>
-/// Swaps the byte order of a <see cref="std::int64_t" />.
+/// Swaps the byte order of a <typeparamref name="TType" />.
 /// </summary>
+/// <typeparam name="TType">An signed numeric type.</typeparam>
 /// <param name="v">The value to swap the byte order of.</param>
 /// <returns>The value when the byte order is swapped.</returns>
-inline constexpr std::int64_t swap_bytes(_In_ const std::int64_t v) noexcept {
-    return static_cast<std::int64_t>(swap_bytes(static_cast<std::uint64_t>(v)));
+template<class TType>
+inline constexpr std::enable_if_t<std::is_signed_v<TType>, TType> swap_bytes(
+        _In_ const TType v) noexcept {
+    typedef detail::make_unsigned_t<TType> uint_type;
+    return static_cast<TType>(swap_bytes(static_cast<uint_type>(v)));
 }
 
 
@@ -115,7 +100,9 @@ inline constexpr std::int64_t swap_bytes(_In_ const std::int64_t v) noexcept {
 /// <param name="v">The value to swap the byte order of.</param>
 /// <returns>The value when the byte order is swapped.</returns>
 inline constexpr char16_t swap_bytes(_In_ const char16_t v) noexcept {
-    return static_cast<char16_t>(swap_bytes(static_cast<std::uint16_t>(v)));
+    typedef std::decay_t<decltype(v)> value_type;
+    typedef detail::make_unsigned_t<value_type> int_type;
+    return static_cast<value_type>(swap_bytes(static_cast<int_type>(v)));
 }
 
 
@@ -125,7 +112,9 @@ inline constexpr char16_t swap_bytes(_In_ const char16_t v) noexcept {
 /// <param name="v">The value to swap the byte order of.</param>
 /// <returns>The value when the byte order is swapped.</returns>
 inline constexpr char32_t swap_bytes(_In_ const char32_t v) noexcept {
-    return static_cast<char32_t>(swap_bytes(static_cast<std::uint32_t>(v)));
+    typedef std::decay_t<decltype(v)> value_type;
+    typedef detail::make_unsigned_t<value_type> int_type;
+    return static_cast<value_type>(swap_bytes(static_cast<int_type>(v)));
 }
 
 FPD_NAMESPACE_END
@@ -228,7 +217,6 @@ inline void swap_bytes_duff(_Inout_updates_(cnt) void *values,
     assert(stride >= size);
     assert(stride > 1);
     auto v = static_cast<std::uint8_t *>(values);
-    auto n = v;
     auto i = (cnt + 7) / 8;
 
     switch (cnt % 8) {

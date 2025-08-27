@@ -420,7 +420,7 @@ FPD_NAMESPACE::convert_string(
         _In_ std::size_t cnt_dst,
         _In_reads_or_z_opt_(cnt_src) const TFrom *src,
         _In_ int cnt_src,
-        _In_ const encoding code_page) {
+        _In_ const encoding) {
     if (dst == nullptr) {
         // Make sure that the output buffer size is zero if the output
         // buffer is invalid, such that we get the required buffer size.
@@ -494,7 +494,7 @@ std::enable_if_t<sizeof(TTo) == sizeof(TFrom), std::basic_string<TTo>>
 FPD_NAMESPACE::convert_string(
         _In_reads_or_z_opt_(cnt_src) const TFrom *src,
         _In_ int cnt_src,
-        _In_opt_z_ const encoding code_page) {
+        _In_opt_z_ const encoding) {
     if ((src == nullptr) || (cnt_src == 0)) {
         return std::basic_string<TTo>();
     }
@@ -516,7 +516,7 @@ template<class TChar, class TTraits, class TAlloc>
 std::basic_string<TChar, TTraits, TAlloc> FPD_NAMESPACE::convert_string(
         _In_ const std::basic_string<TChar, TTraits, TAlloc>& src,
         _In_ const int cnt,
-        _In_opt_z_ const encoding reserved) {
+        _In_opt_z_ const encoding) {
     if ((cnt < 0) || (cnt >= src.size())) {
         return src;
     } else {

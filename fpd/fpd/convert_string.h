@@ -290,16 +290,13 @@ convert_string(_In_reads_or_z_opt_(cnt_src) const TFrom *src,
 /// string.</param>
 /// <param name="cnt_src">The length of the source string, which can be -1
 /// if <paramref name="src" /> is null-terminated.</param>
-/// <param name="code_page">The code page used for the multi-byte character
-/// string.</param>
 /// <returns>The converted string.</returns>
 /// <exception cref="std::system_error">If the conversion failed.
 /// </exception>
 template<class TTo, class TFrom>
 std::enable_if_t<sizeof(TTo) == sizeof(TFrom), std::basic_string<TTo>>
 convert_string(_In_reads_or_z_opt_(cnt_src) const TFrom *src,
-    _In_ int cnt_src,
-    _In_opt_z_ const encoding code_page);
+    _In_ int cnt_src, _In_opt_z_ const encoding);
 
 
 /// <summary>
@@ -313,14 +310,13 @@ convert_string(_In_reads_or_z_opt_(cnt_src) const TFrom *src,
 /// </param>
 /// <param name="cnt_src">The number of characters in <paramref name="src" /> or
 /// -1 to use the full null-terminated input.</param>
-/// <param name="reserved">This parameter is ignored.</param>
 /// <returns>A new string containing <paramref name="src" /> or a substring
 /// thereof.</returns>
 template<class TChar> inline std::basic_string<TChar> convert_string(
         _In_reads_or_z_opt_(cnt_src) const TChar *src,
         _In_ int cnt_src,
-        _In_opt_z_ const encoding reserved) {
-    return convert_string<TChar>(src, cnt_src, reserved);
+        _In_opt_z_ const encoding) {
+    return convert_string<TChar>(src, cnt_src, nullptr);
 }
 
 
@@ -334,13 +330,12 @@ template<class TChar> inline std::basic_string<TChar> convert_string(
 /// <param name="src">The input strin, which is also the output string.</param>
 /// <param name="cnt">If not negative, the output string will be truncated to
 /// this number of characters.</param>
-/// <param name="reserved">This parameter is ignored.</param>
 /// <returns><paramref name="src" /> or a substring thereof.</returns>
 template<class TChar, class TTraits, class TAlloc>
 std::basic_string<TChar, TTraits, TAlloc> convert_string(
     _In_ const std::basic_string<TChar, TTraits, TAlloc>& src,
     _In_ const int cnt,
-    _In_opt_z_ const encoding reserved);
+    _In_opt_z_ const encoding);
 
 FPD_NAMESPACE_END
 

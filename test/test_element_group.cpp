@@ -301,6 +301,7 @@ namespace fpd {
             Assert::AreEqual(int(0), int(g.offset(1)), L"offset@1", LINE_INFO());
             Assert::ExpectException<std::invalid_argument>([&g](void) {
                 auto dummy = g.offset(element<wchar_t>());
+                UNREFERENCED_PARAMETER(dummy);
             }, L"offset of invalid element", LINE_INFO());
 
             g.add({ semantic::position_radius, format::float32xyzw, 0, 0 });

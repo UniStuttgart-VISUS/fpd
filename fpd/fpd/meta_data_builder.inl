@@ -10,7 +10,7 @@
  */
 template<class TChar>
 FPD_NAMESPACE::meta_data_builder<TChar>::meta_data_builder(void)
-    : with_code_page(encodings::oem),
+    : with_code_page<TChar>(encodings::oem),
       _endian(endian::system),
       _version(std::make_pair(FPD_FILE_MAJOR, FPD_FILE_MINOR)) { }
 

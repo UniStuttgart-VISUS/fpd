@@ -186,6 +186,9 @@ public:
     inline std::size_t write(_In_ const std::size_t offset,
             _In_reads_bytes_(cnt) const void *src,
             _In_ const std::size_t cnt) const {
+        UNREFERENCED_PARAMETER(offset);
+        UNREFERENCED_PARAMETER(src);
+        UNREFERENCED_PARAMETER(cnt);
         throw std::system_error(ERROR_FILE_READ_ONLY,
             std::system_category());
     }

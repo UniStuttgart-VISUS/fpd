@@ -16,6 +16,12 @@
 #include <dxgi.h>
 #endif /* defined(_WIN32) */
 
+#include <gl/GL.h>
+
+#if defined(FPD_WITH_VULKAN)
+#include <vulkan/vulkan.h>
+#endif /* defined(FPD_WITH_VULKAN) */
+
 #include "fpd/format.h"
 #include "fpd/literal.h"
 #include "fpd/type_components.h"
@@ -47,11 +53,55 @@ template<class TValue> struct format_reverse_traits {
 };
 
 
-#define _SPECIALISE_SCALAR_FMT_TRAITS(f, t)\
+// Helper macros for constructing the DXGI and Vulkan formats.
+#define __FPD_MCAT0(l, r) l ## r
+#define __FPD_MCAT(l, r) __FPD_MCAT0(l, r)
+#define __FPD_MEXP(x) x
+#define __FPD_MTER0(t, f) f
+#define __FPD_MTER1(t, f) t
+#define __FPD_MTER2(t, f) t
+#define __FPD_MTER3(t, f) t
+#define __FPD_MTER4(t, f) t
+#define __FPD_MTER(c, t, f) __FPD_MTER ## c(t, f)
+#define __FPD_SUFFIX(s) _ ## s
+
+#define __RGBA_VEC0(w, f) f
+#define __RGBA_VEC1(w, f) R ## w ## _ ## f
+#define __RGBA_VEC2(w, f) R ## w ## G ## w ## _ ## f
+#define __RGBA_VEC3(w, f) R ## w ## G ## w ## B ## w ## _ ## f
+#define __RGBA_VEC4(w, f) R ## w ## G ## w ## B ## w ## A ## w ## _ ## f
+#define __RGBA_VEC(c, w, f) __RGBA_VEC ## c(w, f)
+
+#if defined(_WIN32)
+#define __FPD_DXGI_SFX(c, t) __FPD_MTER(c, t, UNKNOWN)
+#define __FPD_DXGI_VEC(c, w, t) __RGBA_VEC(c, w, __FPD_DXGI_SFX(c, t))
+#define __FPD_DXGI_FMT(c, w, t) __FPD_MCAT(DXGI_FORMAT_, __FPD_DXGI_VEC(c, w, t))
+#define _FPD_DXGI_FORMAT(c, w, t) static constexpr const DXGI_FORMAT \
+    dxgi_format = DXGI_FORMAT::__FPD_DXGI_FMT(c, w, t);
+#else /* defined(_WIN32) */
+#define _FPD_DXGI_FORMAT(f, c, w)
+#endif /* defined(_WIN32) */
+
+#define _FPD_GL_FORMAT(g) static constexpr const GLenum opengl_format = g;
+
+#if defined(FPD_WITH_VULKAN)
+#define __FPD_VK_SFX(c, t) __FPD_MTER(c, t, UNDEFINED)
+#define __FPD_VK_VEC(c, w, t) __RGBA_VEC(c, w, __FPD_VK_SFX(c, t))
+#define __FPD_VK_FMT(c, w, t) __FPD_MCAT(VK_FORMAT_, __FPD_VK_VEC(c, w, t))
+#define _FPD_VK_FORMAT(c, w, t) static constexpr const VkFormat \
+    vulkan_format = VkFormat::__FPD_VK_FMT(c, w, t);
+#else /* defined(FPD_WITH_VULKAN) */
+#define _FPD_VK_FORMAT(c, w, t)
+#endif /* defined(FPD_WITH_VULKAN) */
+
+#define _SPECIALISE_SCALAR_FMT_TRAITS(f, t, b, df, dc, g, vf, vc)\
 template<> struct format_forward_traits<format::f> {\
     typedef t scalar;\
     typedef t type;\
+    _FPD_DXGI_FORMAT(dc, b, df)\
     static constexpr const format format = format::f;\
+    _FPD_GL_FORMAT(g)\
+    _FPD_VK_FORMAT(vc, b, vf)\
     template<class TChar>\
     static inline constexpr const TChar *name(void) noexcept {\
         return FPD_TPL_LITERAL(TChar, #f);\
@@ -60,14 +110,17 @@ template<> struct format_forward_traits<format::f> {\
 template<> struct format_reverse_traits<t> {\
     typedef t scalar;\
     typedef t type;\
+    _FPD_DXGI_FORMAT(dc, b, df)\
     static constexpr const format format = format::f;\
+    _FPD_GL_FORMAT(g)\
+    _FPD_VK_FORMAT(vc, b, vf)\
     template<class TChar>\
     static inline constexpr const TChar *name(void) noexcept {\
         return FPD_TPL_LITERAL(TChar, #f);\
     }\
 }
 
-#define _SPECIALISE_VEC_FMT_TRAITS(f, s, t, d)\
+#define _SPECIALISE_VEC_FMT_TRAITS(f, s, t, d, df, dc, g, vf, vc)\
 template<> struct format_forward_traits<format::f##s> {\
     typedef t scalar;\
     typedef std::array<t, d> type;\
@@ -87,26 +140,56 @@ template<> struct format_reverse_traits<std::array<t, d>> {\
     }\
 }
 
+#define _SPECIALISE_FMT_TRAITS(f, t, b, df, dc, g, vf, vc)\
+_SPECIALISE_SCALAR_FMT_TRAITS(f##x, t, b, df, dc, g, vf, vc);\
+_SPECIALISE_VEC_FMT_TRAITS(f, xy, t, 2, df, dc, g, vf, vc);\
+_SPECIALISE_VEC_FMT_TRAITS(f, xyz, t, 3, df, dc, g, vf, vc);\
+_SPECIALISE_VEC_FMT_TRAITS(f, xyzw, t, 4, df, dc, g, vf, vc)
 
-#define _SPECIALISE_FMT_TRAITS(f, t)\
-_SPECIALISE_SCALAR_FMT_TRAITS(f##x, t);\
-_SPECIALISE_VEC_FMT_TRAITS(f, xy, t, 2);\
-_SPECIALISE_VEC_FMT_TRAITS(f, xyz, t, 3);\
-_SPECIALISE_VEC_FMT_TRAITS(f, xyzw, t, 4)
-
-
-_SPECIALISE_SCALAR_FMT_TRAITS(unknown, void);
-_SPECIALISE_FMT_TRAITS(int8, std::int8_t);
-_SPECIALISE_FMT_TRAITS(uint8, std::uint8_t);
-_SPECIALISE_FMT_TRAITS(int16, std::int16_t);
-_SPECIALISE_FMT_TRAITS(uint16, std::uint16_t);
-_SPECIALISE_FMT_TRAITS(int32, std::int32_t);
-_SPECIALISE_FMT_TRAITS(uint32, std::uint32_t);
-_SPECIALISE_FMT_TRAITS(int64, std::int64_t);
-_SPECIALISE_FMT_TRAITS(uint64, std::uint64_t);
-_SPECIALISE_FMT_TRAITS(float32, float);
-_SPECIALISE_FMT_TRAITS(float64, double);
-
+_SPECIALISE_SCALAR_FMT_TRAITS(unknown, void, 0,
+    UNKNOWN, 0,
+    GL_NONE,
+    UNDEFINED, 0);
+_SPECIALISE_FMT_TRAITS(int8, std::int8_t, 8,
+    SINT, 1,
+    GL_BYTE,
+    SINT, 1);
+_SPECIALISE_FMT_TRAITS(uint8, std::uint8_t, 8,
+    UINT, 1,
+    GL_UNSIGNED_BYTE,
+    UINT, 1);
+_SPECIALISE_FMT_TRAITS(int16, std::int16_t, 16,
+    SINT, 1,
+    GL_SHORT,
+    SINT, 1);
+_SPECIALISE_FMT_TRAITS(uint16, std::uint16_t, 16,
+    UINT, 1,
+    GL_UNSIGNED_SHORT,
+    UINT, 1);
+_SPECIALISE_FMT_TRAITS(int32, std::int32_t, 32,
+    SINT, 1,
+    GL_INT,
+    SINT, 1);
+_SPECIALISE_FMT_TRAITS(uint32, std::uint32_t, 32,
+    UINT, 1,
+    GL_UNSIGNED_INT,
+    UINT, 1);
+_SPECIALISE_FMT_TRAITS(int64, std::int64_t, 64,
+    SINT, 0,
+    GL_NONE,
+    SINT, 1);
+_SPECIALISE_FMT_TRAITS(uint64, std::uint64_t, 64,
+    UINT, 0,
+    GL_NONE,
+    UINT, 1);
+_SPECIALISE_FMT_TRAITS(float32, float, 32,
+    FLOAT, 1,
+    GL_FLOAT,
+    SFLOAT, 1);
+_SPECIALISE_FMT_TRAITS(float64, double, 64,
+    FLOAT, 0,
+    GL_DOUBLE,
+    SFLOAT, 1);
 
 #undef _SPECIALISE_FMT_TRAITS
 #undef _SPECIALISE_VEC_FMT_TRAITS

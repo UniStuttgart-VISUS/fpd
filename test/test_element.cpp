@@ -56,7 +56,7 @@ namespace fpd {
                 element<char> e(semantic::user_defined, "bla", format::int32xyz, 42, 0);
                 Assert::AreEqual(int(format::int32xyz), int(e.format()), L"format", LINE_INFO());
                 Assert::AreEqual(42, int(e.offset()), L"offset", LINE_INFO());
-                Assert::AreEqual(int(semantic::user_defined), int(e.semantic()), L"semantic", LINE_INFO());
+                Assert::AreEqual(std::uint64_t(semantic::user_defined), std::uint64_t(e.semantic()), L"semantic", LINE_INFO());
                 Assert::AreEqual(std::string("bla"), e.semantic_name(), L"semantic_name", LINE_INFO());
                 Assert::AreEqual(3 * sizeof(float), std::size_t(e.size()), L"size", LINE_INFO());
             }
@@ -74,7 +74,7 @@ namespace fpd {
                 element<char> e(semantic::user_defined, "bla", format::unknown, 42, 2);
                 Assert::AreEqual(int(format::unknown), int(e.format()), L"format", LINE_INFO());
                 Assert::AreEqual(42, int(e.offset()), L"offset", LINE_INFO());
-                Assert::AreEqual(int(semantic::user_defined), int(e.semantic()), L"semantic", LINE_INFO());
+                Assert::AreEqual(std::uint64_t(semantic::user_defined), std::uint64_t(e.semantic()), L"semantic", LINE_INFO());
                 Assert::AreEqual(std::string("bla"), e.semantic_name(), L"semantic_name", LINE_INFO());
                 Assert::AreEqual(std::size_t(2), std::size_t(e.size()), L"size", LINE_INFO());
             }
@@ -83,7 +83,7 @@ namespace fpd {
                 element<wchar_t> e(user_defined_semantic(43), L"bla", format::unknown, 42, 17);
                 Assert::AreEqual(int(format::unknown), int(e.format()), L"format", LINE_INFO());
                 Assert::AreEqual(42, int(e.offset()), L"offset", LINE_INFO());
-                Assert::AreEqual(int(user_defined_semantic(43)), int(e.semantic()), L"semantic", LINE_INFO());
+                Assert::AreEqual(std::uint64_t(user_defined_semantic(43)), std::uint64_t(e.semantic()), L"semantic", LINE_INFO());
                 Assert::AreEqual(std::wstring(L"bla"), e.semantic_name(), L"semantic_name", LINE_INFO());
                 Assert::AreEqual(std::size_t(17), std::size_t(e.size()), L"size", LINE_INFO());
             }
@@ -186,7 +186,7 @@ namespace fpd {
                 element<char>e(i);
                 Assert::AreEqual(int(format::int32xyz), int(e.format()), L"format", LINE_INFO());
                 Assert::AreEqual(42, int(e.offset()), L"offset", LINE_INFO());
-                Assert::AreEqual(int(semantic::user_defined), int(e.semantic()), L"semantic", LINE_INFO());
+                Assert::AreEqual(std::uint64_t(semantic::user_defined), std::uint64_t(e.semantic()), L"semantic", LINE_INFO());
                 Assert::AreEqual(std::string("bla"), e.semantic_name(), L"semantic_name", LINE_INFO());
                 Assert::AreEqual(3 * sizeof(float), std::size_t(e.size()), L"size", LINE_INFO());
             }
@@ -206,7 +206,7 @@ namespace fpd {
                 element<char>e(i);
                 Assert::AreEqual(int(format::unknown), int(e.format()), L"format", LINE_INFO());
                 Assert::AreEqual(42, int(e.offset()), L"offset", LINE_INFO());
-                Assert::AreEqual(int(semantic::user_defined), int(e.semantic()), L"semantic", LINE_INFO());
+                Assert::AreEqual(std::uint64_t(semantic::user_defined), std::uint64_t(e.semantic()), L"semantic", LINE_INFO());
                 Assert::AreEqual(std::string("bla"), e.semantic_name(), L"semantic_name", LINE_INFO());
                 Assert::AreEqual(std::size_t(2), std::size_t(e.size()), L"size", LINE_INFO());
             }
