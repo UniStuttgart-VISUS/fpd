@@ -295,6 +295,55 @@ inline constexpr std::size_t to_components(
 }
 
 
+#if defined(_WIN32)
+/// <summary>
+/// Recursion stop for <see cref="to_dxgi" />.
+/// </summary>
+inline constexpr DXGI_FORMAT to_dxgi(_In_ const format_list<>,
+        _In_ const format) noexcept {
+    return DXGI_FORMAT_UNKNOWN;
+}
+
+/// <summary>
+/// Determines the DXGI format for the given <paramref name="format" />.
+/// </summary>
+template<format Format, format... Formats>
+inline constexpr DXGI_FORMAT to_dxgi(
+        _In_ const format_list<Format, Formats...>,
+        _In_ const format format) noexcept {
+    if (format == Format) {
+        return format_forward_traits<Format>::dxgi_format;
+    } else {
+        return to_dxgi(format_list<Formats...>(), format);
+    }
+}
+#endif /* defined(_WIN32) */
+
+
+/// <summary>
+/// Recursion stop for <see cref="to_opengl" />.
+/// </summary>
+inline constexpr GLenum to_opengl(_In_ const format_list<>,
+        _In_ const format) noexcept {
+    return GL_NONE;
+}
+
+/// <summary>
+/// Determines the OpenGL scalar format for the given
+/// <paramref name="format" />.
+/// </summary>
+template<format Format, format... Formats>
+inline constexpr GLenum to_opengl(
+        _In_ const format_list<Format, Formats...>,
+        _In_ const format format) noexcept {
+    if (format == Format) {
+        return format_forward_traits<Format>::opengl_format;
+    } else {
+        return to_opengl(format_list<Formats...>(), format);
+    }
+}
+
+
 /// <summary>
 /// Recursion stop for <see cref="to_scalar_size" />.
 /// </summary>
@@ -373,6 +422,31 @@ inline const TChar *const to_string(
     }
 }
 
+
+#if defined(FPD_WITH_VULKAN)
+/// <summary>
+/// Recursion stop for <see cref="to_vulkan" />.
+/// </summary>
+inline constexpr VkFormat to_vulkan(_In_ const format_list<>,
+        _In_ const format) noexcept {
+    return VK_FORMAT_UNDEFINED;
+}
+
+/// <summary>
+/// Determines the Vulkan format for the given <paramref name="format" />.
+/// </summary>
+template<format Format, format... Formats>
+inline constexpr VkFormat to_vulkan(
+        _In_ const format_list<Format, Formats...>,
+        _In_ const format format) noexcept {
+    if (format == Format) {
+        return format_forward_traits<Format>::vulkan_format;
+    } else {
+        return to_vulkan(format_list<Formats...>(), format);
+    }
+}
+#endif /* defined(FPD_WITH_VULKAN) */
+
 FPD_DETAIL_NAMESPACE_END
 
 
@@ -431,6 +505,22 @@ inline std::size_t to_components(_In_ const format format) noexcept {
 
 
 /// <summary>
+/// Determines the matching OpenGL scalar format for <paramref name="format" />.
+/// </summary>
+/// <remarks>
+/// Note that OpenGL does not use vector formats like DXGI or Vulkan, so you
+/// need to determine the number of components separately using
+/// <see cref="to_components" />.
+/// </remarks>
+/// <param name="format">The format to determine the OpenGL format for.</param>
+/// <returns>The matching scalar format or <c>GL_NONE</c> if no matching format
+/// could be found.</returns>
+inline constexpr GLenum to_opengl(_In_ const format format) noexcept {
+    return detail::to_opengl(formats(), format);
+}
+
+
+/// <summary>
 /// Answer the size in bytes of a scalar of the given
 /// <paramref name="format" />.
 /// </summary>
@@ -479,6 +569,19 @@ inline const TChar *const to_string(_In_ const format format) {
     typedef format_list_cat<formats, format::unknown> dispatch_type;
     return detail::to_string<TChar>(dispatch_type(), format);
 }
+
+#if defined(FPD_WITH_VULKAN)
+/// <summary>
+/// Determines the matching Vulkan format for <paramref name="format" />.
+/// </summary>
+/// <param name="format">The format to determine the Vulkan format for.</param>
+/// <returns>The matching buffer format or <c>VK_FORMAT_UNDEFINED</c> if no
+/// matching format could be found.</returns>
+inline constexpr VkFormat to_vulkan(_In_ const format format) noexcept {
+    return detail::to_vulkan(formats(), format);
+}
+#endif /* defined(FPD_WITH_VULKAN) */
+
 
 FPD_NAMESPACE_END
 
