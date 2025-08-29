@@ -22,8 +22,11 @@
 #include <vulkan/vulkan.h>
 #endif /* defined(FPD_WITH_VULKAN) */
 
+#include "fpd/dependent_bool.h"
+#include "fpd/detector.h"
 #include "fpd/format.h"
 #include "fpd/literal.h"
+#include "fpd/type_collapse.h"
 #include "fpd/type_components.h"
 #include "fpd/type_list.h"
 #include "fpd/type_size.h"
@@ -37,6 +40,7 @@ FPD_DETAIL_NAMESPACE_BEGIN
 /// </summary>
 /// <typeparam name="Format">The format to reflect on.</typeparam>
 template<format Format> struct format_forward_traits { };
+
 
 /// <summary>
 /// A template that allows for retrieving the <paramref name="format" />
@@ -63,7 +67,6 @@ template<class TValue> struct format_reverse_traits {
 #define __FPD_MTER3(t, f) t
 #define __FPD_MTER4(t, f) t
 #define __FPD_MTER(c, t, f) __FPD_MTER ## c(t, f)
-#define __FPD_SUFFIX(s) _ ## s
 
 #define __RGBA_VEC0(w, f) f
 #define __RGBA_VEC1(w, f) R ## w ## _ ## f
@@ -71,6 +74,8 @@ template<class TValue> struct format_reverse_traits {
 #define __RGBA_VEC3(w, f) R ## w ## G ## w ## B ## w ## _ ## f
 #define __RGBA_VEC4(w, f) R ## w ## G ## w ## B ## w ## A ## w ## _ ## f
 #define __RGBA_VEC(c, w, f) __RGBA_VEC ## c(w, f)
+
+
 
 #if defined(_WIN32)
 #define __FPD_DXGI_SFX(c, t) __FPD_MTER(c, t, UNKNOWN)
@@ -94,14 +99,49 @@ template<class TValue> struct format_reverse_traits {
 #define _FPD_VK_FORMAT(c, w, t)
 #endif /* defined(FPD_WITH_VULKAN) */
 
-#define _SPECIALISE_SCALAR_FMT_TRAITS(f, t, b, df, dc, g, vf, vc)\
+template<format Format, class TEnum, class TCheck>
+struct gfx_fmt;
+
+//template<class TValue, bool Enabled> void hurz(std::bool_constant<Enabled>) {
+//    static_assert(dependent_false_v<TValue>, "bla");
+//}
+//
+//template<class TValue> void hurz(std::true_type) {
+//    static_assert(dependent_false_v<TValue>, "blubb");
+//}
+
+//void gug() {
+//    hurz<int>(std::true_type{});
+//}
+//struct gfx_fmt<format::f, DXGI_FORMAT, Fallback, true> final {
+//    \
+//        static constexpr auto value = dependent_value<DXGI_FORMAT, __FPD_DXGI_FMT(1, b, df), detector_v<dxgi_has_##f, DXGI_FORMAT>>::value; \
+//}; \
+//template<DXGI_FORMAT Fallback> \
+//struct gfx_fmt<format::f, DXGI_FORMAT, Fallback, false> final {
+//        \
+//            static constexpr auto value = Fallback; \
+//    }; \
+
+
+#define _SPECIALISE_SCALAR_FMT_TRAITS(f, t, b, df, gf, vf)\
+template<class TEnum> \
+using dxgi_has_##f = decltype(TEnum::__FPD_DXGI_FMT(1, b, df));\
+template<class TEnum> \
+using vk_has_##f = decltype(TEnum::__FPD_VK_FMT(1, b, vf));\
+template<class TCheck> \
+struct gfx_fmt<format::f, DXGI_FORMAT, TCheck> final {\
+    static constexpr auto value = __FPD_DXGI_FMT(1, b, df);\
+};\
+template<>\
+struct gfx_fmt<format::f, DXGI_FORMAT, std::false_type> final {\
+    static constexpr auto value = DXGI_FORMAT_UNKNOWN;\
+};\
 template<> struct format_forward_traits<format::f> {\
     typedef t scalar;\
     typedef t type;\
-    _FPD_DXGI_FORMAT(dc, b, df)\
     static constexpr const format format = format::f;\
-    _FPD_GL_FORMAT(g)\
-    _FPD_VK_FORMAT(vc, b, vf)\
+    _FPD_GL_FORMAT(gf)\
     template<class TChar>\
     static inline constexpr const TChar *name(void) noexcept {\
         return FPD_TPL_LITERAL(TChar, #f);\
@@ -110,10 +150,8 @@ template<> struct format_forward_traits<format::f> {\
 template<> struct format_reverse_traits<t> {\
     typedef t scalar;\
     typedef t type;\
-    _FPD_DXGI_FORMAT(dc, b, df)\
     static constexpr const format format = format::f;\
-    _FPD_GL_FORMAT(g)\
-    _FPD_VK_FORMAT(vc, b, vf)\
+    _FPD_GL_FORMAT(gf)\
     template<class TChar>\
     static inline constexpr const TChar *name(void) noexcept {\
         return FPD_TPL_LITERAL(TChar, #f);\
@@ -121,14 +159,18 @@ template<> struct format_reverse_traits<t> {\
 }
 
 // TODO: need to filter out unsupported DXGI 3-component formats.
-#define _SPECIALISE_VEC_FMT_TRAITS(f, s, t, b, d, df, dc, g, vf, vc)\
+#define _SPECIALISE_VEC_FMT_TRAITS(f, s, t, b, d, df, gf, vf)\
+template<class TEnum> \
+using dxgi_has_##f##s = decltype(TEnum::__FPD_DXGI_FMT(d, b, df));\
+template<class TEnum> \
+using vk_has_##f##s = decltype(TEnum::__FPD_VK_FMT(d, b, vf));\
 template<> struct format_forward_traits<format::f##s> {\
     typedef t scalar;\
     typedef std::array<t, d> type;\
     /*_FPD_DXGI_FORMAT(__FPD_MTER(dc, d, 0), b, df)*/\
     static constexpr const format format = format::f##s;\
-    _FPD_GL_FORMAT(g)\
-    _FPD_VK_FORMAT(__FPD_MTER(vc, d, 0), b, vf)\
+    _FPD_GL_FORMAT(gf)\
+    /*_FPD_VK_FORMAT(__FPD_MTER(vc, d, 0), b, vf)*/\
     template<class TChar>\
     static inline constexpr const TChar *name(void) noexcept {\
         return FPD_TPL_LITERAL(TChar, #f#s); \
@@ -139,64 +181,37 @@ template<> struct format_reverse_traits<std::array<t, d>> {\
     typedef std::array<t, d> type;\
     /*_FPD_DXGI_FORMAT(__FPD_MTER(dc, d, 0), b, df)*/\
     static constexpr const format format = format::f##s;\
-    _FPD_GL_FORMAT(g)\
-    _FPD_VK_FORMAT(__FPD_MTER(vc, d, 0), b, vf)\
+    _FPD_GL_FORMAT(gf)\
+    /*_FPD_VK_FORMAT(__FPD_MTER(vc, d, 0), b, vf)*/\
     template<class TChar>\
     static inline constexpr const TChar *name(void) noexcept {\
         return FPD_TPL_LITERAL(TChar, #f#s); \
     }\
 }
 
-#define _SPECIALISE_FMT_TRAITS(f, t, b, df, dc, g, vf, vc)\
-_SPECIALISE_SCALAR_FMT_TRAITS(f##x, t, b, df, dc, g, vf, vc);\
-_SPECIALISE_VEC_FMT_TRAITS(f, xy, t, b, 2, df, dc, g, vf, vc);\
-_SPECIALISE_VEC_FMT_TRAITS(f, xyz, t, b, 3, df, dc, g, vf, vc);\
-_SPECIALISE_VEC_FMT_TRAITS(f, xyzw, t, b, 4, df, dc, g, vf, vc)
 
-_SPECIALISE_SCALAR_FMT_TRAITS(unknown, void, 0,
-    UNKNOWN, 0,
-    GL_NONE,
-    UNDEFINED, 0);
-_SPECIALISE_FMT_TRAITS(int8, std::int8_t, 8,
-    SINT, 1,
-    GL_BYTE,
-    SINT, 1);
-_SPECIALISE_FMT_TRAITS(uint8, std::uint8_t, 8,
-    UINT, 1,
-    GL_UNSIGNED_BYTE,
-    UINT, 1);
-_SPECIALISE_FMT_TRAITS(int16, std::int16_t, 16,
-    SINT, 1,
-    GL_SHORT,
-    SINT, 1);
-_SPECIALISE_FMT_TRAITS(uint16, std::uint16_t, 16,
-    UINT, 1,
-    GL_UNSIGNED_SHORT,
-    UINT, 1);
-_SPECIALISE_FMT_TRAITS(int32, std::int32_t, 32,
-    SINT, 1,
-    GL_INT,
-    SINT, 1);
-_SPECIALISE_FMT_TRAITS(uint32, std::uint32_t, 32,
-    UINT, 1,
-    GL_UNSIGNED_INT,
-    UINT, 1);
-_SPECIALISE_FMT_TRAITS(int64, std::int64_t, 64,
-    SINT, 0,
-    GL_NONE,
-    SINT, 1);
-_SPECIALISE_FMT_TRAITS(uint64, std::uint64_t, 64,
-    UINT, 0,
-    GL_NONE,
-    UINT, 1);
-_SPECIALISE_FMT_TRAITS(float32, float, 32,
-    FLOAT, 1,
-    GL_FLOAT,
-    SFLOAT, 1);
-_SPECIALISE_FMT_TRAITS(float64, double, 64,
-    FLOAT, 0,
-    GL_DOUBLE,
-    SFLOAT, 1);
+#define _SPECIALISE_FMT_TRAITS(f, t, b, df, gf, vf)\
+_SPECIALISE_SCALAR_FMT_TRAITS(f##x, t, b, df, gf, vf);\
+_SPECIALISE_VEC_FMT_TRAITS(f, xy, t, b, 2, df, gf, vf);\
+_SPECIALISE_VEC_FMT_TRAITS(f, xyz, t, b, 3, df, gf, vf);\
+_SPECIALISE_VEC_FMT_TRAITS(f, xyzw, t, b, 4, df, gf, vf)
+
+_SPECIALISE_SCALAR_FMT_TRAITS(unknown, void, 0, 0, GL_NONE, 0);
+_SPECIALISE_FMT_TRAITS(int8, std::int8_t, 8, SINT, GL_BYTE, SINT);
+_SPECIALISE_FMT_TRAITS(uint8, std::uint8_t, 8, UINT, GL_UNSIGNED_BYTE, UINT);
+_SPECIALISE_FMT_TRAITS(int16, std::int16_t, 16, SINT, GL_SHORT, SINT);
+_SPECIALISE_FMT_TRAITS(uint16, std::uint16_t, 16, UINT, GL_UNSIGNED_SHORT, UINT);
+_SPECIALISE_FMT_TRAITS(int32, std::int32_t, 32, SINT, GL_INT, SINT);
+_SPECIALISE_FMT_TRAITS(uint32, std::uint32_t, 32, UINT, GL_UNSIGNED_INT, UINT);
+_SPECIALISE_FMT_TRAITS(int64, std::int64_t, 64, SINT, GL_NONE, SINT);
+_SPECIALISE_FMT_TRAITS(uint64, std::uint64_t, 64, UINT, GL_NONE, UINT);
+_SPECIALISE_FMT_TRAITS(float32, float, 32, FLOAT, GL_FLOAT, SFLOAT);
+_SPECIALISE_FMT_TRAITS(float64, double, 64, FLOAT, GL_DOUBLE, SFLOAT);
+
+//static_assert(detector_v<_vk_has_float32x, VkFormat>, "bla222");
+//static_assert(detector_v<dxgi_has_float32x, DXGI_FORMAT>, "bla222");
+
+
 
 #undef _SPECIALISE_FMT_TRAITS
 #undef _SPECIALISE_VEC_FMT_TRAITS

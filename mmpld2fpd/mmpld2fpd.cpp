@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <string>
 
 #if defined(_WIN32)
 #include <Windows.h>
@@ -19,6 +20,36 @@
 #include <fpd/file.h>
 #include <fpd/posix_io.h>
 #include <fpd/win32_io.h>
+
+
+/// <summary>
+/// Find (case-insensitively) the given switch in the given range.
+/// </summary>
+template<class TIterator, class TChar>
+TIterator find_switch(TIterator&& begin, TIterator&& end, const TChar *name) {
+    typedef std::basic_string<TChar> string_type;
+    static const auto eq = [](TChar l, TChar r) {
+        return (std::tolower(l) == std::tolower(r));
+    };
+
+    return std::find_if(std::forward<TIterator>(begin),
+        std::forward<TIterator>(end),
+        [name, eq](const string_type& s) {
+            return std::equal(s.begin(), s.end(), name, eq));
+        });
+}
+
+
+/// <summary>
+/// Find (case-insensitively) the given switch and return its argument.
+/// </summary>
+template<class TIterator, class TChar>
+TIterator find_argument(TIterator&& begin, TIterator&& end, const TChar *name) {
+    auto retval = ::find_switch(std::forward<TIterator>(begin),
+        std::forward<TIterator>(end),
+        name);
+    return (retval != end) ? ++retval : retval;
+}
 
 
 /// <summary>
@@ -37,13 +68,31 @@ int _tmain(const int argc, const _TCHAR **argv) {
 #endif /* defined(_WIN32) */
 
     try {
-        if (argc < 2) {
-            throw std::invalid_argument("At least the path to the MMPLD input "
-                "file must be provided as command line argument.");
+        std::basic_string<_TCHAR> input;
+        std::basic_string<_TCHAR> output;
+
+        {
+            auto end = argv + argc;
+            auto it = ::find_argument(argv, end, _T("--in"));
+            if (it == end) {
+                throw std::invalid_argument("At least the path to the MMPLD "
+                    "input file must be provided as command line argument.");
+            }
+            input = *it;
         }
 
-        mmpld::file<handle_type, _TCHAR> input(argv[1]);
-        fpd::file<_TCHAR, io_type> output(argv[2]);
+        {
+            auto end = argv + argc;
+            auto it = ::find_argument(argv, end, _T("--out"));
+            if (it != end) {
+                output = *it;
+            } else {
+                output = input + _T(".fpd");
+            }
+        }
+
+        mmpld::file<handle_type, _TCHAR> mmpld(input.c_str());
+        fpd::file<_TCHAR, io_type> fpd(output.c_str());
 
 
     } catch (std::exception& ex) {

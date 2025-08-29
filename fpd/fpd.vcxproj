@@ -149,7 +149,8 @@
     <ClInclude Include="fpd\compression.h" />
     <ClInclude Include="fpd\com_category.h" />
     <ClInclude Include="fpd\convert_string.h" />
-    <ClInclude Include="fpd\dependent_false.h" />
+    <ClInclude Include="fpd\dependent_bool.h" />
+    <ClInclude Include="fpd\detector.h" />
     <ClInclude Include="fpd\dstorage_io.h" />
     <ClInclude Include="fpd\element.h" />
     <ClInclude Include="fpd\element_group.h" />
@@ -175,6 +176,7 @@
     <ClInclude Include="fpd\semantic.h" />
     <ClInclude Include="fpd\spatial_hierarchy.h" />
     <ClInclude Include="fpd\swap_bytes.h" />
+    <ClInclude Include="fpd\type_collapse.h" />
     <ClInclude Include="fpd\type_components.h" />
     <ClInclude Include="fpd\type_list.h" />
     <ClInclude Include="fpd\type_size.h" />

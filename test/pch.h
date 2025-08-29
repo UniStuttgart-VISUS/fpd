@@ -12,7 +12,8 @@
 
 #include "fpd/bounding_box.h"
 #include "fpd/convert_string.h"
-#include "fpd/dependent_false.h"
+#include "fpd/dependent_bool.h"
+#include "fpd/dependent_value.h"
 #include "fpd/dstorage_io.h"
 #include "fpd/element.h"
 #include "fpd/element_group.h"

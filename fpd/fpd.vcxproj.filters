@@ -123,7 +123,13 @@
     <ClInclude Include="fpd\make_unsigned.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="fpd\dependent_false.h">
+    <ClInclude Include="fpd\dependent_bool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fpd\type_collapse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fpd\detector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
