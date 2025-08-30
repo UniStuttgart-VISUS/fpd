@@ -26,16 +26,18 @@
 /// Find (case-insensitively) the given switch in the given range.
 /// </summary>
 template<class TIterator, class TChar>
-TIterator find_switch(TIterator&& begin, TIterator&& end, const TChar *name) {
+TIterator find_switch(_In_ const TIterator begin,
+        _In_ const TIterator end,
+        _In_z_ const TChar *name) {
     typedef std::basic_string<TChar> string_type;
-    static const auto eq = [](TChar l, TChar r) {
+    static const auto eq = [](const TChar l, const TChar r) {
         return (std::tolower(l) == std::tolower(r));
     };
 
-    return std::find_if(std::forward<TIterator>(begin),
-        std::forward<TIterator>(end),
-        [name, eq](const string_type& s) {
-            return std::equal(s.begin(), s.end(), name, eq));
+    return std::find_if(begin,
+        end,
+        [name](const string_type& s) {
+            return std::equal(s.begin(), s.end(), name, eq);
         });
 }
 
@@ -44,10 +46,10 @@ TIterator find_switch(TIterator&& begin, TIterator&& end, const TChar *name) {
 /// Find (case-insensitively) the given switch and return its argument.
 /// </summary>
 template<class TIterator, class TChar>
-TIterator find_argument(TIterator&& begin, TIterator&& end, const TChar *name) {
-    auto retval = ::find_switch(std::forward<TIterator>(begin),
-        std::forward<TIterator>(end),
-        name);
+TIterator find_argument(_In_ const TIterator begin,
+        _In_ const TIterator end,
+        _In_z_ const TChar *name) {
+    auto retval = ::find_switch(begin, end, name);
     return (retval != end) ? ++retval : retval;
 }
 
