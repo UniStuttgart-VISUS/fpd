@@ -223,12 +223,15 @@ template<class TChar>
 FPD_NAMESPACE::meta_data_builder<TChar>&
 FPD_NAMESPACE::meta_data_builder<TChar>::with_frames(
         _In_ const std::size_t frames) {
+    typedef frame_table_type::value_type offset_type;
+    constexpr auto invalid_offset = (std::numeric_limits<offset_type>::max)();
+
     if (frames < 1) {
         throw std::invalid_argument("An FPD file must contain at least one "
             "frame.");
     }
 
-    this->_frame_table.resize(frames);
+    this->_frame_table.resize(frames, invalid_offset);
 
     if (this->_bounding_boxes.size() > (this->_frame_table.size() + 1)) {
         this->_bounding_boxes.resize(this->_frame_table.size() + 1);

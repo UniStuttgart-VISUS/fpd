@@ -9,6 +9,7 @@
 #pragma once
 
 #include <algorithm>
+#include <limits>
 
 #include "fpd/convert_string.h"
 #include "fpd/meta_data.h"
