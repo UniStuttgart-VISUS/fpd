@@ -107,12 +107,14 @@ namespace fpd {
             Assert::AreEqual(int(DXGI_FORMAT_R8_SINT), int(to_dxgi(format::int8x)), L"int8x", LINE_INFO());
             Assert::AreEqual(int(DXGI_FORMAT_R32G32B32_FLOAT), int(to_dxgi(format::float32xyz)), L"float32xyz", LINE_INFO());
             Assert::AreEqual(int(DXGI_FORMAT_UNKNOWN), int(to_dxgi(format::unknown)), L"unknown", LINE_INFO());
+            Assert::AreEqual(int(DXGI_FORMAT_UNKNOWN), int(to_dxgi(format::int8xyz)), L"int8xyz", LINE_INFO());
         }
 
         TEST_METHOD(test_to_opengl) {
             Assert::AreEqual(int(GL_BYTE), int(to_opengl(format::int8x)), L"int8x", LINE_INFO());
             Assert::AreEqual(int(GL_FLOAT), int(to_opengl(format::float32xyz)), L"float32xyz", LINE_INFO());
             Assert::AreEqual(int(GL_NONE), int(to_opengl(format::unknown)), L"unknown", LINE_INFO());
+            Assert::AreEqual(int(GL_BYTE), int(to_opengl(format::int8xyz)), L"int8xyz", LINE_INFO());
         }
 
         TEST_METHOD(test_to_string) {
@@ -137,6 +139,7 @@ namespace fpd {
             Assert::AreEqual(int(VK_FORMAT_R8_SINT), int(to_vulkan(format::int8x)), L"int8x", LINE_INFO());
             Assert::AreEqual(int(VK_FORMAT_R32G32B32_SFLOAT), int(to_vulkan(format::float32xyz)), L"float32xyz", LINE_INFO());
             Assert::AreEqual(int(VK_FORMAT_UNDEFINED), int(to_vulkan(format::unknown)), L"unknown", LINE_INFO());
+            Assert::AreEqual(int(VK_FORMAT_R8G8B8_SINT), int(to_vulkan(format::int8xyz)), L"int8xyz", LINE_INFO());
 #endif /* defined(FPD_WITH_VULKAN) */
         }
     };
