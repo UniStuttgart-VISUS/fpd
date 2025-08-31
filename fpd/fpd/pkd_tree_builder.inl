@@ -164,8 +164,9 @@ FPD_NAMESPACE::pkd_tree_builder<TChar>::pkd_tree_builder(void) noexcept
     _format(format::unknown),
     _group(0),
     _offset(0),
-    _scalar(0),
-    _stride(0, 0) { }
+    _parallel_threshold((std::numeric_limits<std::size_t>::max)()),
+    _particles(0),
+    _scalar(0) { }
 
 
 /*
@@ -192,7 +193,12 @@ FPD_NAMESPACE::pkd_tree_builder<TChar>::build(
             "box.");
     }
 
-    auto positions = positions(particles, cnt);
+    // Cache the begin of each stream such that we subsequently have direct
+    // access to it.
+    for (auto& s : this->_streams) {
+        s.start = static_cast<std::uint8_t *>(particles);
+        s.start = this->operator ()(s.start, cnt);
+    }
 
     throw "TODO";
 }
@@ -212,17 +218,30 @@ FPD_NAMESPACE::pkd_tree_builder<TChar>::for_format(
     this->_format = format::unknown;
     this->_group = 0;
     this->_offset = 0;
-    this->_stride.first = 0;
+
+    // The '_streams' hold the offsets of all groups and '_group' is the index 
+    // of the group holding the position in '_streams'.
+    std::size_t offset = 0;
+    this->_streams.clear();
+    this->_streams.reserve(desc.count_groups());
 
     for (auto& g : desc) {
+        this->_streams.emplace_back(offset);
+        offset += this->_streams.back().stride = g.size();
+
         auto e = g.find(semantic::position);
         if (e != g.end()) {
+            if (this->_format == format::unknown) {
+                throw std::invalid_argument("The specified format description "
+                    "multiple positions, wherefore it is not clear which on "
+                    "the pkd tree should be based.");
+            }
+            assert(this->_format == format::unknown);
             this->_format = e->format();
             this->_components = to_components(this->_format);
             this->_dimensions = this->_components;
-            this->_offset += g.offset(*e);
+            this->_offset = g.offset(*e);
             this->_scalar = to_scalar_size(this->_format);
-            this->_stride.second = g.size();
 
             // If this is a combined position + radius semantic, we need to
             // subtract one dimension that is used by the radius.
@@ -234,7 +253,6 @@ FPD_NAMESPACE::pkd_tree_builder<TChar>::for_format(
         }
 
         ++this->_group;
-        this->_stride.first += g.size();
     }
 
     if (this->_format == format::unknown) {
@@ -249,7 +267,8 @@ FPD_NAMESPACE::pkd_tree_builder<TChar>::for_format(
     assert(this->_group >= 0);
     assert(this->_group < desc.count_groups());
     assert(this->_scalar > 0);
-    assert(this->_stride.second > 0);
+    assert(this->_streams.size() == desc.count_groups());
+    assert(this->_offset < this->_streams[this->_group].stride);
     return *this;
 }
 
@@ -260,192 +279,154 @@ FPD_NAMESPACE::pkd_tree_builder<TChar>::for_format(
 template<class TChar>
 template<class TScalar>
 void FPD_NAMESPACE::pkd_tree_builder<TChar>::build_ospray(
-        _In_ void *particles,
-        _In_ std::vector<std::size_t>& indices,
         _In_ const std::size_t node,
         _In_ const bounding_box bounds,
         _In_ const std::size_t depth) const {
-    const auto nodes = indices.size();
+    assert(this->_format != format::unknown);
+    assert(std::all_of(this->_streams.begin(), this->_streams.end(),
+        [](const stream& s) { return (s.start != nullptr); }));
 
     auto left = detail::ospray_pkd_left_child(node);
-    if (detail::ospray_pkd_invalid_node(left, nodes)) {
-        // If there is no left child, there is no child at all, so we are the
-        // node for the subtree.
+    if (detail::ospray_pkd_invalid_node(left, this->_particles)) {
+        // If there is no left child, there is no child at all, so the root node
+        // is the whole subtree.
         return;
     }
 
-    const auto position = this->position<TScalar>(particles, node, indices);
+    const auto position = this->position<TScalar>(node);
     const auto split = depth % this->_dimensions;
     const auto node_pos = position[split];
+    // TODO: select dimension based on bounding box
     // const size_t dim = maxDim(bounds.size());
 
     auto right = detail::ospray_pkd_right_child(node);
-    if (detail::ospray_pkd_invalid_node(left, nodes)) {
+    if (detail::ospray_pkd_invalid_node(left, this->_particles)) {
         // We have exactly one child, so if the order between the node and its
-        // child is wrong, we swap it. As we lack the right child, we are done
+        // child is wrong, we swap it. As we lack another child, we are done
         // after this.
-        if (this->component<TScalar>(particles, left, indices, split)
-                > node_pos) {
-            std::swap(indices[left], indices[node]);
+        if (this->position<TScalar>(left, split) > node_pos) {
+            this->swap_particles(left, node);
             this->embed_axis(position, split);
         }
-
         return;
     }
 
-    detail::ospray_pkd_iterator l0(left);
-    detail::ospray_pkd_iterator r0(right);
-    detail::ospray_pkd_iterator l = l0;
-    detail::ospray_pkd_iterator r = r0;
+    detail::ospray_pkd_iterator l(left);
+    detail::ospray_pkd_iterator r(right);
 
     while (true) {
         // Search the first mismatch in the left and right subtree.
-        while (detail::ospray_pkd_valid_node(l, nodes)
-                && (this->component<TScalar>(particles, l, indices, split)
-                <= node_pos)) {
+        while (detail::ospray_pkd_valid_node(l, this->_particles)
+                && (this->position<TScalar>(l, split) <= node_pos)) {
             ++l;
         }
-        const auto left_mismatch = detail::ospray_pkd_valid_node(l, nodes);
+        const auto left_mismatch = detail::ospray_pkd_valid_node(l,
+            this->_particles);
 
-        while (detail::ospray_pkd_valid_node(r, nodes)
-                && (this->component<TScalar>(particles, r, indices, split)
-                >= node_pos)) {
+        while (detail::ospray_pkd_valid_node(r, this->_particles)
+                && (this->position<TScalar>(r, split) >= node_pos)) {
             ++r;
         }
-        const auto right_mismatch = detail::ospray_pkd_valid_node(r, nodes);
+        const auto right_mismatch = detail::ospray_pkd_valid_node(r,
+            this->_particles);
 
         if (left_mismatch && right_mismatch) {
             // Both subtrees have a mismatch.
-            std::swap(indices[l++], indices[r++]);
+            this->swap_particles(l++, r++);
             continue;
 
         } else if (left_mismatch) {
             // Only the left subtree has a mismatch.
             assert(!right_mismatch);
-            l0 = l++;
+            auto ll = l++;
 
-            while (detail::ospray_pkd_valid_node(l, nodes)) {
-                if (this->component<TScalar>(particles, l, indices, split)
-                        <= node_pos) {
-                    std::swap(indices[l0++], indices[l]);
+            while (detail::ospray_pkd_valid_node(l, this->_particles)) {
+                if (this->position<TScalar>(l, split) <= node_pos) {
+                    this->swap_particles(ll++, l);
                 }
                 ++l;
             }
 
-            std::swap(indices[node], indices[l0++]);
+            this->swap_particles(node, ll++);
 
-            l = l0;
-            r = r0;
-
+            l = ll;
             continue;
 
         } else if (right_mismatch) {
             // Only the right subtree has a mismatch.
             assert(!left_mismatch);
-            r0 = r++;
+            auto rr = r++;
 
-            while (detail::ospray_pkd_valid_node(r, nodes)) {
-                if (this->component<TScalar>(particles, r, indices, split)
-                        >= node_pos) {
-                    std::swap(indices[l0++], indices[l]);
+            while (detail::ospray_pkd_valid_node(r, this->_particles)) {
+                if (this->position<TScalar>(r, split) >= node_pos) {
+                    this->swap_particles(rr++, r);
                 }
-
                 ++r;
             }
 
-            std::swap(indices[node], indices[r0++]);
+            this->swap_particles(node, rr++);
 
-            l = l0;
-            r = r0;
-
+            r = rr;
             continue;
+        } /* if (left_mismatch && right_mismatch) */
+
+#if defined(FPD_CHECK_PDK)
+        {
+            detail::ospray_pkd_iterator l(detail::ospray_pkd_left_child(node));
+            detail::ospray_pkd_iterator r(detail::ospray_pkd_right_child(node));
+
+            while (detail::ospray_pkd_valid_node(l, this->_particles)) {
+                if (!(this->position<TScalar>(l, split) <= node_pos)) {
+                    throw std::runtime_error("The left subtree is not a valid "
+                        "kd-tree.");
+                }
+                ++l;
+            }
+
+            while (detail::ospray_pkd_valid_node(r, this->_particles)) {
+                if (!(this->position<TScalar>(r, split) >= node_pos)) {
+                    throw std::runtime_error("The right subtree is not a valid "
+                        "kd-tree.");
+                }
+                ++r;
+            }
         }
+#endif /* defined(FPD_CHECK_PDK) */
+    } /* while (true) */
 
-//            if (isValidNode(l, N)) {
-//                if (isValidNode(r, N)) {
-//                    // both mis-mathces valid, just swap them and go on
-//                    swap(l, r); ++l; ++r;
-//                    continue;
-//                } else {
-//                    // mis-match on left side, but nothing on right side to swap with: swap with root
-//                    // --> can't go on on right side any more, but can still compact matches on left
-//                    l0 = l;
-//                    ++l;
-//                    while (isValidNode(l, N)) {
-//                        if (POS(l, dim) <= rootPos) { swap(l0, l); ++l0; }
-//                        ++l;
-//                    }
-//                    swap(nodeID, l0); ++l0;
-//                    rootPos = POS(nodeID, dim);
-//
-//                    l = l0;
-//                    r = r0;
-//                    continue;
-//                }
-//            } else {
-//                if (isValidNode(r, N)) {
-//                    // mis-match on left side, but nothing on right side to swap with: swap with root
-//                    // --> can't go on on right side any more, but can still compact matches on left
-//                    r0 = r;
-//                    ++r;
-//                    while (isValidNode(r, N)) {
-//                        if (POS(r, dim) >= rootPos) { swap(r0, r); ++r0; }
-//                        ++r;
-//                    }
-//                    swap(nodeID, r0); ++r0;
-//                    rootPos = POS(nodeID, dim);
-//
-//                    l = l0;
-//                    r = r0;
-//                    continue;
-//                } else {
-//                    // no mis-match on either side ... done.
-//                    break;
-//                }
-//            }
-//        }
-
-//#if CHECK
-//        // check tree:
-//        {
-//            SubtreeIterator l(leftChildOf(nodeID));
-//            SubtreeIterator r(rightChildOf(nodeID));
-//            while (isValidNode(l)) {
-//                if (!(pos(l, dim) <= pos(nodeID, dim)))
-//                    throw std::runtime_error("error in building. not a valid kd-tree...");
-//                ++l;
-//            }
-//            while (isValidNode(r)) {
-//                if (!(pos(r, dim) >= pos(nodeID, dim)))
-//                    throw std::runtime_error("error in building. not a valid kd-tree...");
-//                ++r;
-//            }
-//        }
-//#endif
-    }
-//
 //    box3f lBounds = bounds;
 //    box3f rBounds = bounds;
 
     this->embed_axis(static_cast<TScalar *>(position), split);
-//    setDim(nodeID, dim);
-//
+
+    auto left_bounds = bounds;
+    auto right_bounds = bounds;
 //    lBounds.upper[dim] = rBounds.lower[dim] = pos(nodeID, dim);
-//
-//#if 1
-//    if ((numLevels - depth) > 20) {
-//        std::thread lThread([&]() {
-//            pkdBuildThread(new PKDBuildJob(this, leftChildOf(nodeID), lBounds, depth + 1));
-//        });
-//        buildRec(rightChildOf(nodeID), rBounds, depth + 1);
-//        lThread.join();
-//    } else
-//#endif
-//    {
-//        buildRec(leftChildOf(nodeID), lBounds, depth + 1);
-//        buildRec(rightChildOf(nodeID), rBounds, depth + 1);
-//    }
-//}
+
+    /* numLevels - depth */
+    if (0 > this->_parallel_threshold) {
+        std::thread t(&build_ospray<TScalar>,
+            this,
+            detail::ospray_pkd_left_child(node),
+            left_bounds,
+            depth + 1);
+        this->build_ospray<TScalar>(
+            detail::ospray_pkd_right_child(node),
+            right_bounds,
+            depth + 1);
+        assert(t.joinable());
+        t.join();
+
+    } else {
+        this->build_ospray<TScalar>(
+            detail::ospray_pkd_left_child(node),
+            left_bounds,
+            depth + 1);
+        this->build_ospray<TScalar>(
+            detail::ospray_pkd_right_child(node),
+            right_bounds,
+            depth + 1);
+    }
 }
 
 
@@ -511,3 +492,25 @@ void FPD_NAMESPACE::pkd_tree_builder<TChar>::embed_axis(_In_ TScalar *position,
 //    throw std::logic_error("The specified format of particle coordinates "
 //        "cannot be compared.");
 //}
+
+
+/*
+ * FPD_NAMESPACE::pkd_tree_builder<TChar>::swap_particles
+ */
+template<class TChar>
+void FPD_NAMESPACE::pkd_tree_builder<TChar>::swap_particles(
+        _In_ const std::size_t lhs, _In_ const std::size_t rhs) noexcept {
+    assert(lhs < this->_particles);
+    assert(rhs < this->_particles);
+    std::vector<std::uint8_t> buffer(0);
+
+    for (auto& s : this->_streams) {
+        if (buffer.size() < s.stride) {
+            buffer.resize(s.stride);
+        }
+
+        ::memcpy(buffer.data(), s(lhs), s.stride);
+        ::memcpy(s(lhs), s(rhs), s.stride);
+        ::memcpy(s(rhs), buffer.data(), s.stride);
+    }
+}

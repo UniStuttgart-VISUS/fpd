@@ -56,3 +56,45 @@ FPD_NAMESPACE::format_description<TChar>::add(
     this->_groups[initialiser._group].add(initialiser, eval_offset);
     return *this;
 }
+
+
+/*
+ * FPD_NAMESPACE::format_description<TChar>::operator ()
+ */
+template<class TChar>
+template<class TPointer>
+_Ret_valid_ std::enable_if_t<sizeof(TPointer) == 1, TPointer *>
+FPD_NAMESPACE::format_description<TChar>::operator ()(
+        _In_ TPointer *particles,
+        _In_ const std::size_t cnt,
+        _In_ const std::size_t group,
+        _In_ const std::size_t particle) const {
+    static_assert(sizeof(TPointer) == 1, "The input pointer must be byte-sized "
+        "in order for the pointer arithmetics to work.");
+    if (particles == nullptr) {
+        throw std::invalid_argument("A valid pointer to particle data must be "
+            "provided.");
+    }
+    if (group >= this->_groups.size()) {
+        throw std::out_of_range("The specified group index is out of range.");
+    }
+    if (particle >= cnt) {
+        throw std::out_of_range("The specified particle index is out of "
+            "range.");
+    }
+
+    // Compute the per-particle offset of 'group'.
+    std::size_t offset = 0;
+    for (std::size_t i = 0; i < group; ++i) {
+        assert(i < this->_groups.size());
+        offset += this->_groups[i].size();
+    }
+
+    // Compute the offset of the group itself.
+    offset *= cnt;
+
+    // Add the offset of the particle within the group.
+    offset += particle * this->_groups[group].size();
+
+    return particles + offset;
+}

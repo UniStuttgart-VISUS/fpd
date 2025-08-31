@@ -231,6 +231,44 @@ public:
     }
 
     /// <summary>
+    /// Provides access to the begin of the data of the
+    /// <paramref name="particle" />th in the specified
+    /// <paramref name="group" />.
+    /// </summary>
+    /// <remarks>
+    /// <para>Each of the <parmaref name="cnt" /> <paramref name="particles" />
+    /// has data in each <paramref name="group" /> (think of the group as an
+    /// attribute stream). This method allows for directly accessing the
+    /// specified group for a specific particle.</para>
+    /// </remarks>
+    /// <typeparam name="TPointer">The pointer to the data. This must be a
+    /// byte-sized type in order to the underlying pointer arithmetics to work
+    /// correctly.</typeparam>
+    /// <param name="particles">A pointer to the begin of the particle data of
+    /// a frame. These data must comprise all groups of <paramref name="cnt" />
+    /// particles.</param>
+    /// <param name="cnt">The total number of particles in the data set.</param>
+    /// <param name="group">The zero-based index of the group to retrieve.
+    /// </param>
+    /// <param name="particle">The zero-based index of the particle to retrieve.
+    /// This defaults to zero, i.e. the first particle or the begin of the
+    /// group.</param>
+    /// <returns>A pointer to the requested data of the given particle.
+    /// </returns>
+    /// <exception cref="std::invalid_argument">If <parmaref name="particles" />
+    /// is <see langword="nullptr" />.</exception>
+    /// <exception cref="std::out_of_range">If <paramref name="group" /> is an
+    /// invalid group for the format description, or if
+    /// <paramref name="particle" /> is out of the range of
+    /// <parmaref name="cnt" /> particles.</exception>
+    template<class TPointer>
+    _Ret_valid_ std::enable_if_t<sizeof(TPointer) == 1, TPointer *> operator ()(
+        _In_ TPointer *particles,
+        _In_ const std::size_t cnt,
+        _In_ const std::size_t group,
+        _In_ const std::size_t particle = 0) const;
+
+    /// <summary>
     /// Answer whether the description is non-empty.
     /// </summary>
     /// <returns><c>true</c> if there is at least one element in the format,
@@ -243,7 +281,6 @@ public:
 private:
 
     std::vector<group_type> _groups;
-
 };
 
 FPD_NAMESPACE_END

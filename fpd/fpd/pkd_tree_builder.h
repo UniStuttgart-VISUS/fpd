@@ -6,13 +6,15 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cinttypes>
 #include <cstdlib>
 #include <limits>
 #include <mutex>
-#include <queue>
 #include <stdexcept>
 #include <thread>
 #include <utility>
+#include <vector>
 
 #include "fpd/bounding_box.h"
 #include "fpd/format_description.h"
@@ -42,13 +44,22 @@ public:
     pkd_tree_builder(void) noexcept;
 
     /// <summary>
+    /// Configures the builder to work only serially.
+    /// </summary>
+    /// <returns>*<see langword="this" />.</returns>
+    pkd_tree_builder& always_serially(void) noexcept {
+        this->_parallel_threshold = (std::numeric_limits<std::size_t>::max)();
+        return *this;
+    }
+
+    /// <summary>
     /// In-place builds the pkd-tree.
     /// </summary>
     /// <param name="particles">A pointer to <paramref name="cnt" /> particles
     /// of the configured format.</param>
     /// <param name="cnt">The number of particles in designated by
     /// <paramref name="particles" />.</param>
-    /// <returns><c>*this</c>.</returns>
+    /// <returns>*<see langword="this" />.</returns>
     /// <exception cref="std::invalid_argument">If <paramref name="particles" />
     /// is <c>nullptr</c> while <paramref name="cnt" /> is larger than zero.
     /// </param>
@@ -58,10 +69,23 @@ public:
     /// Specifies the format of the particles to be re-organised.
     /// </summary>
     /// <param name="desc">The format description</param>
-    /// <returns><c>*this</c>.</returns>
+    /// <returns>*<see langword="this" />.</returns>
     /// <exception cref="std::invalid_argument">If <parmaref name="desc" /> does
     /// not hold any <see cref="semantic::position" />.</exception>
     pkd_tree_builder& for_format(_In_ const format_description_type& desc);
+
+    /// <summary>
+    /// Configures the builder to make the left and the right subtree in
+    /// parallel if the height of the tree exceed the specified
+    /// <paramref name="depth" />.
+    /// </summary>
+    /// <param name="depth">The minimum depth required for parallel
+    /// processing.</param>
+    /// <returns>*<see langword="this" />.</returns>
+    pkd_tree_builder& parallel_above(_In_ const std::size_t depth) noexcept {
+        this->_parallel_threshold = depth;
+        return *this;
+    }
 
     /// <summary>
     /// Sets the overall bounding box of the particles.
@@ -73,7 +97,7 @@ public:
     /// starting with the x-axis.
     /// </remarks>
     /// <param name="bbox">The bounding box of the particles.</param>
-    /// <returns><c>*this</c>.</returns>
+    /// <returns>*<see langword="this" />.</returns>
     inline pkd_tree_builder& within_bounding_box(
             _In_ const bounding_box& bbox) {
         this->_bbox = bbox;
@@ -102,7 +126,7 @@ public:
     /// <param name="dimension">The dimension to embed the split axis in. If
     /// this is outside the range of the dimensions the positions have (possibly
     /// including the radius), the builder will create round-robin splits.</param>
-    /// <returns><c>*this</c>.</returns>
+    /// <returns>*<see langword="this" />.</returns>
     inline pkd_tree_builder& with_splits_embedded_in(
             _In_ const std::size_t dimension) noexcept {
         this->_axis_dimension = dimension;
@@ -111,36 +135,63 @@ public:
 
 private:
 
-    typedef std::pair<std::size_t, std::size_t> particle_range;
+    /// <summary>
+    /// Cache for all relevant information about a group of elements in the
+    /// configured format. This are mainly the offset of the group (the 
+    /// aggregated size of all preceeding groups) and the size of an element in
+    /// the group. Futhermore, once the builder received actual particle data,
+    /// we cache the start of the stream here to speed up subsequent pointer
+    /// arithmetics.
+    /// </summary>
+    struct stream {
+        std::size_t offset;
+        std::uint8_t *start;
+        std::size_t stride;
+
+        inline stream(_In_ const std::size_t offset = 0)
+            : offset(offset), start(nullptr), stride(0) { }
+
+        /// <summary>
+        /// Gets the begin of the <paramref name="particle" />th particle of the
+        /// group described by this stream.
+        /// </summary>
+        template<class TPointer> inline TPointer *operator()(
+                _In_ TPointer *particles,
+                _In_ std::size_t cnt,
+                _In_ const std::size_t particle = 0) const noexcept {
+            static_assert(sizeof(TPointer) == 1, "The input pointer must be "
+                "byte-sized in order for the pointer arithmetics to work.");
+            assert(particles != nullptr);
+            assert(this->stride > 0);
+            auto retval = particles;
+            retval += cnt * this->offset;
+            retval += particle * this->stride;
+            return retval;
+        }
+
+        /// <summary>
+        /// Gets the begin of the <paramref name="particle" />th particle from
+        /// <see cref="start" />.
+        /// </summary>
+        inline const std::uint8_t *operator ()(
+                _In_ std::size_t cnt,
+                _In_ const std::size_t particle) const noexcept {
+            assert(this->start != nullptr);
+            return this->operator ()(this->start, cnt, particle);
+        }
+    };
 
     /// <summary>
-    /// Builds an OSPray style P-kd tree.
+    /// Builds an OSPray-style P-kd tree.
     /// </summary>
     /// <typeparam name="TScalar"></typeparam>
-    /// <param name="particles"></param>
-    /// <param name="indices"></param>
     /// <param name="node"></param>
     /// <param name="bounds"></param>
     /// <param name="depth"></param>
-    template<class TScalar> void build_ospray(_In_ void *particles,
-        _In_ std::vector<std::size_t>& indices,
+    template<class TScalar> void build_ospray(
         _In_ const std::size_t node,
         _In_ const bounding_box bounds,
         _In_ const std::size_t depth) const;
-
-    /// <summary>
-    /// Gets the <paramref name="c" />th component of the
-    /// <paramref name="i" />th node in <paramref name="indices" />.
-    /// </summary>
-    template<class TScalar> inline TScalar& component(_In_ void *positions,
-            _In_ std::size_t i,
-            _In_ const std::vector<std::size_t>& indices,
-            _In_ std::size_t c) {
-        assert(i < indices.size());
-        assert(c < this->_components);
-        auto position = this->position<TScalar>(position, i, indices);
-        return position[c];
-    }
 
     /// <summary>
     /// Embeds the given <paramref name="axis" /> in the three least significant
@@ -151,37 +202,37 @@ private:
         _In_ const std::size_t axis) const noexcept;
 
     /// <summary>
-    /// Answer the <paramref name="i" />th position pointer based on the
-    /// current per-component stride of the builder.
+    /// Answer the position of the <paramref name="i" />th particle.
     /// </summary>
-    inline void *position(_In_ std::uint8_t *positions,
-            _In_ const std::size_t i) noexcept {
-        assert(positions != nullptr);
-        assert(this->_stride.second > 0);
-        return positions + (i * this->_stride.second);
+    inline void *position(_In_ const std::size_t i) noexcept {
+        assert(this->_group < this->_streams.size());
+        assert(this->_streams[this->_group].start != nullptr);
+        assert(i < this->_particles);
+        // Get the start of the stream holding the position.
+        auto retval = this->_streams[this->_group](this->_particles, i);
+        // Offset to the location of the position within the stream.
+        retval += this->_offset;
+        return retval;
     }
 
     /// <summary>
-    /// Answer the position of the <paramref name="i" />th index in
-    /// <paramref name="indices" />.
+    /// Answer the position of the <paramref name="i" />th particle.
     /// </summary>
-    template<class TScalar> inline TScalar *position(
-            _In_ std::uint8_t *positions,
-            _In_ const std::size_t i,
-            _In_ const std::vector<std::size_t>& indices) noexcept {
-        assert(i < indices.size());
-        auto retval = this->position(position, indices[i]);
+    template<class TScalar>
+    inline TScalar *position(_In_ const std::size_t i) noexcept {
+        auto retval = this->position(i);
         return static_cast<TScalar *>(retval);
     }
 
     /// <summary>
-    /// Answer a pointer to the first position in the given particle list.
+    /// Asnwer the <paramref name="c" />th component of the position of the
+    /// <paramref name="i" />th particle.
     /// </summary>
-    inline void *positions(_In_ std::uint8_t *particles,
-            _In_ const std::size_t cnt) noexcept {
-        assert(particles != nullptr);
-        assert(this->_stride.first > 0);
-        return particles + (cnt * this->_stride.first + this->_stride.second);
+    template<class TScalar> inline TScalar position(
+            _In_ const std::size_t i,
+            _In_ const std::size_t c) noexcept {
+        assert(c < this->_components);
+        return this->position<TScalar>(i)[c];
     }
 
     ///// <summary>
@@ -197,6 +248,12 @@ private:
     ///// </summary>
     //void resolve_compare_as(_In_ format_list<>, _In_ const format format);
 
+    /// <summary>
+    /// Swaps the particles at the specifiied indices.
+    /// </summary>
+    void swap_particles(_In_ const std::size_t lhs,
+        _In_ const std::size_t rhs) noexcept;
+
     std::size_t _axis_component;
     std::size_t _components;
     bounding_box _bbox;
@@ -205,9 +262,10 @@ private:
     std::size_t _group;
     std::mutex _lock;
     std::size_t _offset;
-    std::queue<particle_range> _queue;
+    std::size_t _parallel_threshold;
+    std::size_t _particles;
     std::size_t _scalar;
-    std::pair<std::size_t, std::size_t> _stride;
+    std::vector<stream> _streams;
 };
 
 FPD_NAMESPACE_END
