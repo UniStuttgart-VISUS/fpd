@@ -51,3 +51,31 @@ TValue FPD_NAMESPACE::bounding_box::get(_In_ const value v) const {
 
     return *static_cast<const TValue *>(retval);
 }
+
+
+/*
+ * FPD_NAMESPACE::bounding_box::max
+ */
+template<class TValue>
+TValue(FPD_NAMESPACE::bounding_box::max)(_In_ std::size_t axis) const {
+    if (axis >= 3) {
+        throw std::out_of_range("The specified axis is out of range.");
+    }
+
+    axis += static_cast<std::size_t>(value::max_x);
+    return this->get<TValue>(static_cast<value>(axis));
+}
+
+
+/*
+ * FPD_NAMESPACE::bounding_box::min
+ */
+template<class TValue>
+TValue(FPD_NAMESPACE::bounding_box::min)(_In_ std::size_t axis) const {
+    if (axis >= 3) {
+        throw std::out_of_range("The specified axis is out of range.");
+    }
+
+    axis += static_cast<std::size_t>(value::min_x);
+    return this->get<TValue>(static_cast<value>(axis));
+}

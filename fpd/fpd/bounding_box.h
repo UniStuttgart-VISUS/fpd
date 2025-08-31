@@ -169,6 +169,20 @@ public:
     template<class TValue> TValue get(_In_ const value v) const;
 
     /// <summary>
+    /// Answer the maximum coordinate along the given axis.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the coordinate, which must be the
+    /// type matching <see cref="format" />.</typeparam>
+    /// <param name="axis">The zero-based index of the axi.</param>
+    /// <returns>The maximum along <paramref name="axis" />.</returns>
+    /// <exception cref="std::logic_error">If <paramre name="TValue" /> is not
+    /// the type used to represent <see cref="format" />, or if the bounding
+    /// box is invalid.</exception>
+    /// <exception cref="std::out_of_range">If <paramref name="axis" />
+    /// is not within [0, 2].</exception>
+    template<class TValue> TValue (max)(_In_ std::size_t axis) const;
+
+    /// <summary>
     /// The maximum x-coordinate covered by the data.
     /// </summary>
     /// <typeparam name="TValue">The type of the coordinate, which must be the
@@ -206,6 +220,20 @@ public:
     template<class TValue> inline TValue max_z(void) const {
         return this->get<TValue>(value::max_z);
     }
+
+    /// <summary>
+    /// Answer the minimum coordinate along the given axis.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the coordinate, which must be the
+    /// type matching <see cref="format" />.</typeparam>
+    /// <param name="axis">The zero-based index of the axi.</param>
+    /// <returns>The minimum along <paramref name="axis" />.</returns>
+    /// <exception cref="std::logic_error">If <paramre name="TValue" /> is not
+    /// the type used to represent <see cref="format" />, or if the bounding
+    /// box is invalid.</exception>
+    /// <exception cref="std::out_of_range">If <paramref name="axis" />
+    /// is not within [0, 2].</exception>
+    template<class TValue> TValue (min)(_In_ std::size_t axis) const;
 
     /// <summary>
     /// The minimum x-coordinate covered by the data.

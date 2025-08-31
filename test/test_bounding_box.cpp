@@ -84,5 +84,17 @@ namespace fpd {
             Assert::ExpectException<std::logic_error>([&bb](void) { bb.get<int>(bounding_box::value::min_y); }, L"get min_y wrong type", LINE_INFO());
             Assert::ExpectException<std::logic_error>([&bb](void) { bb.get<int>(bounding_box::value::min_z); }, L"get min_y wrong type", LINE_INFO());
         }
+
+        TEST_METHOD(minmax) {
+            bounding_box bb(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f);
+            Assert::AreEqual(4.0f, (bb.max<float>)(0), L"max(0)", LINE_INFO());
+            Assert::AreEqual(5.0f, (bb.max<float>)(1), L"max(1)", LINE_INFO());
+            Assert::AreEqual(6.0f, (bb.max<float>)(2), L"max(2)", LINE_INFO());
+            Assert::ExpectException<std::out_of_range>([&bb](void) { (bb.max<float>)(3); }, L"max(3)", LINE_INFO());
+            Assert::AreEqual(1.0f, (bb.min<float>)(0), L"min(0)", LINE_INFO());
+            Assert::AreEqual(2.0f, (bb.min<float>)(1), L"min(1)", LINE_INFO());
+            Assert::AreEqual(3.0f, (bb.min<float>)(2), L"min(2)", LINE_INFO());
+            Assert::ExpectException<std::out_of_range>([&bb](void) { (bb.min<float>)(3); }, L"min(3)", LINE_INFO());
+        }
     };
 }
