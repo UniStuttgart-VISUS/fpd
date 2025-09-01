@@ -170,6 +170,7 @@
     <ClInclude Include="fpd\memory_io.h" />
     <ClInclude Include="fpd\meta_data.h" />
     <ClInclude Include="fpd\meta_data_builder.h" />
+    <ClInclude Include="fpd\mmpld.h" />
     <ClInclude Include="fpd\null_coalesce.h" />
     <ClInclude Include="fpd\pkd_tree_builder.h" />
     <ClInclude Include="fpd\posix_io.h" />
