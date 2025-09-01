@@ -17,6 +17,7 @@
 
 #include <mmpld.h>
 
+#define FPD_WITH_MMPLD
 #include <fpd/file.h>
 #include <fpd/posix_io.h>
 #include <fpd/win32_io.h>
