@@ -124,11 +124,11 @@ void FPD_NAMESPACE::bounding_box::set(_In_ const value component,
         *static_cast<TValue *>(dst) = value;
 
     } else {
-        detail::dispatch_format<void>(this->_format,
-            [dst, value](const auto tag) {
-                typedef std::decay_t<decltype(tag)> pointer_type;
-                typedef std::remove_pointer<pointer_type>::type value_type;
-                *static_cast<pointer_type>(dst) = value;
-            }, scalar_formats());
+        detail::dispatch_format<void>(this->_format, [dst, value](
+                const auto tag) {
+            typedef std::decay_t<decltype(tag)> pointer_type;
+            typedef std::remove_pointer<pointer_type>::type value_type;
+            *static_cast<pointer_type>(dst) = static_cast<value_type>(value);
+        }, scalar_formats());
     }
 }

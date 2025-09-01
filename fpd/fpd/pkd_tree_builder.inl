@@ -98,7 +98,7 @@ public:
     /// Postfix-increment the iterator.
     /// </summary>
     /// <returns><c>*this</c> before the increment.</returns>
-    inline ospray_pkd_iterator& operator ++(int) noexcept {
+    inline ospray_pkd_iterator operator ++(int) noexcept {
         auto retval = *this;
         ++(*this);
         return retval;
@@ -163,6 +163,7 @@ FPD_NAMESPACE::pkd_tree_builder<TChar>::pkd_tree_builder(void) noexcept
     _dimensions(0),
     _format(format::unknown),
     _group(0),
+    _levels(0),
     _offset(0),
     _parallel_threshold((std::numeric_limits<std::size_t>::max)()),
     _particles(0),
@@ -187,7 +188,7 @@ FPD_NAMESPACE::pkd_tree_builder<TChar>::build(
             "can be used to build trees.");
     }
 
-    if ((this->_axis_dimension < this->_dimensions) && !this->_bbox) {
+    if ((this->_axis_component < this->_dimensions) && !this->_bbox) {
         throw std::logic_error("A valid bounding box must be provided if the "
             "split axes are to be chosen dynamically based on the bounding "
             "box.");
@@ -197,10 +198,29 @@ FPD_NAMESPACE::pkd_tree_builder<TChar>::build(
     // access to it.
     for (auto& s : this->_streams) {
         s.start = static_cast<std::uint8_t *>(particles);
-        s.start = this->operator ()(s.start, cnt);
+        s.start = s(s.start, cnt);
     }
 
-    throw "TODO";
+    // Remember the size of the data set.
+    this->_particles = cnt;
+
+    // Determine the number of levels in the tree.
+    this->_levels = 0;
+    for (std::size_t i = this->_particles; i > 0; i >>= 1) {
+        ++this->_levels;
+    }
+
+    // Instantiate the actual build process based on the format of the
+    // positions.
+    dispatch_format<void>(this->_format, [this, cnt](auto tag) {
+        typedef std::decay_t<decltype(tag)> tag_type;
+        typedef std::remove_pointer_t<tag_type> value_type;
+        typedef detail::format_reverse_traits<value_type> traits;
+        typedef typename traits::scalar scalar_type;
+        this->build_ospray<scalar_type>(0, this->_bbox, 0);
+    });
+
+    return *this;
 }
 
 
@@ -282,6 +302,9 @@ void FPD_NAMESPACE::pkd_tree_builder<TChar>::build_ospray(
         _In_ const std::size_t node,
         _In_ const bounding_box bounds,
         _In_ const std::size_t depth) const {
+    static_assert(std::is_arithmetic_v<TScalar>, "The scalar type must be an "
+        "actual arithmetic scalar type.");
+    assert(depth <= this->_levels);
     assert(this->_format != format::unknown);
     assert(std::all_of(this->_streams.begin(), this->_streams.end(),
         [](const stream& s) { return (s.start != nullptr); }));
@@ -368,45 +391,49 @@ void FPD_NAMESPACE::pkd_tree_builder<TChar>::build_ospray(
 
             r = rr;
             continue;
+
+        } else {
+            // All particles are in the correct subtree.
+            break;
+
         } /* if (left_mismatch && right_mismatch) */
-
-#if defined(FPD_CHECK_PDK)
-        {
-            detail::ospray_pkd_iterator l(detail::ospray_pkd_left_child(node));
-            detail::ospray_pkd_iterator r(detail::ospray_pkd_right_child(node));
-
-            while (detail::ospray_pkd_valid_node(l, this->_particles)) {
-                if (!(this->position<TScalar>(l, split) <= node_pos)) {
-                    throw std::runtime_error("The left subtree is not a valid "
-                        "kd-tree.");
-                }
-                ++l;
-            }
-
-            while (detail::ospray_pkd_valid_node(r, this->_particles)) {
-                if (!(this->position<TScalar>(r, split) >= node_pos)) {
-                    throw std::runtime_error("The right subtree is not a valid "
-                        "kd-tree.");
-                }
-                ++r;
-            }
-        }
-#endif /* defined(FPD_CHECK_PDK) */
     } /* while (true) */
 
-//    box3f lBounds = bounds;
-//    box3f rBounds = bounds;
+#if defined(FPD_CHECK_PDK)
+    {
+        detail::ospray_pkd_iterator ll(detail::ospray_pkd_left_child(node));
+        detail::ospray_pkd_iterator rr(detail::ospray_pkd_right_child(node));
+
+        while (detail::ospray_pkd_valid_node(ll, this->_particles)) {
+            if (!(this->position<TScalar>(ll, split) <= node_pos)) {
+                throw std::runtime_error("The left subtree is not a valid "
+                    "kd-tree.");
+            }
+            ++ll;
+        }
+
+        while (detail::ospray_pkd_valid_node(rr, this->_particles)) {
+            if (!(this->position<TScalar>(rr, split) >= node_pos)) {
+                throw std::runtime_error("The right subtree is not a valid "
+                    "kd-tree.");
+            }
+            ++rr;
+        }
+    }
+#endif /* defined(FPD_CHECK_PDK) */
 
     this->embed_axis(static_cast<TScalar *>(position), split);
 
     auto left_bounds = bounds;
     auto right_bounds = bounds;
-    (left_bounds.max)(split, node_pos);
-    (right_bounds.min)(split, node_pos);
 
-    /* numLevels - depth */
-    if (0 > this->_parallel_threshold) {
-        std::thread t(&build_ospray<TScalar>,
+    if (bounds) {
+        (left_bounds.max)(split, node_pos);
+        (right_bounds.min)(split, node_pos);
+    }
+
+    if ((this->_levels - depth) > this->_parallel_threshold) {
+        std::thread t(&pkd_tree_builder<TChar>::build_ospray<TScalar>,
             this,
             detail::ospray_pkd_left_child(node),
             left_bounds,
@@ -438,7 +465,7 @@ template<class TChar>
 template<class TScalar>
 void FPD_NAMESPACE::pkd_tree_builder<TChar>::embed_axis(_In_ TScalar *position,
         _In_ const std::size_t axis) const noexcept {
-    typedef detail::make_unsigned<TScalar> mask_type;
+    typedef detail::make_unsigned_t<TScalar> mask_type;
     constexpr auto three = static_cast<mask_type>(3);
 
     if (this->_axis_component < this->_components) {
@@ -500,7 +527,8 @@ void FPD_NAMESPACE::pkd_tree_builder<TChar>::embed_axis(_In_ TScalar *position,
  */
 template<class TChar>
 void FPD_NAMESPACE::pkd_tree_builder<TChar>::swap_particles(
-        _In_ const std::size_t lhs, _In_ const std::size_t rhs) noexcept {
+        _In_ const std::size_t lhs,
+        _In_ const std::size_t rhs) const noexcept {
     assert(lhs < this->_particles);
     assert(rhs < this->_particles);
     std::vector<std::uint8_t> buffer(0);
@@ -510,8 +538,8 @@ void FPD_NAMESPACE::pkd_tree_builder<TChar>::swap_particles(
             buffer.resize(s.stride);
         }
 
-        ::memcpy(buffer.data(), s(lhs), s.stride);
-        ::memcpy(s(lhs), s(rhs), s.stride);
-        ::memcpy(s(rhs), buffer.data(), s.stride);
+        ::memcpy(buffer.data(), s(this->_particles, lhs), s.stride);
+        ::memcpy(s(this->_particles, lhs), s(this->_particles, rhs), s.stride);
+        ::memcpy(s(this->_particles, rhs), buffer.data(), s.stride);
     }
 }

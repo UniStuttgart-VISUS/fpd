@@ -95,6 +95,15 @@ namespace fpd {
             }, L"invalid format", LINE_INFO());
 
             builder.for_format(format_description<wchar_t>({ { semantic::position_radius, format::float32xyzw, 0, 0 } }));
+
+            std::vector<float> particles = {
+                2.0f, 2.0f, 2.0f, 0.1f,
+                1.0f, 1.0f, 1.0f, 0.2f,
+                4.0f, 4.0f, 4.0f, 0.3f,
+                3.0f, 3.0f, 3.0f, 0.4f,
+            };
+
+            builder.build(particles.data(), 4);
         }
 
     };

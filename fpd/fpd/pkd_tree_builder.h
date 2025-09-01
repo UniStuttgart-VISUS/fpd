@@ -10,7 +10,6 @@
 #include <cinttypes>
 #include <cstdlib>
 #include <limits>
-#include <mutex>
 #include <stdexcept>
 #include <thread>
 #include <utility>
@@ -173,7 +172,7 @@ private:
         /// Gets the begin of the <paramref name="particle" />th particle from
         /// <see cref="start" />.
         /// </summary>
-        inline const std::uint8_t *operator ()(
+        inline std::uint8_t *operator ()(
                 _In_ std::size_t cnt,
                 _In_ const std::size_t particle) const noexcept {
             assert(this->start != nullptr);
@@ -204,7 +203,7 @@ private:
     /// <summary>
     /// Answer the position of the <paramref name="i" />th particle.
     /// </summary>
-    inline void *position(_In_ const std::size_t i) noexcept {
+    inline void *position(_In_ const std::size_t i) const noexcept {
         assert(this->_group < this->_streams.size());
         assert(this->_streams[this->_group].start != nullptr);
         assert(i < this->_particles);
@@ -219,7 +218,7 @@ private:
     /// Answer the position of the <paramref name="i" />th particle.
     /// </summary>
     template<class TScalar>
-    inline TScalar *position(_In_ const std::size_t i) noexcept {
+    inline TScalar *position(_In_ const std::size_t i) const noexcept {
         auto retval = this->position(i);
         return static_cast<TScalar *>(retval);
     }
@@ -230,7 +229,7 @@ private:
     /// </summary>
     template<class TScalar> inline TScalar position(
             _In_ const std::size_t i,
-            _In_ const std::size_t c) noexcept {
+            _In_ const std::size_t c) const noexcept {
         assert(c < this->_components);
         return this->position<TScalar>(i)[c];
     }
@@ -252,7 +251,7 @@ private:
     /// Swaps the particles at the specifiied indices.
     /// </summary>
     void swap_particles(_In_ const std::size_t lhs,
-        _In_ const std::size_t rhs) noexcept;
+        _In_ const std::size_t rhs) const noexcept;
 
     std::size_t _axis_component;
     std::size_t _components;
@@ -260,7 +259,7 @@ private:
     std::size_t _dimensions;
     format _format;
     std::size_t _group;
-    std::mutex _lock;
+    std::size_t _levels;
     std::size_t _offset;
     std::size_t _parallel_threshold;
     std::size_t _particles;
