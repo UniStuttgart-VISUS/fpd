@@ -15,12 +15,8 @@ FPD_NAMESPACE::bounding_box::bounding_box(
         _In_ const TValue min_z, _In_ const TValue max_x,
         _In_ const TValue max_y, _In_ const TValue max_z)
         : _format(detail::format_v<TValue>) {
-    if (!std::is_arithmetic<TValue>::value
-            || (to_components(this->_format) != 1)) {
-        throw std::logic_error("A bounding box must comprise only scalar "
-            "arithmetic values.");
-    }
-
+    static_assert(std::is_arithmetic<TValue>::value, "A bounding box must "
+        "comprise only scalar arithmetic values.");
     this->_values.resize(6 * to_size(this->_format));
     assert(*this);
 
@@ -68,6 +64,21 @@ TValue(FPD_NAMESPACE::bounding_box::max)(_In_ std::size_t axis) const {
 
 
 /*
+ * FPD_NAMESPACE::bounding_box::max
+ */
+template<class TValue>
+void (FPD_NAMESPACE::bounding_box::max)(_In_ std::size_t axis,
+        _In_ const TValue value) {
+    if (axis >= 3) {
+        throw std::out_of_range("The specified axis is out of range.");
+    }
+
+    axis += static_cast<std::size_t>(value::max_x);
+    this->set(static_cast<bounding_box::value>(axis), value);
+}
+
+
+/*
  * FPD_NAMESPACE::bounding_box::min
  */
 template<class TValue>
@@ -78,4 +89,46 @@ TValue(FPD_NAMESPACE::bounding_box::min)(_In_ std::size_t axis) const {
 
     axis += static_cast<std::size_t>(value::min_x);
     return this->get<TValue>(static_cast<value>(axis));
+}
+
+/*
+ * FPD_NAMESPACE::bounding_box::min
+ */
+template<class TValue>
+void (FPD_NAMESPACE::bounding_box::min)(_In_ std::size_t axis,
+        _In_ const TValue value) {
+    if (axis >= 3) {
+        throw std::out_of_range("The specified axis is out of range.");
+    }
+
+    axis += static_cast<std::size_t>(value::min_x);
+    this->set(static_cast<bounding_box::value>(axis), value);
+}
+
+
+
+/*
+ * FPD_NAMESPACE::bounding_box::set
+ */
+template<class TValue>
+void FPD_NAMESPACE::bounding_box::set(_In_ const value component,
+        _In_ const TValue value) {
+    const auto offset = this->offset(component);
+    if (!offset.second) {
+        throw std::out_of_range("The specified component is out of range.");
+    }
+
+    void *dst = this->_values.data() + offset.first;
+
+    if (detail::format_v<TValue> == this->_format) {
+        *static_cast<TValue *>(dst) = value;
+
+    } else {
+        detail::dispatch_format<void>(this->_format,
+            [dst, value](const auto tag) {
+                typedef std::decay_t<decltype(tag)> pointer_type;
+                typedef std::remove_pointer<pointer_type>::type value_type;
+                *static_cast<pointer_type>(dst) = value;
+            }, scalar_formats());
+    }
 }

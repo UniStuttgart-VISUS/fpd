@@ -183,6 +183,21 @@ public:
     template<class TValue> TValue (max)(_In_ std::size_t axis) const;
 
     /// <summary>
+    /// Sets the maximum value along the given <paramref name="axis" /> to the
+    /// specified <paramref name="value" />.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the value to be set. If this is not
+    /// the type of the elements of the bounding box, it will be cast to this
+    /// type. which might cause loss of precision.</typeparam>
+    /// <param name="axis">The zero-based index of the axis to set.</param>
+    /// <param name="value">The value to be set.</param>
+    /// <exception cref="std::logic_error">If the bounding box is invalid, i.e.
+    /// has no components allocated, or if <paramref name="component" /> was
+    /// forced to an invalid value.</exception>
+    template<class TValue>
+    void (max)(_In_ std::size_t axis, _In_ const TValue value);
+
+    /// <summary>
     /// The maximum x-coordinate covered by the data.
     /// </summary>
     /// <typeparam name="TValue">The type of the coordinate, which must be the
@@ -236,6 +251,21 @@ public:
     template<class TValue> TValue (min)(_In_ std::size_t axis) const;
 
     /// <summary>
+    /// Sets the minimum value along the given <paramref name="axis" /> to the
+    /// specified <paramref name="value" />.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the value to be set. If this is not
+    /// the type of the elements of the bounding box, it will be cast to this
+    /// type. which might cause loss of precision.</typeparam>
+    /// <param name="axis">The zero-based index of the axis to set.</param>
+    /// <param name="value">The value to be set.</param>
+    /// <exception cref="std::logic_error">If the bounding box is invalid, i.e.
+    /// has no components allocated, or if <paramref name="component" /> was
+    /// forced to an invalid value.</exception>
+    template<class TValue>
+    void (min)(_In_ std::size_t axis, _In_ const TValue value);
+
+    /// <summary>
     /// The minimum x-coordinate covered by the data.
     /// </summary>
     /// <typeparam name="TValue">The type of the coordinate, which must be the
@@ -275,6 +305,21 @@ public:
     }
 
     /// <summary>
+    /// Sets the specified <paramref name="component" /> of the bounding box to
+    /// the specified <paramref name="value" />.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the value to be set. If this is not
+    /// the type of the elements of the bounding box, it will be cast to this
+    /// type. which might cause loss of precision.</typeparam>
+    /// <param name="component">The component to be set.</param>
+    /// <param name="value">The value to be set.</param>
+    /// <exception cref="std::logic_error">If the bounding box is invalid, i.e.
+    /// has no components allocated, or if <paramref name="component" /> was
+    /// forced to an invalid value.</exception>
+    template<class TValue>
+    void set(_In_ const value component, _In_ const TValue value);
+
+    /// <summary>
     /// Answer the size of the bounding box in bytes.
     /// </summary>
     /// <returns>The size of the bounding box in bytes.</returns>
@@ -300,16 +345,27 @@ public:
     /// or <c>nullptr</c> if the bounding box is not valid.</returns>
     inline _Ret_maybenull_ const void *operator [](
             _In_ const value v) const noexcept {
-        const auto size = to_size(this->_format);
-        const auto offset = static_cast<std::size_t>(v) * size;
-        const auto retval = (offset + size <= this->_values.size())
-            ? this->_values.data() + offset
+        const auto offset = this->offset(v);
+        const auto retval = offset.second
+            ? this->_values.data() + offset.first
             : nullptr;
         assert((retval != nullptr) || !*this);
         return retval;
     }
 
 private:
+
+    /// <summary>
+    /// Answer the offset of <paramref name="v" /> in bytes. The second
+    /// component of the pair indicates whether the offset is valid.
+    /// </summary>
+    inline std::pair<std::size_t, bool> offset(
+            _In_ const value v) const noexcept {
+        const auto size = to_size(this->_format);
+        const auto start = static_cast<std::size_t>(v) * size;
+        const auto end = start + size;
+        return std::make_pair(start, end <= this->_values.size());
+    }
 
     std::vector<std::uint8_t> _values;
     format_type _format;

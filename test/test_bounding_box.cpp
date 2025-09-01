@@ -95,6 +95,12 @@ namespace fpd {
             Assert::AreEqual(2.0f, (bb.min<float>)(1), L"min(1)", LINE_INFO());
             Assert::AreEqual(3.0f, (bb.min<float>)(2), L"min(2)", LINE_INFO());
             Assert::ExpectException<std::out_of_range>([&bb](void) { (bb.min<float>)(3); }, L"min(3)", LINE_INFO());
+
+            Assert::AreEqual(4.0f, (bb.max<float>)(0), L"max(0)", LINE_INFO());
+            (bb.max)(0, 42.0f);
+            Assert::AreEqual(42.0f, (bb.max<float>)(0), L"max(0)", LINE_INFO());
+            (bb.min)(0, 42);
+            Assert::AreEqual(42.0f, (bb.min<float>)(0), L"min(0)", LINE_INFO());
         }
     };
 }

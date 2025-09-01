@@ -231,10 +231,10 @@ FPD_NAMESPACE::pkd_tree_builder<TChar>::for_format(
 
         auto e = g.find(semantic::position);
         if (e != g.end()) {
-            if (this->_format == format::unknown) {
+            if (this->_format != format::unknown) {
                 throw std::invalid_argument("The specified format description "
-                    "multiple positions, wherefore it is not clear which on "
-                    "the pkd tree should be based.");
+                    "contains multiple positions, wherefore it is not clear "
+                    "which on the pkd tree should be based.");
             }
             assert(this->_format == format::unknown);
             this->_format = e->format();
@@ -401,7 +401,8 @@ void FPD_NAMESPACE::pkd_tree_builder<TChar>::build_ospray(
 
     auto left_bounds = bounds;
     auto right_bounds = bounds;
-//    lBounds.upper[dim] = rBounds.lower[dim] = pos(nodeID, dim);
+    (left_bounds.max)(split, node_pos);
+    (right_bounds.min)(split, node_pos);
 
     /* numLevels - depth */
     if (0 > this->_parallel_threshold) {

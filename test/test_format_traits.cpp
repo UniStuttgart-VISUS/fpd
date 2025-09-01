@@ -142,5 +142,21 @@ namespace fpd {
             Assert::AreEqual(int(VK_FORMAT_R8G8B8_SINT), int(to_vulkan(format::int8xyz)), L"int8xyz", LINE_INFO());
 #endif /* defined(FPD_WITH_VULKAN) */
         }
+
+        TEST_METHOD(test_dispatch_format) {
+            Assert::IsTrue(dispatch_format<bool>(format::int8x, [](const auto tag) {
+                return std::is_same_v<std::decay_t<decltype(tag)>, std::int8_t *>;
+            }), L"int8x", LINE_INFO());
+            Assert::IsTrue(dispatch_format<bool>(format::int8xy, [](const auto tag) {
+                return std::is_same_v<std::decay_t<decltype(tag)>, std::array<std::int8_t, 2> *>;
+            }), L"int8xy", LINE_INFO());
+        }
+
+        TEST_METHOD(test_scalar_formats) {
+            Assert::IsTrue(detail::in_format_list_v<scalar_formats, format::int8x>, L"int8x", LINE_INFO());
+            Assert::IsTrue(detail::in_format_list_v<scalar_formats, format::int32x>, L"int32x", LINE_INFO());
+            Assert::IsTrue(detail::in_format_list_v<scalar_formats, format::float32>, L"float32", LINE_INFO());
+            Assert::IsFalse(detail::in_format_list_v<scalar_formats, format::float32xy>, L"float32xy", LINE_INFO());
+        }
     };
 }

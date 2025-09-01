@@ -9,8 +9,10 @@
 #pragma once
 
 #include <array>
+#include <functional>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 #if defined(_WIN32)
 #include <dxgi.h>
@@ -197,6 +199,36 @@ constexpr auto format_v = format_reverse_traits<TValue>::format;
 
 
 /// <summary>
+/// Filter a <see cref="format_list" /> by a <typeparamref name="TPredicate" />
+/// on the type resolved by <see cref="format_forward_traits" />.
+/// </summary>
+template<class TList, template<class> class TPredicate>
+struct filter_format_list;
+
+/// <summary>
+/// Recursion stop for <see cref="filter_format_list" />.
+/// </summary>
+template<template<class> class TPredicate>
+struct filter_format_list<format_list<>, TPredicate> final {
+    typedef format_list<> type;
+};
+
+/// <summary>
+/// Specialisation of <paramref name="filter_format_list" /> for actual type
+/// lists.
+/// </summary>
+template<template<class> class TPredicate, format Format, format... Formats>
+struct filter_format_list<format_list<Format, Formats...>, TPredicate> final {
+    typedef filter_format_list<format_list<Formats...>, TPredicate> tail;
+    typedef format_forward_traits<Format> traits;
+    typedef typename std::conditional<
+        TPredicate<typename traits::type>::value,
+        format_list_cat_t<typename tail::type, Format>,
+        typename tail::type>::type type;
+};
+
+
+/// <summary>
 /// Defines a list of formats that can be expanded to dynamically dispatch to
 /// a per-format handler.
 /// </summary>
@@ -210,6 +242,32 @@ struct format_type_list<format_list<Formats ...>> final {
     template<format F> using traits = format_t<F>;
     typedef type_list<traits<Formats>...> type;
 };
+
+
+/// <summary>
+/// Recursion stop for <see cref="index_of" />.
+/// </summary>
+constexpr inline std::size_t index_of(
+        _In_ const format,
+        _In_ format_list<>,
+        _In_ const std::size_t offset) noexcept {
+    return offset;
+}
+
+/// <summary>
+/// Find the position of <paramref name="format" /> in the given format list.
+/// </summary>
+template<format Format, format... Formats>
+constexpr inline std::size_t index_of(
+        _In_ const format format,
+        _In_ format_list<Format, Formats...>,
+        _In_ const std::size_t offset) noexcept {
+    if (format == Format) {
+        return offset;
+    } else {
+        return index_of(format, format_list<Formats...>(), offset + 1);
+    }
+}
 
 
 /// <summary>
@@ -242,6 +300,33 @@ struct in_format_list<format_list<>, Needle> final : std::false_type { };
 /// </summary>
 template<class TList, format Format>
 constexpr bool in_format_list_v = in_format_list<TList, Format>::value;
+
+
+/// <summary>
+/// Dispatches a runtime-defined format to a callback template.
+/// </summary>
+template<class TReturn, class TCallback, format... Formats>
+TReturn dispatch_format(_In_ const format format,
+        _In_ const TCallback& callback,
+        _In_ const format_list<Formats...>) {
+    typedef std::function<TReturn()> dispatch_type;
+    static const std::array<dispatch_type, sizeof...(Formats)> Dispatchers = {
+            ([&callback](void) {
+                typedef typename format_forward_traits<Formats>::type *tag;
+                return callback(static_cast<tag>(nullptr));
+            })...
+        };
+
+    const auto idx = index_of(format, format_list<Formats...>(), 0);
+    if (idx >= Dispatchers.size()) {
+        throw std::logic_error("The specified format is not in the list "
+            "of supported formats. Please ensure that the format is a valid "
+            "enumeration member and that all enumeration members are "
+            "registered in the formats list.");
+    }
+
+    return Dispatchers[idx]();
+}
 
 
 /// <summary>
@@ -371,8 +456,8 @@ inline std::size_t to_size(
 /// Recursion stop for <see cref="to_string" />.
 /// </summary>
 template<class TChar> inline const TChar *const to_string(
-    _In_ const format_list<>,
-    _In_ const format) {
+        _In_ const format_list<>,
+        _In_ const format) {
     throw std::logic_error("The specified format could not be converted to "
         "a string. Please ensure that the format is a valid enumeration "
         "member and that all enumeration members are registered in the "
@@ -428,7 +513,7 @@ FPD_NAMESPACE_BEGIN
 /// A list of all the types that are represented by the <see cref="format" />s
 /// in the <see cref="formats" /> list.
 /// </summary>
-typedef detail::format_type_list<formats>::type format_types;
+typedef typename detail::format_type_list<formats>::type format_types;
 
 
 /// <summary>
@@ -450,6 +535,36 @@ template<class TList, format Format> struct is_supported_format final
 template<class TList, class TValue> struct is_supported_type final
     : std::bool_constant<detail::in_format_list_v<TList,
     detail::format_v<std::decay_t<TValue>>>> { };
+
+
+/// <summary>
+/// A filtered format list that only holds scalar formats.
+/// </summary>
+typedef typename detail::filter_format_list<formats, std::is_arithmetic>::type
+    scalar_formats;
+
+
+/// <summary>
+/// Dispatches a runtime-defined <paramref name="format" /> to a callback
+/// template that receives a pointer to the type used by the format as
+/// parameter.
+/// </summary>
+/// <typeparam name="TReturn">The return type of the callback.</typeparam>
+/// <typeparam name="TCallback">The callback template. This must be a lambda
+/// with a single <see langword="auto" /> parameter that will be resolved to a
+/// pointer to the type representing values of <paramref name="format" />.
+/// </typeparam>
+/// <param name="format">The format to dispatch to.</param>
+/// <param name="callback">The callback to be invoked.</param>
+/// <returns>The value returned by the callback.</returns>
+/// <exception cref="std::logic_error">If an invalid <paramref name="format" />
+/// was provided or if the type traits have not been setup properly. The latter
+/// is a bug in the implementation of the library.</exception>
+template<class TReturn, class TCallback>
+inline TReturn dispatch_format(_In_ const format format,
+        _In_ const TCallback callback) {
+    return detail::dispatch_format<TReturn>(format, callback, formats());
+}
 
 
 /// <summary>
@@ -520,7 +635,7 @@ inline constexpr GLenum to_opengl(_In_ const format format) noexcept {
 /// was provided or if the type traits have not been setup properly. The latter
 /// is a bug in the implementation of the library.</exception>
 inline std::size_t to_scalar_size(_In_ const format format) {
-    typedef format_list_cat<formats, format::unknown> dispatch_type;
+    typedef format_list_cat_t<formats, format::unknown> dispatch_type;
     return detail::to_scalar_size(dispatch_type(), format);
 }
 
@@ -534,7 +649,7 @@ inline std::size_t to_scalar_size(_In_ const format format) {
 /// was provided or if the type traits have not been setup properly. The latter
 /// is a bug in the implementation of the library.</exception>
 inline std::size_t to_size(_In_ const format format) {
-    typedef format_list_cat<formats, format::unknown> dispatch_type;
+    typedef format_list_cat_t<formats, format::unknown> dispatch_type;
     return detail::to_size(dispatch_type(), format);
 }
 
@@ -551,7 +666,7 @@ inline std::size_t to_size(_In_ const format format) {
 /// is a bug in the implementation of the library.</exception>
 template<class TChar>
 inline const TChar *const to_string(_In_ const format format) {
-    typedef format_list_cat<formats, format::unknown> dispatch_type;
+    typedef format_list_cat_t<formats, format::unknown> dispatch_type;
     return detail::to_string<TChar>(dispatch_type(), format);
 }
 
@@ -567,7 +682,6 @@ inline constexpr VkFormat to_vulkan(_In_ const format format) noexcept {
     return detail::to_vulkan(formats(), format);
 }
 #endif /* defined(FPD_WITH_VULKAN) */
-
 
 FPD_NAMESPACE_END
 

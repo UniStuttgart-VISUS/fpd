@@ -291,18 +291,23 @@ enum class format : std::uint32_t {
 template<format... Formats> struct format_list final { };
 
 
+/// <summary>
+/// Appends a new format to the given instance of <see cref="format_list" />.
+/// </summary>
+/// <typeparam name="TList">The type of the current format list.</typeparam>
+/// <typeparam name="Format">The format to be appended.</typeparam>
+template<class TList, format Format>
+struct format_list_cat;
 
-namespace detail {
-
-    template<class TList, format Format>
-    struct format_list_cat;
-
-    template<format... Formats, format Format>
-    struct format_list_cat<format_list<Formats...>, Format> final {
-        typedef format_list<Formats..., Format> type;
-    };
-
-} /* namespace detail */
+/// <summary>
+/// Specialisation for actual <see cref="format_list" />s.
+/// </summary>
+/// <typeparam name="Formats">The formats in the current list.</typeparam>
+/// <typeparam name="Format">The format to be appended.</typeparam>
+template<format... Formats, format Format>
+struct format_list_cat<format_list<Formats...>, Format> final {
+    typedef format_list<Formats..., Format> type;
+};
 
 /// <summary>
 /// Appends a new format to the given instance of <see cref="format_list" />.
@@ -312,10 +317,10 @@ namespace detail {
 /// contains all valid formats, but also <see cref="format::unknown" />. This
 /// is, for instance, used in <see cref="to_string" />.
 /// </remarks>
-/// <typeparam name="TList">The format list.</typeparam>
+/// <typeparam name="TList">The type of the current format list.</typeparam>
 /// <typeparam name="Format">The format to be appended.</typeparam>
 template<class TList, format Format>
-using format_list_cat = typename detail::format_list_cat<TList, Format>::type;
+using format_list_cat_t = typename format_list_cat<TList, Format>::type;
 
 
 /// <summary>
