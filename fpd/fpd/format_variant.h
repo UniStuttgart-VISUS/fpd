@@ -132,7 +132,7 @@ public:
     inline basic_format_variant(_In_ TValue&& value,
             _In_opt_ typename std::enable_if<
             is_supported_type<formats, TValue>::value>::type * = nullptr)
-            : _format(detail::format_reverse_traits<TValue>::format) {
+            : _format(detail::format_reverse_traits<std::decay_t<TValue>>::format) {
         assert(this->supports(this->_format));
         this->invoke<detail::format_value_ctor>(std::forward<TValue>(value));
     }
@@ -380,8 +380,9 @@ public:
     inline typename std::enable_if<is_supported_type<formats, TValue>::value,
         basic_format_variant>::type&
     operator =(_In_ TValue&& value) {
+        typedef std::decay_t<TValue> value_type;
         this->invoke<detail::format_value_dtor>();
-        this->_format = detail::format_reverse_traits<TValue>::format;
+        this->_format = detail::format_reverse_traits<value_type>::format;
         assert(this->supports(this->_format));
         this->invoke<detail::format_value_ctor>(std::forward<TValue>(value));
         return *this;

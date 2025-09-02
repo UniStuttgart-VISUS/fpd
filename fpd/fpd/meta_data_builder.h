@@ -13,6 +13,7 @@
 
 #include "fpd/convert_string.h"
 #include "fpd/meta_data.h"
+#include "fpd/mmpld.h"
 
 
 FPD_NAMESPACE_BEGIN
@@ -169,19 +170,6 @@ public:
     meta_data_type build(void);
 
     /// <summary>
-    /// If the <paramref name="frame" /> at the given zero-based index exists,
-    /// change it size to <paramref name="size" />.
-    /// </summary>
-    /// <param name="frame">The zero-based index of the frame to change the size
-    /// of.</param>
-    /// <param name="size">The size of the frame in bytes.</param>
-    /// <returns>*<see langword="this" />.</returns>
-    /// <exception cref="std::invalid_argument">If <paramref name="frame" /> is
-    /// out of bounds.</exception>
-    meta_data_builder& set_frame_size(_In_ const std::size_t frame,
-        _In_ const size_type size);
-
-    /// <summary>
     /// Compute the size of the meta data in bytes up to the first frame.
     /// </summary>
     /// <remarks>
@@ -310,6 +298,17 @@ public:
     /// than one.</exception>
     meta_data_builder& with_frames(
         _In_ const std::initializer_list<size_type>& particles);
+
+#if defined(FPD_WITH_MMPLD)
+    /// <summary>
+    /// Erases all format data and replaces them with something that describes
+    /// the format of the given MMPLD particle list.
+    /// </summary>
+    /// <param name="header">The particle list header to derive the format
+    /// from.</param>
+    /// <returns>*<see langword="this" />.</returns>
+    meta_data_builder& with_mmpld_format(_In_ const mmpld::list_header& header);
+#endif /* defined(FPD_WITH_MMPLD) */
 
     /// <summary>
     /// Sets the number of frames in the file and initialises all of them with

@@ -237,6 +237,47 @@ FPD_NAMESPACE::meta_data_builder<TChar>::with_frames(
 }
 
 
+#if defined(FPD_WITH_MMPLD)
+/*
+ * FPD_NAMESPACE::meta_data_builder<TChar>::with_mmpld_format
+ */
+template<class TChar>
+FPD_NAMESPACE::meta_data_builder<TChar>&
+FPD_NAMESPACE::meta_data_builder<TChar>::with_mmpld_format(
+        _In_ const mmpld::list_header& header) {
+    this->_format = format_description_type();
+
+    {
+        auto format = mmpld_format(header.vertex_type);
+        if (format != format::unknown) {
+            auto semantic = mmpld_semantic(header.vertex_type);
+            assert(semantic != semantic::unknown);
+            this->_format.add(semantic, nullptr, format);
+        }
+    }
+
+    {
+        auto format = mmpld_format(header.colour_type);
+        if (format != format::unknown) {
+            auto semantic = mmpld_semantic(header.colour_type);
+            assert(semantic != semantic::unknown);
+            this->_format.add(semantic, nullptr, format);
+        }
+    }
+
+    // If we have a valid format, but without per-particle radii, add the
+    // per-list radius as global property, provided it is valid.
+    if (this->_format
+            && (this->_format(0, 0).semantic() != semantic::position_radius)
+            && (header.radius > 0.0f)) {
+        this->_global_particle_properties[semantic::radius] = header.radius;
+    }
+
+    return *this;
+}
+#endif /* defined(FPD_WITH_MMPLD) */
+
+
 /*
  * FPD_NAMESPACE::meta_data_builder<TChar>::with_uniform_frames
  */

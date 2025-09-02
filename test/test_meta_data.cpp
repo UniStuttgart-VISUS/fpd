@@ -217,8 +217,51 @@ namespace fpd {
                     + 4;
                 Assert::AreEqual(expected, builder.size(), L"Overall header size", LINE_INFO());
             }
+        }
 
+        TEST_METHOD(mmpld_format_global_radius) {
+            meta_data_builder<wchar_t> builder;
 
+            mmpld::list_header header;
+            header.vertex_type = mmpld::vertex_type::float_xyz;
+            header.colour_type = mmpld::colour_type::rgb8;
+            header.radius = 0.5f;
+
+            builder.with_mmpld_format(header);
+            builder.with_uniform_frames(1, 1);
+
+            auto data = builder.build();
+
+            Assert::AreEqual(std::size_t(2), data.format_description().count_elements(), L"# of format elements", LINE_INFO());
+            Assert::AreEqual(int(semantic::position), int(data.format_description()(0, 0).semantic()), L"semantic of element 0", LINE_INFO());
+            Assert::AreEqual(int(format::float32xyz), int(data.format_description()(0, 0).format()), L"format of element 0", LINE_INFO());
+            Assert::AreEqual(int(semantic::colour), int(data.format_description()(0, 1).semantic()), L"semantic of element 1", LINE_INFO());
+            Assert::AreEqual(int(format::uint8xyz), int(data.format_description()(0, 1).format()), L"format of element 1", LINE_INFO());
+            Assert::AreEqual(std::size_t(1), data.global_particle_properties().size(), L"# of global properties", LINE_INFO());
+            Assert::IsTrue(data.global_particle_properties().find(semantic::radius) != data.global_particle_properties().end(), L"global radius present", LINE_INFO());
+            // TODO
+//            Assert::IsTrue(format_variant(header.radius) == data.global_particle_properties().at(semantic::radius), L"global radius", LINE_INFO());
+        }
+
+        TEST_METHOD(mmpld_format_particle_radius) {
+            meta_data_builder<wchar_t> builder;
+
+            mmpld::list_header header;
+            header.vertex_type = mmpld::vertex_type::float_xyzr;
+            header.colour_type = mmpld::colour_type::rgba32;
+            header.radius = 0.5f;
+
+            builder.with_mmpld_format(header);
+            builder.with_uniform_frames(1, 1);
+
+            auto data = builder.build();
+
+            Assert::AreEqual(std::size_t(2), data.format_description().count_elements(), L"# of format elements", LINE_INFO());
+            Assert::AreEqual(int(semantic::position_radius), int(data.format_description()(0, 0).semantic()), L"semantic of element 0", LINE_INFO());
+            Assert::AreEqual(int(format::float32xyzw), int(data.format_description()(0, 0).format()), L"format of element 0", LINE_INFO());
+            Assert::AreEqual(int(semantic::colour), int(data.format_description()(0, 1).semantic()), L"semantic of element 1", LINE_INFO());
+            Assert::AreEqual(int(format::float32xyzw), int(data.format_description()(0, 1).format()), L"format of element 1", LINE_INFO());
+            Assert::AreEqual(std::size_t(0), data.global_particle_properties().size(), L"no global property", LINE_INFO());
         }
     };
 }

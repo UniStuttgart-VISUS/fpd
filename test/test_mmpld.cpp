@@ -14,9 +14,12 @@ namespace fpd {
     public:
 
         TEST_METHOD(test_mmpld_colour_none) {
-            constexpr auto mmpld = mmpld::colour_type::rgb8;
-            const auto fpd = from_mmpld(mmpld);
-            Assert::AreEqual(int(format::uint8xyz), int(fpd), L"FPD format", LINE_INFO());
+            constexpr auto mmpld = mmpld::colour_type::none;
+            const auto fpd = mmpld_format(mmpld);
+            Assert::AreEqual(int(format::unknown), int(fpd), L"FPD format", LINE_INFO());
+
+            const auto sem = mmpld_semantic(mmpld);
+            Assert::AreEqual(int(semantic::unknown), int(sem), L"FPD semantic", LINE_INFO());
         }
 
         TEST_METHOD(test_mmpld_rgb8) {
@@ -24,9 +27,12 @@ namespace fpd {
             mmpld::colour_properties props;
             Assert::IsTrue(mmpld::get_properties(mmpld, props), L"MMPLD properties", LINE_INFO());
 
-            const auto fpd = from_mmpld(mmpld);
+            const auto fpd = mmpld_format(mmpld);
             Assert::AreEqual(int(format::uint8xyz), int(fpd), L"FPD format", LINE_INFO());
             Assert::AreEqual(to_size(fpd), props.size, L"Same size", LINE_INFO());
+
+            const auto sem = mmpld_semantic(mmpld);
+            Assert::AreEqual(int(semantic::colour), int(sem), L"FPD semantic", LINE_INFO());
         }
 
         TEST_METHOD(test_mmpld_rgba8) {
@@ -34,9 +40,12 @@ namespace fpd {
             mmpld::colour_properties props;
             Assert::IsTrue(mmpld::get_properties(mmpld, props), L"MMPLD properties", LINE_INFO());
 
-            const auto fpd = from_mmpld(mmpld);
+            const auto fpd = mmpld_format(mmpld);
             Assert::AreEqual(int(format::uint8xyzw), int(fpd), L"FPD format", LINE_INFO());
             Assert::AreEqual(to_size(fpd), props.size, L"Same size", LINE_INFO());
+
+            const auto sem = mmpld_semantic(mmpld);
+            Assert::AreEqual(int(semantic::colour), int(sem), L"FPD semantic", LINE_INFO());
         }
 
         TEST_METHOD(test_mmpld_intensity) {
@@ -44,9 +53,12 @@ namespace fpd {
             mmpld::colour_properties props;
             Assert::IsTrue(mmpld::get_properties(mmpld, props), L"MMPLD properties", LINE_INFO());
 
-            const auto fpd = from_mmpld(mmpld);
+            const auto fpd = mmpld_format(mmpld);
             Assert::AreEqual(int(format::float32), int(fpd), L"FPD format", LINE_INFO());
             Assert::AreEqual(to_size(fpd), props.size, L"Same size", LINE_INFO());
+
+            const auto sem = mmpld_semantic(mmpld);
+            Assert::AreEqual(int(semantic::intensity), int(sem), L"FPD semantic", LINE_INFO());
         }
 
         TEST_METHOD(test_mmpld_rgb32) {
@@ -54,9 +66,12 @@ namespace fpd {
             mmpld::colour_properties props;
             Assert::IsTrue(mmpld::get_properties(mmpld, props), L"MMPLD properties", LINE_INFO());
 
-            const auto fpd = from_mmpld(mmpld);
+            const auto fpd = mmpld_format(mmpld);
             Assert::AreEqual(int(format::float32xyz), int(fpd), L"FPD format", LINE_INFO());
             Assert::AreEqual(to_size(fpd), props.size, L"Same size", LINE_INFO());
+
+            const auto sem = mmpld_semantic(mmpld);
+            Assert::AreEqual(int(semantic::colour), int(sem), L"FPD semantic", LINE_INFO());
         }
 
         TEST_METHOD(test_mmpld_rgba32) {
@@ -64,9 +79,12 @@ namespace fpd {
             mmpld::colour_properties props;
             Assert::IsTrue(mmpld::get_properties(mmpld, props), L"MMPLD properties", LINE_INFO());
 
-            const auto fpd = from_mmpld(mmpld);
+            const auto fpd = mmpld_format(mmpld);
             Assert::AreEqual(int(format::float32xyzw), int(fpd), L"FPD format", LINE_INFO());
             Assert::AreEqual(to_size(fpd), props.size, L"Same size", LINE_INFO());
+
+            const auto sem = mmpld_semantic(mmpld);
+            Assert::AreEqual(int(semantic::colour), int(sem), L"FPD semantic", LINE_INFO());
         }
 
         TEST_METHOD(test_mmpld_rgba16) {
@@ -74,9 +92,12 @@ namespace fpd {
             mmpld::colour_properties props;
             Assert::IsTrue(mmpld::get_properties(mmpld, props), L"MMPLD properties", LINE_INFO());
 
-            const auto fpd = from_mmpld(mmpld);
+            const auto fpd = mmpld_format(mmpld);
             Assert::AreEqual(int(format::uint16xyzw), int(fpd), L"FPD format", LINE_INFO());
             Assert::AreEqual(to_size(fpd), props.size, L"Same size", LINE_INFO());
+
+            const auto sem = mmpld_semantic(mmpld);
+            Assert::AreEqual(int(semantic::colour), int(sem), L"FPD semantic", LINE_INFO());
         }
 
         TEST_METHOD(test_mmpld_intensity64) {
@@ -84,9 +105,21 @@ namespace fpd {
             mmpld::colour_properties props;
             Assert::IsTrue(mmpld::get_properties(mmpld, props), L"MMPLD properties", LINE_INFO());
 
-            const auto fpd = from_mmpld(mmpld);
+            const auto fpd = mmpld_format(mmpld);
             Assert::AreEqual(int(format::float64), int(fpd), L"FPD format", LINE_INFO());
             Assert::AreEqual(to_size(fpd), props.size, L"Same size", LINE_INFO());
+
+            const auto sem = mmpld_semantic(mmpld);
+            Assert::AreEqual(int(semantic::intensity), int(sem), L"FPD semantic", LINE_INFO());
+        }
+
+        TEST_METHOD(test_mmpld_vertex_none) {
+            constexpr auto mmpld = mmpld::vertex_type::none;
+            const auto fpd = mmpld_format(mmpld);
+            Assert::AreEqual(int(format::unknown), int(fpd), L"FPD format", LINE_INFO());
+
+            const auto sem = mmpld_semantic(mmpld);
+            Assert::AreEqual(int(semantic::unknown), int(sem), L"FPD semantic", LINE_INFO());
         }
 
         TEST_METHOD(test_mmpld_float_xyz) {
@@ -94,9 +127,12 @@ namespace fpd {
             mmpld::vertex_properties props;
             Assert::IsTrue(mmpld::get_properties(mmpld, props), L"MMPLD properties", LINE_INFO());
 
-            const auto fpd = from_mmpld(mmpld);
+            const auto fpd = mmpld_format(mmpld);
             Assert::AreEqual(int(format::float32xyz), int(fpd), L"FPD format", LINE_INFO());
             Assert::AreEqual(to_size(fpd), props.size, L"Same size", LINE_INFO());
+
+            const auto sem = mmpld_semantic(mmpld);
+            Assert::AreEqual(int(semantic::position), int(sem), L"FPD semantic", LINE_INFO());
         }
 
         TEST_METHOD(test_mmpld_float_xyzr) {
@@ -104,9 +140,12 @@ namespace fpd {
             mmpld::vertex_properties props;
             Assert::IsTrue(mmpld::get_properties(mmpld, props), L"MMPLD properties", LINE_INFO());
 
-            const auto fpd = from_mmpld(mmpld);
+            const auto fpd = mmpld_format(mmpld);
             Assert::AreEqual(int(format::float32xyzw), int(fpd), L"FPD format", LINE_INFO());
             Assert::AreEqual(to_size(fpd), props.size, L"Same size", LINE_INFO());
+
+            const auto sem = mmpld_semantic(mmpld);
+            Assert::AreEqual(int(semantic::position_radius), int(sem), L"FPD semantic", LINE_INFO());
         }
 
         TEST_METHOD(test_mmpld_short_xyz) {
@@ -114,9 +153,12 @@ namespace fpd {
             mmpld::vertex_properties props;
             Assert::IsTrue(mmpld::get_properties(mmpld, props), L"MMPLD properties", LINE_INFO());
 
-            const auto fpd = from_mmpld(mmpld);
+            const auto fpd = mmpld_format(mmpld);
             Assert::AreEqual(int(format::int16xyz), int(fpd), L"FPD format", LINE_INFO());
             Assert::AreEqual(to_size(fpd), props.size, L"Same size", LINE_INFO());
+
+            const auto sem = mmpld_semantic(mmpld);
+            Assert::AreEqual(int(semantic::position), int(sem), L"FPD semantic", LINE_INFO());
         }
 
         TEST_METHOD(test_mmpld_double_xyz) {
@@ -124,9 +166,12 @@ namespace fpd {
             mmpld::vertex_properties props;
             Assert::IsTrue(mmpld::get_properties(mmpld, props), L"MMPLD properties", LINE_INFO());
 
-            const auto fpd = from_mmpld(mmpld);
+            const auto fpd = mmpld_format(mmpld);
             Assert::AreEqual(int(format::float64xyz), int(fpd), L"FPD format", LINE_INFO());
             Assert::AreEqual(to_size(fpd), props.size, L"Same size", LINE_INFO());
+
+            const auto sem = mmpld_semantic(mmpld);
+            Assert::AreEqual(int(semantic::position), int(sem), L"FPD semantic", LINE_INFO());
         }
     };
 }
