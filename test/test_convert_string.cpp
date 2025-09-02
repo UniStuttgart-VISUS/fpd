@@ -93,6 +93,13 @@ namespace fpd {
                 const auto input = static_cast<src_type *>(nullptr);
                 Assert::IsTrue(convert_string<dst_type>(input, -1, cp).empty(), L"nullptr conversion", LINE_INFO());
             }
+
+            {
+                const auto input = L"色";
+                const auto actual = convert_string<dst_type>(input, -1, cp);
+                Assert::AreEqual(std::size_t(3), actual.size(), L"Measure japanese", LINE_INFO());
+                Assert::AreEqual(std::string(u8"色"), actual, L"Convert japanese", LINE_INFO());
+            }
         }
 
         TEST_METHOD(char162wchar) {

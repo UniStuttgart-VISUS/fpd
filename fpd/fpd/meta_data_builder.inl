@@ -104,12 +104,12 @@ FPD_NAMESPACE::meta_data_builder<TChar>::size(void) const {
         for (auto& s : this->_user_defined_semantics) {
             if (meta_data_builder::has_code_page) {
                 retval += convert_string(
-                    static_cast<char_type *>(nullptr), 0, this->code_page(),
+                    static_cast<char *>(nullptr), 0, this->code_page(),
                     s.c_str(), -1, encodings::utf8);
             } else {
                 assert(sizeof(char_type) > 1);
                 retval += convert_string(
-                    static_cast<char_type *>(nullptr), 0,
+                    static_cast<char *>(nullptr), 0,
                     s.c_str(), -1, encodings::utf8);
             }
         }
@@ -364,19 +364,4 @@ void FPD_NAMESPACE::meta_data_builder<TChar>::add_user_defined_semantic(
 
         this->_user_defined_semantics[i] = d;
     }
-}
-
-
-/*
- * FPD_NAMESPACE::meta_data_builder<TChar>::particle_size
- */
-template<class TChar>
-typename FPD_NAMESPACE::meta_data_builder<TChar>::size_type
-FPD_NAMESPACE::meta_data_builder<TChar>::particle_size(void) const {
-    if (!this->_format) {
-        throw std::logic_error("No format has been specified yet, wherefore "
-            "the size of a particle cannot be determined.");
-    }
-
-    return this->_format.size();
 }

@@ -371,8 +371,6 @@ private:
     void add_user_defined_semantic(_In_ const semantic s,
         _In_opt_z_ const char_type *d);
 
-    size_type particle_size(void) const;
-
     std::vector<bounding_box> _bounding_boxes;
     string_type _description;
     format_description_type _format;

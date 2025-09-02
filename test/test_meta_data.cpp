@@ -162,7 +162,7 @@ namespace fpd {
                     + sizeof(header_segment)
                     + 3 * sizeof(std::uint64_t)
 
-                    // Two format element s
+                    // Two format elements
                     + sizeof(header_segment)
                     + 2 * element<wchar_t>::size_on_disk;
                 Assert::AreEqual(expected, builder.size(), L"Overall header size", LINE_INFO());
@@ -188,6 +188,37 @@ namespace fpd {
             Assert::AreEqual(std::uint64_t(12), data.particles(2), L"particles in frame 2", LINE_INFO());
             Assert::AreEqual(start_of_data, data.frame_offset(2), L"start of frame 2", LINE_INFO());
             Assert::AreEqual(std::uint64_t(12 * (3 * sizeof(float) + 4 * sizeof(std::uint32_t))), data.frame_size(2), L"size of frame 2", LINE_INFO());
+        }
+
+        TEST_METHOD(measure_semantic) {
+            meta_data_builder<wchar_t> builder;
+            builder.add_format_element(user_defined_semantic(0), L"PÖSÜTÜN", format::float32xyz);
+            builder.add_format_element(user_defined_semantic(1), L"色", format::uint32xyzw);
+            builder.with_uniform_frames(1, 1);
+
+            {
+                const auto expected
+                    = 3                         // magic cookie
+                    + 1 + 1                     // file version
+                    + sizeof(endian)            // BOM
+                    + sizeof(std::uint32_t)     // header size
+
+                    // Frame table.
+                    + sizeof(header_segment)
+                    + 1 * sizeof(std::uint64_t)
+
+                    // Two format elements
+                    + sizeof(header_segment)
+                    + 2 * element<wchar_t>::size_on_disk
+
+                    // User-defined format table.
+                    + sizeof(header_segment)
+                    + 11
+                    + 4;
+                Assert::AreEqual(expected, builder.size(), L"Overall header size", LINE_INFO());
+            }
+
+
         }
     };
 }
