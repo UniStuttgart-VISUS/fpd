@@ -169,13 +169,26 @@ public:
     meta_data_type build(void);
 
     /// <summary>
+    /// If the <paramref name="frame" /> at the given zero-based index exists,
+    /// change it size to <paramref name="size" />.
+    /// </summary>
+    /// <param name="frame">The zero-based index of the frame to change the size
+    /// of.</param>
+    /// <param name="size">The size of the frame in bytes.</param>
+    /// <returns>*<see langword="this" />.</returns>
+    /// <exception cref="std::invalid_argument">If <paramref name="frame" /> is
+    /// out of bounds.</exception>
+    meta_data_builder& set_frame_size(_In_ const std::size_t frame,
+        _In_ const size_type size);
+
+    /// <summary>
     /// Compute the size of the meta data in bytes up to the first frame.
     /// </summary>
-    /// <remkars>
+    /// <remarks>
     /// The size reported here comprises the static file header as well as the
     /// on-disk representation of everything in this builder. It is the offset
     /// of the first frame in the file.
-    /// </remkars>
+    /// </remarks>
     /// <returns>The size of the meta data.</returns>
     size_type size(void) const;
 
@@ -183,11 +196,11 @@ public:
     /// Sets the code page to be assumed for narrow strings.
     /// </summary>
     /// <remarks>
-    /// The code page is not relevant if the application uses UTF-16 strings and
-    /// will be discarded.
+    /// The code page is not relevant if the application uses UTF-16 or UTF-32
+    /// strings and will be discarded.
     /// </remarks>
     /// <param name="code_page">The code page of narrow strings.</param>
-    /// <returns><c>*this</c>.</returns>
+    /// <returns>*<see langword="this" />.</returns>
     meta_data_builder& using_code_page(_In_ const encoding code_page) noexcept {
         this->code_page(code_page);
         return *this;
@@ -198,7 +211,7 @@ public:
     /// </summary>
     /// <param name="bounding_box">The global bounding box of the particles.
     /// </param>
-    /// <returns><c>*this</c></returns>
+    /// <returns>*<see langword="this" />.</returns>
     /// <exception cref="std::invalid_argument">If the specified bounding
     /// box contains no data.</exception>
     meta_data_builder& with_bounding_box(_In_ const bounding_box& bounding_box);
@@ -208,7 +221,7 @@ public:
     /// </summary>
     /// <param name="bounding_box">The global bounding box of the particles.
     /// </param>
-    /// <returns><c>*this</c></returns>
+    /// <returns>*<see langword="this" />.</returns>
     /// <exception cref="std::invalid_argument">If the specified bounding
     /// box contains no data.</exception>
     meta_data_builder& with_bounding_box(_Inout_ bounding_box&& bounding_box);
@@ -223,6 +236,7 @@ public:
     /// <param name="max_x">The maximum value on the x-axis.</param>
     /// <param name="max_y">The maximum value on the y-axis.</param>
     /// <param name="max_z">The maximum value on the z-axis.</param>
+    /// <returns>*<see langword="this" />.</returns>
     /// <exception cref="std::logic_error">If <typeparamref name="TValue" />
     /// is not a valid scalar arithmetic type.</exception>
     template<class TValue> inline meta_data_builder& with_bounding_box(
@@ -238,7 +252,7 @@ public:
     /// </summary>
     /// <param name="description">The description of the file, which may be
     /// <c>nullptr</c> to erase existing data.</param>
-    /// <returns><c>*this</c>.</returns>
+    /// <returns>*<see langword="this" />.</returns>
     meta_data_builder& with_description(
         _In_opt_z_ const char_type *description);
 
@@ -246,7 +260,7 @@ public:
     /// Sets a description of the file.
     /// </summary>
     /// <param name="description">The description of the file.</param>
-    /// <returns><c>*this</c>.</returns>
+    /// <returns>*<see langword="this" />.</returns>
     meta_data_builder& with_description(_In_ const string_type& description) {
         this->_description = description;
         return *this;
@@ -256,7 +270,7 @@ public:
     /// Sets a description of the file.
     /// </summary>
     /// <param name="description">The description of the file.</param>
-    /// <returns><c>*this</c>.</returns>
+    /// <returns>*<see langword="this" />.</returns>
     meta_data_builder& with_description(
             _Inout_ string_type&& description) noexcept {
         this->_description = std::move(description);
@@ -264,28 +278,12 @@ public:
     }
 
     /// <summary>
-    /// Sets the type of endian expected for the data on disk.
-    /// </summary>
-    /// <remarks>
-    /// <para>The endian will only be honoured when writing the meta data. The
-    /// caller is responsible to make sure to perform any conversion necessary
-    /// to match the endian of the particle data with the one configured here.
-    /// </para>
-    /// <para>It is not necessary to set the endian if the data are using the
-    /// endian of the system the code is running on as this will be implicitly
-    /// assumed.</para>
-    /// </remarks>
-    /// <param name="endian">The endian of the data on disk.</param>
-    /// <returns><c>*this</c>.</returns>
-    meta_data_builder& with_endian(_In_ const endian endian) noexcept;
-
-    /// <summary>
     /// Sets the format of the particles.
     /// </summary>
     /// <param name="format">The description of the format of the particles.
     /// </param>
     /// <returns></returns>
-    /// <returns><c>*this</c>.</returns>
+    /// <returns>*<see langword="this" />.</returns>
     meta_data_builder& with_format(_In_ const format_description_type& format) {
         this->_format = format;
         return *this;
@@ -296,8 +294,7 @@ public:
     /// </summary>
     /// <param name="format">The description of the format of the particles.
     /// </param>
-    /// <returns></returns>
-    /// <returns><c>*this</c>.</returns>
+    /// <returns>*<see langword="this" />.</returns>
     meta_data_builder& with_format(
             _Inout_ format_description_type&& format) noexcept {
         this->_format = std::move(format);
@@ -305,13 +302,29 @@ public:
     }
 
     /// <summary>
-    /// Sets the number of frames in the file.
+    /// Sets the frames in the file.
     /// </summary>
-    /// <param name="frames">The number of frames in the file.</param>
-    /// <returns><c>*this</c>.</returns>
+    /// <param name="particles">The number of particles in each frame.</param>
+    /// <returns>*<see langword="this" />.</returns>
     /// <exception cref="std::invalid_argument">If the number of frames is less
     /// than one.</exception>
-    meta_data_builder& with_frames(_In_ const std::size_t frames);
+    meta_data_builder& with_frames(
+        _In_ const std::initializer_list<size_type>& particles);
+
+    /// <summary>
+    /// Sets the number of frames in the file and initialises all of them with
+    /// the specified uniform size.
+    /// </summary>
+    /// <param name="frames">The number of frames in the file.</param>
+    /// <param name="particles">The number of particles in each frame.</param>
+    /// <returns>*<see langword="this" />.</returns>
+    /// <exception cref="std::invalid_argument">If the number of frames is less
+    /// than one.</exception>
+    /// <exception cref="std::logic_error">If the format of the particles has
+    /// not yet been set, in which case it is not possible for the method to
+    /// determine the size of a particle.</exception>
+    meta_data_builder& with_uniform_frames(_In_ const std::size_t frames,
+        _In_ const size_type particles);
 
     /// <summary>
     /// Sets the version of the file to produce.
@@ -358,9 +371,10 @@ private:
     void add_user_defined_semantic(_In_ const semantic s,
         _In_opt_z_ const char_type *d);
 
+    size_type particle_size(void) const;
+
     std::vector<bounding_box> _bounding_boxes;
     string_type _description;
-    endian _endian;
     format_description_type _format;
     frame_table_type _frame_table;
     std::map<semantic, format_variant> _global_particle_properties;

@@ -38,12 +38,12 @@ The segment type enumeration of the reference implementation is defined such tha
 ### Frame table (0x01)
 This segment is mandatory.
 
-The frame table segment holds the offsets of all frames in the file from the end of the headers (the size of the headers must be added when seeking to a frame from the begin of the file). Each offset is represented as `uint64`. The number of frames can be computed by dividing the size of this header by the size of `uint64`.
+The frame table segment holds the number of particles for each frame in the file. Each number is represented as `uint64`.
 
 | Type           | Length   | Description                                      |
 |----------------|----------|--------------------------------------------------|
-| uint64 | 8 Bytes | The offset of the first frame from the begin of the file. |
-| ...    | 8 Bytes | The offsets of all frames follow in the same format.      |
+| uint64 | 8 Bytes | The number of particles in the first frame.               |
+| ...    | 8 Bytes | The number of particles in the subsequent frames.         |
 
 ### Format description (0x02)
 This segment is mandatory.

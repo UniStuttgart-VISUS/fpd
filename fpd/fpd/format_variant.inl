@@ -14,7 +14,8 @@ template<FPD_NAMESPACE::format... Formats>
 FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant(
         _In_ const format_type format,
         _In_reads_(cnt) const void *value,
-        _In_ const std::size_t cnt)
+        _In_ const std::size_t cnt,
+        _In_ const endian endian)
         : _format(format) {
     if (!this->supports(this->_format)) {
         throw std::invalid_argument("The variant does not support the "
@@ -28,7 +29,7 @@ FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant(
             "represent the specified format.");
     }
 
-    this->invoke<detail::format_value_runtime_ctor>(value, cnt);
+    this->invoke<detail::format_value_runtime_ctor>(value, cnt, endian);
 }
 
 
@@ -40,7 +41,7 @@ FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant(
         _In_ const basic_format_variant& rhs)
         : _format(rhs._format) {
     this->invoke<detail::format_value_runtime_ctor>(rhs._data.data(),
-        rhs._data.size());
+        rhs._data.size(), endian::system);
 }
 
 
@@ -59,7 +60,7 @@ FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::basic_format_variant(
     }
 
     this->invoke<detail::format_value_runtime_ctor>(rhs._data.data(),
-        rhs._data.size());
+        rhs._data.size(), endian::system);
 }
 
 
@@ -140,7 +141,7 @@ FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::operator =(
         this->invoke<detail::format_value_dtor>();
         this->_format = rhs._format;
         this->invoke<detail::format_value_runtime_ctor>(rhs._data.data(),
-            rhs._data.size());
+            rhs._data.size(), endian::system);
     }
 
     return *this;
@@ -164,7 +165,7 @@ FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::operator =(
     this->invoke<detail::format_value_dtor>();
     this->_format = rhs._format;
     this->invoke<detail::format_value_runtime_ctor>(rhs._data.data(),
-        rhs._data.size());
+        rhs._data.size(), endian::system);
 
     return *this;
 }
@@ -192,7 +193,7 @@ FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::operator =(
  * FPD_NAMESPACE::basic_format_variant<_FPD_VAR_FMTS>::invoke0
  */
 template<FPD_NAMESPACE::format... Formats>
-template<template<class> class TFunc,
+template<template<class, bool> class TFunc,
     FPD_NAMESPACE::format Fmt,
     FPD_NAMESPACE::format... Fmts,
     class... TArgs>

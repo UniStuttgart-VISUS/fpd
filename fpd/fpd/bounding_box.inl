@@ -31,6 +31,30 @@ FPD_NAMESPACE::bounding_box::bounding_box(
 
 
 /*
+ * FPD_NAMESPACE::bounding_box::bounding_box
+ */
+template<class TByte>
+FPD_NAMESPACE::bounding_box::bounding_box(
+        _In_ const std::enable_if_t<sizeof(TByte) == 1, format_type> format,
+        _In_reads_bytes_(cnt) const TByte *values,
+        _In_ std::size_t cnt,
+        endian endian)
+        : _format(format) {
+    const auto size = to_size(this->_format);
+    this->_values.resize(6 * size);
+
+    if ((values == nullptr) || (cnt < this->_values.size())) {
+        throw std::invalid_argument("The specified bounds are invalid.");
+    }
+
+    swap_endian_as(this->_values.data(),
+        reinterpret_cast<const std::uint8_t *>(values),
+        this->_values.size(), size,
+        endian);
+}
+
+
+/*
  * FPD_NAMESPACE::bounding_box::get
  */
 template<class TValue>

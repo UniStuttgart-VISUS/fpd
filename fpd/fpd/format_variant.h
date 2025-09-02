@@ -14,6 +14,7 @@
 #include <stdexcept>
 #include <type_traits>
 
+#include "fpd/endian.h"
 #include "fpd/format_traits.h"
 #include "fpd/invoke.h"
 #include "fpd/type_list.h"
@@ -21,7 +22,7 @@
 
 FPD_DETAIL_NAMESPACE_BEGIN
 
-template<class TValue> struct format_value_ctor final {
+template<class TValue, bool = false> struct format_value_ctor final {
 
     template<class TArg>
     typename std::enable_if<std::is_convertible<TValue, TArg>::value>::type
@@ -39,17 +40,31 @@ template<class TValue> struct format_value_ctor final {
     }
 };
 
-template<class TValue> struct format_value_runtime_ctor final {
+template<class TValue, bool Arithmetic = std::is_arithmetic_v<TValue>>
+struct format_value_runtime_ctor final {
     inline void operator ()(_In_ TValue *target,
             _In_reads_(cnt) const void *value,
-            _In_ std::size_t cnt) {
+            _In_ std::size_t cnt,
+            _In_ const endian endian) {
+        assert(target != nullptr);
+        assert(cnt >= sizeof(TValue));
+        new (target) TValue(swap_endian_as<TValue>(value, endian));
+    }
+};
+
+template<class TValue> struct format_value_runtime_ctor<TValue, false> final {
+    inline void operator ()(_In_ TValue *target,
+            _In_reads_(cnt) const void *value,
+            _In_ std::size_t cnt,
+            _In_ const endian endian) {
+        UNREFERENCED_PARAMETER(endian);
         assert(target != nullptr);
         assert(cnt >= sizeof(TValue));
         new (target) TValue(*reinterpret_cast<const TValue *>(value));
     }
 };
 
-template<class TValue> struct format_value_dtor final {
+template<class TValue, bool = false> struct format_value_dtor final {
     inline void operator ()(TValue *target) noexcept {
         assert(target != nullptr);
         target->~TValue();
@@ -131,12 +146,17 @@ public:
     /// bytes that can be interpreted as the initial value.</param>
     /// <param name="cnt">The size of the data provided via
     /// <paramref name="value" />, in bytes.</param>
+    /// <param name="endian">The endian of the data provided as
+    /// <paramref name="value" />, which provides the constructor the ability to
+    /// convert to the native system endian if these do not match. This
+    /// parameter defaults to the system endian the code is running on.</param>
     /// <exception cref="std::invalid_argument">If the variant does not support
     /// values of type <typeparamref name="TValue" /> or if the provided data
     /// are invalid.</exception>
     basic_format_variant(_In_ const format_type format,
         _In_reads_(cnt) const void *value,
-        _In_ const std::size_t cnt);
+        _In_ const std::size_t cnt,
+        _In_ const endian endian = endian::system);
 
     /// <summary>
     /// Clone <paramref name="rhs" />.
@@ -379,12 +399,12 @@ public:
 
 private:
 
-    template<template<class> class TFunc, class... TArgs>
+    template<template<class, bool> class TFunc, class... TArgs>
     inline void invoke(TArgs&&... args) {
         this->invoke0<TFunc>(formats(), std::forward<TArgs>(args)...);
     }
 
-    template<template<class> class TFunc, class... TArgs>
+    template<template<class, bool> class TFunc, class... TArgs>
     inline void invoke(TArgs&&... args) const {
         // Rationale: We do not want to implement the whole stack twice, so
         // we use the const_cast here as we know that our own functors do
@@ -394,13 +414,13 @@ private:
             std::forward<TArgs>(args)...);
     }
 
-    template<template<class> class TFunc,
+    template<template<class, bool> class TFunc,
         FPD_NAMESPACE::format Fmt,
         FPD_NAMESPACE::format... Fmts,
         class... TArgs>
     void invoke0(_In_ format_list<Fmt, Fmts...>, _In_ TArgs&&... args);
 
-    template<template<class> class TFunc, class... TArgs>
+    template<template<class, bool> class TFunc, class... TArgs>
     inline void invoke0(_In_ const format_list<>, TArgs&&...) { }
 
     std::array<std::uint8_t, type_list_max_sizeof<format_types>::value> _data;

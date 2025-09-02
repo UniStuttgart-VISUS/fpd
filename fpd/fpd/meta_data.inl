@@ -136,15 +136,16 @@ FPD_NAMESPACE::meta_data<TChar> FPD_NAMESPACE::meta_data<TChar>::parse(
     // Find out how many bytes of header segments are in the file and check
     // whether the caller provided at least this amount of data.
     const auto required = check_header_size(retval, data, cnt);
+    retval._header_size = required + fixed_header_size;
 
-    if (required + fixed_header_size > cnt) {
+    if (retval._header_size > cnt) {
         throw std::invalid_argument("Insufficient header data have been "
             "provided to parse all header segments.");
     }
 
     return parse(retval,
         static_cast<const std::uint8_t *>(data) + fixed_header_size,
-        required);
+        retval._header_size);
 }
 
 
@@ -155,11 +156,11 @@ template<class TChar>
 typename FPD_NAMESPACE::meta_data<TChar>::size_type
 FPD_NAMESPACE::meta_data<TChar>::frame_offset(
         _In_ const std::size_t frame) const {
-    if (frame >= this->_frame_table.size()) {
+    assert(this->_frame_offsets.size() == this->_frame_table.size());
+    if (frame >= this->_frame_offsets.size()) {
         throw std::range_error("The specified frame is out of range.");
     }
-
-    return this->_frame_table[frame];
+    return this->_frame_offsets[frame];
 }
 
 
@@ -170,21 +171,8 @@ template<class TChar>
 typename FPD_NAMESPACE::meta_data<TChar>::size_type
 FPD_NAMESPACE::meta_data<TChar>::frame_size(
         _In_ const std::size_t frame) const {
-    if (frame >= this->_frame_table.size()) {
-        throw std::range_error("The specified frame is out of range.");
-    }
-
-    const auto cur = this->_frame_table[frame];
-    const auto nxt = ((frame + 1) < this->_frame_table.size())
-        ? this->_frame_table[frame + 1]
-        : this->_file_size;
-
-    if (nxt < cur) {
-        throw std::logic_error("The meta data block does not hold the correct "
-            "size of the file or the frame table is not sorted.");
-    }
-
-    return (nxt - cur);
+    assert(this->_particle_size > 0);
+    return this->particles(frame) * this->_particle_size;
 }
 
 
@@ -211,6 +199,20 @@ FPD_NAMESPACE::meta_data<TChar>::group_offset(_In_ const std::size_t frame,
 
 
 /*
+ * FPD_NAMESPACE::meta_data<TChar>::particles
+ */
+template<class TChar>
+typename FPD_NAMESPACE::meta_data<TChar>::size_type
+FPD_NAMESPACE::meta_data<TChar>::particles(_In_ const std::size_t frame) const {
+    assert(this->_frame_offsets.size() == this->_frame_table.size());
+    if (frame >= this->_frame_table.size()) {
+        throw std::range_error("The specified frame is out of range.");
+    }
+    return this->_frame_table[frame];
+}
+
+
+/*
  * FPD_NAMESPACE::meta_data<TChar>::user_defined_semantic
  */
 template<class TChar>
@@ -230,6 +232,24 @@ FPD_NAMESPACE::meta_data<TChar>::user_defined_semantic(
     }
 
     return this->_user_defined_semantics[i - f];
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data<TChar>::calc_frame_offsets
+ */
+template<class TChar>
+void FPD_NAMESPACE::meta_data<TChar>::calc_frame_offsets(
+        _Inout_ meta_data& meta_data) {
+    assert(meta_data._particle_size > 0);
+
+    auto offset = meta_data._header_size;
+    meta_data._frame_offsets.resize(meta_data._frame_table.size());
+
+    for (std::size_t i = 0; i < meta_data._frame_table.size(); ++i) {
+        meta_data._frame_offsets[i] = offset;
+        offset += meta_data._frame_table[i] * meta_data._particle_size;
+    }
 }
 
 
@@ -276,7 +296,8 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_bounding_box(
     }
     meta_data._frame_bounding_boxes.reserve((end - cur) / stride);
     while (cur < end) {
-        meta_data._frame_bounding_boxes.emplace_back(fmt, cur, end - cur);
+        meta_data._frame_bounding_boxes.emplace_back(fmt, cur, end - cur,
+            meta_data._endian);
         cur += stride;
     }
 }
@@ -326,23 +347,23 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_format_description(
 
     while (cur < end) {
         _FPD_THROW_IF_INCOMPLETE(sizeof(semantic));
-        const auto s = *reinterpret_cast<const semantic *>(cur);
+        const auto s = swap_enum_endian<semantic>(cur, meta_data._endian);
         cur += sizeof(s);
 
         _FPD_THROW_IF_INCOMPLETE(sizeof(format));
-        const auto f = *reinterpret_cast<const format *>(cur);
+        const auto f = swap_enum_endian<format>(cur, meta_data._endian);
         cur += sizeof(f);
 
         _FPD_THROW_IF_INCOMPLETE(sizeof(std::uint16_t));
-        const auto g = *reinterpret_cast<const std::uint16_t *>(cur);
+        const auto g = swap_endian_as<std::uint16_t>(cur, meta_data._endian);
         cur += sizeof(g);
 
         _FPD_THROW_IF_INCOMPLETE(sizeof(std::uint16_t));
-        const auto o = *reinterpret_cast<const std::uint16_t *>(cur);
+        const auto o = swap_endian_as<std::uint16_t>(cur, meta_data._endian);
         cur += sizeof(o);
 
         _FPD_THROW_IF_INCOMPLETE(sizeof(std::uint16_t));
-        const auto b = *reinterpret_cast<const std::uint16_t *>(cur);
+        const auto b = swap_endian_as<std::uint16_t>(cur, meta_data._endian);
         cur += sizeof(b);
 
         if (s < semantic::user_defined) {
@@ -369,6 +390,13 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_format_description(
         }
     } /* while (cur < end) */
 #undef _FPD_THROW_IF_INCOMPLETE
+
+    // Cache the size of a single particle, because we need that a lot.
+    meta_data._particle_size = meta_data._format_description.size();
+
+    // We now pre-compute the frame offsets in the file from the number of
+    // particles such that we can seek directly later on.
+    calc_frame_offsets(meta_data);
 }
 
 
@@ -392,6 +420,9 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_frame_table(
         static_cast<const std::uint8_t *>(data) + cnt);
     meta_data._frame_table.reserve(e - b);
     std::copy(b, e, std::back_inserter(meta_data._frame_table));
+    swap_endian(meta_data._frame_table.data(),
+        meta_data._frame_table.size(),
+        meta_data._endian);
 }
 
 
@@ -428,7 +459,8 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_global_particle_properties(
 
         const auto cnt = to_size(f);
         _FPD_THROW_IF_INCOMPLETE(cnt);
-        meta_data._global_particle_properties[s] = format_variant(f, cur, cnt);
+        meta_data._global_particle_properties[s] = format_variant(
+            f, cur, cnt, meta_data.endian());
         cur += cnt;
     }
 

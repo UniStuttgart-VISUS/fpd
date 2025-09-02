@@ -15,7 +15,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "fpd/annotations.h"
+#include "fpd/endian.h"
 #include "fpd/format_traits.h"
 
 
@@ -105,29 +105,28 @@ public:
     /// <param name="max_z">The maximum value on the z-axis.</param>
     /// <exception cref="std::logic_error">If <typeparamref name="TValue" />
     /// is not a valid scalar arithmetic type.</exception>
-    template<class TValue>
-    bounding_box(_In_ const TValue min_x, _In_ const TValue min_y,
+    template<class TValue> bounding_box(
+        _In_ const TValue min_x, _In_ const TValue min_y,
         _In_ const TValue min_z, _In_ const TValue max_x,
         _In_ const TValue max_y, _In_ const TValue max_z);
 
     /// <summary>
     /// Initialises a new instance.
     /// </summary>
+    /// <typeparam name="TByte">A type to represent a single byte.</typeparam>
     /// <param name="format">The scalar format of the bounding box.</param>
     /// <param name="values">A pointer to at least six values of the specified
     /// format.</param>
     /// <param name="cnt">The size of the buffer designated by
     /// <paramref name="values" />, in bytes.</param>
-    inline bounding_box(_In_ const format_type format,
-            _In_reads_bytes_(cnt)  const void *values,
-            _In_ const std::size_t cnt)
-            : _format(format) {
-        this->_values.resize(6 * to_size(this->_format));
-        if ((values == nullptr) || (cnt < this->_values.size())) {
-            throw std::invalid_argument("The specified bounds are invalid.");
-        }
-        ::memcpy(this->_values.data(), values, this->_values.size());
-    }
+    /// <param name="endian">The endian in which <paramref name="values" /> are
+    /// represented. If this is not the system endian, the constructor will
+    /// convert the data. This parameter defaults to the system endian.</param>
+    template<class TByte> bounding_box(
+        _In_ const std::enable_if_t<sizeof(TByte) == 1, format_type> format,
+        _In_reads_bytes_(cnt) const TByte *values,
+        _In_ std::size_t cnt,
+        _In_ endian endian = endian::system);
 
     /// <summary>
     /// Answer the values of the bounding box in linear memory.

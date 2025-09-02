@@ -53,8 +53,7 @@ public:
     typedef format_description<char_type> format_description_type;
 
     /// <summary>
-    /// The type used to represent the absolute offsets of the frames into
-    /// the file.
+    /// The type used to represent the number of particles in each frame.
     /// </summary>
     typedef std::vector<std::uint64_t> frame_table_type;
 
@@ -69,7 +68,7 @@ public:
     typedef typename format_description_type::semantic_type semantic_type;
 
     /// <summary>
-    /// The type used to express file sizes and offsets.
+    /// The type used to express sizes and positive offsets.
     /// </summary>
     typedef frame_table_type::value_type size_type;
 
@@ -148,7 +147,8 @@ public:
             = FPD_NAMESPACE::encodings::oem) noexcept
         : with_code_page<TChar>(encoding),
             _endian(endian_type::undefined),
-            _file_size(0),
+            _header_size(0),
+            _particle_size(0),
             _version(std::uint8_t(0), std::uint8_t(0)) { }
 
     /// <summary>
@@ -157,28 +157,6 @@ public:
     /// <returns>The endian of the data in the file.</returns>
     inline endian_type endian(void) const noexcept {
         return this->_endian;
-    }
-
-    /// <summary>
-    /// Answer the overall size of the FPD file in bytes.
-    /// </summary>
-    /// <returns>The size of the FPD file in bytes.</returns>
-    inline size_type file_size(void) const noexcept {
-        return this->_file_size;
-    }
-
-    /// <summary>
-    /// Sets the overall size of the FPD file described by these meta data.
-    /// </summary>
-    /// <remarks>
-    /// This information cannot be parsed from the file itself, but must be
-    /// determined externally and set manually.
-    /// </remarks>
-    /// <param name="file_size">The file size in bytes.</param>
-    /// <returns><c>*this</c>.</returns>
-    inline meta_data& file_size(_In_ const size_type file_size) noexcept {
-        this->_file_size = file_size;
-        return *this;
     }
 
     /// <summary>
@@ -199,7 +177,8 @@ public:
     }
 
     /// <summary>
-    /// Answer the offset of the given frame from the begin of the file.
+    /// Answer the offset of the given frame, in bytes, from the begin of the
+    /// file.
     /// </summary>
     /// <param name="frame">The zero-based index of the frame.</param>
     /// <returns>The offset of the frame in bytes.</returns>
@@ -211,17 +190,13 @@ public:
     /// Answer the size of the given frame in bytes.
     /// </summary>
     /// <param name="frame">The zero-based index of the frame.</param>
-    /// <returns>The size of the frame in bytes.</returns>
+    /// <returns>The number of bytes in the frame.</returns>
     /// <exception cref="std::range_error">If <paramref name="frame" /> is
     /// out of range of the <see cref="frame_table" />.</exception>
-    /// <exception cref="std::logic_error">If <see cref="file_size" /> is
-    /// obviously too small, most likely because it has not been set at all.
-    /// This might also be the case if the frame table holds invalid offsets,
-    /// i.e. if the frames are not sorted correctly.</exception>
     size_type frame_size(_In_ const std::size_t frame) const;
 
     /// <summary>
-    /// Gets the offsets of the frames in the file.
+    /// Gets the table of frame sizes (in number of particles).
     /// </summary>
     /// <returns>The frame table.</returns>
     inline const frame_table_type& frame_table(void) const noexcept {
@@ -263,12 +238,7 @@ public:
     /// <returns>The number of particles in the frame.</returns>
     /// <exception cref="std::range_error">If <paramref name="frame" /> is
     /// out of range of the <see cref="frame_table" />.</exception>
-    inline std::size_t particles(_In_ const std::size_t frame) const {
-        const auto frame_size = this->frame_size(frame);
-        const auto particle_size = this->_format_description.size();
-        assert(frame_size % particle_size == 0);
-        return static_cast<std::size_t>(frame_size / particle_size);
-    }
+    std::size_t particles(_In_ const std::size_t frame) const;
 
     /// <summary>
     /// Gets the textual description of the specified semantic.
@@ -289,6 +259,8 @@ public:
     }
 
 private:
+
+    static void calc_frame_offsets(_Inout_ meta_data& meta_data);
 
     static void parse_bounding_box(_Inout_ meta_data& meta_data,
         _In_ const void *data, _In_ const std::size_t cnt);
@@ -316,11 +288,13 @@ private:
     bounding_box _bounding_box;
     string_type _description;
     endian_type _endian;
-    size_type _file_size;
     format_description_type _format_description;
     std::vector<bounding_box> _frame_bounding_boxes;
+    frame_table_type _frame_offsets;
     frame_table_type _frame_table;
     std::map<semantic, format_variant> _global_particle_properties;
+    size_type _header_size;
+    size_type _particle_size;
     std::vector<string_type> _user_defined_semantics;
     version_type _version;
 

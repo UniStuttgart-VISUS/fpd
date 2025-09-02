@@ -112,6 +112,18 @@ namespace fpd {
             }
 
             {
+                int i = swap_endian(42, endian::big);
+                basic_format_variant<format_list<format::int32, format::float64>> v(format::int32, &i, sizeof(i), endian::big);
+                Assert::AreEqual(int(format::int32), int(v.format()), L"Format derived from argument", LINE_INFO());
+                Assert::IsNotNull(v.try_get<int>(), L"Get via type valid", LINE_INFO());
+                Assert::IsNull(v.try_get<double>(), L"Get via wrong type invalid", LINE_INFO());
+                Assert::IsNotNull(v.try_get<format::int32>(), L"Get via format valid", LINE_INFO());
+                Assert::IsNull(v.try_get<format::float64>(), L"Get via wrong format invalid", LINE_INFO());
+                Assert::AreEqual(42, v.get<format::int32>(), L"Get via format", LINE_INFO());
+                Assert::AreEqual(42, v.get<int>(), L"Get via type", LINE_INFO());
+            }
+
+            {
                 double d = 42;
                 basic_format_variant<format_list<format::int32, format::float64>> v(format::float64, &d, sizeof(d));
                 Assert::AreEqual(int(format::float64), int(v.format()), L"Format derived from argument", LINE_INFO());

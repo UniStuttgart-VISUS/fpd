@@ -8,6 +8,9 @@
 #define _FPD_ENDIAN_H
 #pragma once
 
+#include <cassert>
+#include <type_traits>
+
 #include "fpd/swap_bytes.h"
 
 
@@ -173,6 +176,56 @@ TValue swap_endian_as(_In_ const void *value, _In_ const endian endian) {
 
     return retval;
 }
+
+
+/// <summary>
+/// Reverses the byte order of <paramref name="cnt" /> bytes starting at
+/// <paramref name="value" /> if <paramref name="endian" /> is valid and not
+/// equal to the system endian.
+/// </summary>
+/// <typeparam name="TValue">A pointer type to a byte-sized value.</typeparam>
+/// <param name="value">A pointer to <parmaref name="cnt" /> valid bytes.
+/// </param>
+/// <param name="cnt">The number of bytes to swap.</param>
+/// <param name="endian">The endian the input is currently in.</param>
+template<class TValue>
+std::enable_if_t<sizeof(TValue) == 1> swap_endian_as(
+        _Inout_updates_(cnt) TValue *value,
+        _In_ const std::size_t cnt,
+        _In_ const endian endian) {
+    assert(value != nullptr);
+    if (requires_conversion(endian)) {
+        swap_bytes(value, 1, cnt, cnt);
+    }
+}
+
+
+/// <summary>
+/// Reverses the byte order of <paramref name="cnt" /> numbers of
+/// <paramref name="size" /> bytes when copying from <paramref name="src" />
+/// to <parmaref name="dst" /> such that the destination data are in system
+/// endian.
+/// </summary>
+/// <typeparam name="TValue">A pointer type to a byte-sized value.</typeparam>
+/// <param name="value">A pointer to <parmaref name="cnt" /> elements of size
+/// <paramref name="size" /> each.</param>
+/// <param name="cnt">The number of elements to swap.</param>
+/// <param name="size">The size of each element in bytes.</param>
+/// <param name="endian">The endian the input is currently in.</param>
+/// <returns></returns>
+template<class TValue>
+std::enable_if_t<sizeof(TValue) == 1> swap_endian_as(
+        _Out_writes_bytes_(cnt * size) TValue *dst,
+        _In_reads_bytes_(cnt * size) const TValue *src,
+        _In_ const std::size_t cnt,
+        _In_ const std::size_t size,
+        _In_ const endian endian) {
+    ::memcpy(dst, src, cnt * size);
+    if (requires_conversion(endian)) {
+        swap_bytes(dst, cnt, size, size);
+    }
+}
+
 
 /// <summary>
 /// Swaps the bytes of the given enumeration type as its underlying type.

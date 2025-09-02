@@ -1,8 +1,8 @@
-// <copyright file="test_meta_data.cpp" company="Visualisierungsinstitut der Universität Stuttgart">
-// Copyright © 2023 Visualisierungsinstitut der Universität Stuttgart.
+ï»¿// <copyright file="test_meta_data.cpp" company="Visualisierungsinstitut der UniversitÃ¤t Stuttgart">
+// Copyright Â© 2023 - 2025 Visualisierungsinstitut der UniversitÃ¤t Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
-// <author>Christoph Müller</author>
+// <author>Christoph MÃ¼ller</author>
 
 #include "pch.h"
 
@@ -16,7 +16,6 @@ namespace fpd {
         TEST_METHOD(default_ctor) {
             meta_data<wchar_t> md;
             Assert::AreEqual(int(endian::undefined), int(md.endian()), L"endian", LINE_INFO());
-            Assert::AreEqual(std::uint64_t(0), md.file_size(), L"file_size", LINE_INFO());
             Assert::AreEqual(std::size_t(0), md.format_description().count_elements(), L"format elements", LINE_INFO());
             Assert::AreEqual(std::size_t(0), md.format_description().count_groups(), L"format groups", LINE_INFO());
             Assert::AreEqual(std::size_t(0), md.frames(), L"frames", LINE_INFO());
@@ -65,10 +64,9 @@ namespace fpd {
 
             builder.with_description(L"description")
                 .using_code_page(encodings::ansi)
-                .with_endian(endian::system)
                 .with_version(FPD_FILE_MAJOR, FPD_FILE_MINOR)
                 .with_bounding_box(0.0f, 1.0f, 2.0f, 10.0f, 11.0f, 12.0f)
-                .with_frames(42)
+                .with_uniform_frames(42, 1)
                 .add_format_element(semantic::position, nullptr, format::float32xyz);
 
             {
@@ -78,7 +76,7 @@ namespace fpd {
                     + sizeof(endian)            // BOM
                     + sizeof(std::uint32_t)     // header size
 
-                    // Frame offset table.
+                    // Frame table.
                     + sizeof(header_segment)
                     + 42 * sizeof(std::uint64_t)
 
@@ -106,8 +104,7 @@ namespace fpd {
             meta_data_builder<char> builder;
 
             builder.using_code_page(encodings::ansi)
-                .with_endian(endian::system)
-                .with_frames(1)
+                .with_frames({ 42 })
                 .add_format_element(semantic::user_defined, "float3", format::float32xyz);
 
             {
@@ -117,7 +114,7 @@ namespace fpd {
                     + sizeof(endian)            // BOM
                     + sizeof(std::uint32_t)     // header size
 
-                    // Frame offset table.
+                    // Frame table.
                     + sizeof(header_segment)
                     + 1 * sizeof(std::uint64_t)
 
@@ -135,6 +132,14 @@ namespace fpd {
             Assert::IsTrue(builder, L"Builder valid", LINE_INFO());
             auto data = builder.build();
             Assert::IsFalse(builder, L"Builder reset", LINE_INFO());
+
+            Assert::AreEqual(int(FPD_FILE_MAJOR), int(data.version().first), L"major version", LINE_INFO());
+            Assert::AreEqual(int(FPD_FILE_MINOR), int(data.version().second), L"minor version", LINE_INFO());
+            Assert::AreEqual(std::size_t(1), data.frames(), L"# of frames", LINE_INFO());
+            Assert::AreEqual(std::uint64_t(42), data.particles(0), L"particles in frame", LINE_INFO());
+            Assert::AreEqual(std::uint64_t(42 * 3 * sizeof(float)), data.frame_size(0), L"size of frame", LINE_INFO());
+            Assert::AreEqual(std::size_t(1), data.format_description().count_elements(), L"# of format elements", LINE_INFO());
+            Assert::AreEqual(std::size_t(1), data.format_description().count_groups(), L"# of format groups", LINE_INFO());
         }
     };
 }

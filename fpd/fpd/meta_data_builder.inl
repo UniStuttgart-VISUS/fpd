@@ -11,7 +11,6 @@
 template<class TChar>
 FPD_NAMESPACE::meta_data_builder<TChar>::meta_data_builder(void)
     : with_code_page<TChar>(encodings::oem),
-      _endian(endian::system),
       _version(std::make_pair(FPD_FILE_MAJOR, FPD_FILE_MINOR)) { }
 
 
@@ -44,8 +43,7 @@ FPD_NAMESPACE::meta_data_builder<TChar>::build(void) {
     retval._description = std::move(this->_description);
     assert(this->_description.empty());
 
-    retval._endian = this->_endian;
-    this->_endian = endian::system;
+    retval._endian = endian::system;
 
     retval._format_description = std::move(this->_format);
     assert(!this->_format);
@@ -55,6 +53,9 @@ FPD_NAMESPACE::meta_data_builder<TChar>::build(void) {
 
     retval._frame_table = std::move(this->_frame_table);
     assert(this->_frame_table.empty());
+    retval._particle_size = retval._format_description.size();
+    meta_data_type::calc_frame_offsets(retval);
+    assert(retval._frame_table.size() == retval._frame_offsets.size());
 
     retval._global_particle_properties = std::move(
         this->_global_particle_properties);
@@ -205,33 +206,50 @@ FPD_NAMESPACE::meta_data_builder<TChar>::with_description(
 
 
 /*
- * FPD_NAMESPACE::meta_data_builder<TChar>::with_endian
- */
-template<class TChar>
-FPD_NAMESPACE::meta_data_builder<TChar>&
-FPD_NAMESPACE::meta_data_builder<TChar>::with_endian(
-        _In_ const endian endian) noexcept {
-    this->_endian = endian;
-    return *this;
-}
-
-
-/*
  * FPD_NAMESPACE::meta_data_builder<TChar>::with_frames
  */
 template<class TChar>
 FPD_NAMESPACE::meta_data_builder<TChar>&
 FPD_NAMESPACE::meta_data_builder<TChar>::with_frames(
-        _In_ const std::size_t frames) {
-    typedef frame_table_type::value_type offset_type;
-    constexpr auto invalid_offset = (std::numeric_limits<offset_type>::max)();
+        _In_ const std::initializer_list<size_type>& particles) {
+    if (particles.size() < 1) {
+        throw std::invalid_argument("An FPD file must contain at least one "
+            "frame.");
+    }
 
+    this->_frame_table.clear();
+    this->_frame_table.reserve(particles.size());
+
+    for (auto it = particles.begin(), end = particles.end(); it != end; ++it) {
+        this->_frame_table.push_back(*it);
+    }
+
+    if (this->_bounding_boxes.size() > (this->_frame_table.size() + 1)) {
+        this->_bounding_boxes.resize(this->_frame_table.size() + 1);
+    }
+
+    return *this;
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data_builder<TChar>::with_uniform_frames
+ */
+template<class TChar>
+FPD_NAMESPACE::meta_data_builder<TChar>&
+FPD_NAMESPACE::meta_data_builder<TChar>::with_uniform_frames(
+        _In_ const std::size_t frames,
+        _In_ const size_type particles) {
     if (frames < 1) {
         throw std::invalid_argument("An FPD file must contain at least one "
             "frame.");
     }
 
-    this->_frame_table.resize(frames, invalid_offset);
+    this->_frame_table.resize(frames);
+
+    for (std::size_t i = 0; i < this->_frame_table.size(); ++i) {
+        this->_frame_table[i] = particles;
+    }
 
     if (this->_bounding_boxes.size() > (this->_frame_table.size() + 1)) {
         this->_bounding_boxes.resize(this->_frame_table.size() + 1);
@@ -284,7 +302,7 @@ FPD_NAMESPACE::meta_data_builder<TChar>::operator bool(void) const noexcept {
     }
 
     if (!this->_bounding_boxes.empty()) {
-        // Ff more than one bounding box is given, all bounding boxes must have
+        // For more than one bounding box is given, all bounding boxes must have
         // the same format (for perfomance reasons, we check whether the bbox
         // is valid at the same time).
         const auto format = this->_bounding_boxes.front().format();
@@ -299,7 +317,6 @@ FPD_NAMESPACE::meta_data_builder<TChar>::operator bool(void) const noexcept {
             return false;
         }
     }
-
 
     if (!this->_format) {
         // The format must contain something. We do not make any assumption of
@@ -342,4 +359,19 @@ void FPD_NAMESPACE::meta_data_builder<TChar>::add_user_defined_semantic(
 
         this->_user_defined_semantics[i] = d;
     }
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data_builder<TChar>::particle_size
+ */
+template<class TChar>
+typename FPD_NAMESPACE::meta_data_builder<TChar>::size_type
+FPD_NAMESPACE::meta_data_builder<TChar>::particle_size(void) const {
+    if (!this->_format) {
+        throw std::logic_error("No format has been specified yet, wherefore "
+            "the size of a particle cannot be determined.");
+    }
+
+    return this->_format.size();
 }

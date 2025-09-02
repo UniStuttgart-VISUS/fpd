@@ -14,7 +14,6 @@
 #include <memory>
 #include <typeindex>
 
-#include "fpd/abi.h"
 #include "fpd/make_unsigned.h"
 
 
@@ -348,7 +347,7 @@ template<class TValue> inline void swap_bytes(
 /// <param name="size">The number of bytes to reverse for each value, which
 /// must be more than one.</param>
 /// <param name="stride">The number of bytes between values, which must be
-/// at least <paramref name="size" />..</param>
+/// at least <paramref name="size" />.</param>
 inline void swap_bytes(_Inout_updates_(cnt) void *values,
         _In_ const std::size_t cnt,
         _In_ const std::size_t size,

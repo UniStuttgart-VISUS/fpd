@@ -1,5 +1,5 @@
 # Flexible Particle Data
-The flexible particle data (FPD) format replaces the previously used MegaMol particle list data (MMPLD) in [TRRojan](https://github.com/UniStuttgart-VISUS/trrojan) as input of particle data. This repository holds the C++ reference implementation for processing files of this format.
+The flexible particle data (FPD) format replaces the previously used MegaMol particle list data (MMPLD) in [TRRojan](https://github.com/UniStuttgart-VISUS/trrojan) as input of particle data. This repository holds the C++ reference implementation for processing files of this format. The description of the on-disk format can be found in the [specification](SPECIFICATION.md).
 
 ## Design goals
 FPD has been designed to address several shortcomings of the MMPLD format in context of TRRojan. The following sections detail the design goals of this new format.

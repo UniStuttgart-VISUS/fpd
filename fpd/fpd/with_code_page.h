@@ -47,7 +47,7 @@ public:
     /// <summary>
     /// Does nothing.
     /// </summary>
-    inline void code_page(_In_ const encoding_type) noexcept { }
+    inline void code_page(_In_opt_ const encoding_type) noexcept { }
 
 protected:
 
@@ -81,7 +81,7 @@ public:
     /// Answer the configured code page for narrow strings.
     /// </summary>
     /// <returns>The configured code page.</returns>
-    inline encoding_type code_page(void) const noexcept {
+    inline _Ret_maybenull_z_ encoding_type code_page(void) const noexcept {
         return this->_code_page;
     }
 
@@ -89,7 +89,7 @@ public:
     /// Sets the code page for narrow strings.
     /// </summary>
     /// <param name="code_page">The new code page for narrow strings.</param>
-    inline void code_page(_In_ const encoding_type code_page) noexcept {
+    inline void code_page(_In_opt_ const encoding_type code_page) noexcept {
         this->_code_page = code_page;
     }
 
@@ -99,7 +99,7 @@ protected:
     /// Initialises a new instance.
     /// </summary>
     /// <param name="code_page">The initial value of the code page.</param>
-    inline with_code_page(_In_ const encoding_type code_page) noexcept
+    inline with_code_page(_In_opt_ const encoding_type code_page) noexcept
         : _code_page(code_page) { }
 
 private:
