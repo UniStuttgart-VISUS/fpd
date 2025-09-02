@@ -169,17 +169,13 @@ public:
 
     /// <summary>
     /// Writes at most <paramref name="cnt" /> bytes from
-    /// <paramref name="src" /> to the specified location in the file.
+    /// <paramref name="src" /> to the current location in the file.
     /// </summary>
-    /// <param name="offset">The offset where to write the bytes to in bytes
-    /// from the begin of the file.</param>
     /// <param name="src">The location from where to get the data.</param>
     /// <param name="cnt">The number of bytes to write.</param>
     /// <returns>The number of bytes actually written.</returns>
-    inline std::size_t write(_In_ const std::size_t offset,
-            _In_reads_bytes_(cnt) const void *src,
+    inline std::size_t write(_In_reads_bytes_(cnt) const void *src,
             _In_ const std::size_t cnt) const {
-        this->seek(offset);
 #if defined(_WIN32)
         auto retval = ::_write(this->_handle, src,
             static_cast<unsigned int>(cnt));
@@ -193,6 +189,22 @@ public:
         }
 #endif /* defined(_WIN32) */
         return retval;
+    }
+
+    /// <summary>
+    /// Writes at most <paramref name="cnt" /> bytes from
+    /// <paramref name="src" /> to the specified location in the file.
+    /// </summary>
+    /// <param name="offset">The offset where to write the bytes to in bytes
+    /// from the begin of the file.</param>
+    /// <param name="src">The location from where to get the data.</param>
+    /// <param name="cnt">The number of bytes to write.</param>
+    /// <returns>The number of bytes actually written.</returns>
+    inline std::size_t write(_In_ const std::size_t offset,
+            _In_reads_bytes_(cnt) const void *src,
+            _In_ const std::size_t cnt) const {
+        this->seek(offset);
+        return this->write(src, cnt);
     }
 
     /// <summary>

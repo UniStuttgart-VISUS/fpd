@@ -165,6 +165,7 @@
     <ClInclude Include="fpd\header_segment.h" />
     <ClInclude Include="fpd\icu_category.h" />
     <ClInclude Include="fpd\invoke.h" />
+    <ClInclude Include="fpd\io.h" />
     <ClInclude Include="fpd\literal.h" />
     <ClInclude Include="fpd\make_unsigned.h" />
     <ClInclude Include="fpd\memory_io.h" />

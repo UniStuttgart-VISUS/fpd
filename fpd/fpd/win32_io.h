@@ -132,6 +132,23 @@ public:
 
     /// <summary>
     /// Writes at most <paramref name="cnt" /> bytes from
+    /// <paramref name="src" /> to the current location in the file.
+    /// </summary>
+    /// <param name="src">The location from where to get the data.</param>
+    /// <param name="cnt">The number of bytes to write.</param>
+    /// <returns>The number of bytes actually written.</returns>
+    inline std::size_t write(_In_reads_bytes_opt_(cnt) const void *src,
+            _In_ const std::size_t cnt) const {
+        DWORD retval = 0;
+        if (!::WriteFile(this->_handle, src, static_cast<DWORD>(cnt), &retval,
+            nullptr)) {
+            throw std::system_error(::GetLastError(), std::system_category());
+        }
+        return retval;
+    }
+
+    /// <summary>
+    /// Writes at most <paramref name="cnt" /> bytes from
     /// <paramref name="src" /> to the specified location in the file.
     /// </summary>
     /// <param name="offset">The offset where to write the bytes to in bytes
@@ -142,13 +159,8 @@ public:
     inline std::size_t write(_In_ const std::size_t offset,
             _In_reads_bytes_opt_(cnt) const void *src,
             _In_ const std::size_t cnt) const {
-        DWORD retval = 0;
         this->seek(offset);
-        if (!::WriteFile(this->_handle, src, static_cast<DWORD>(cnt), &retval,
-                nullptr)) {
-            throw std::system_error(::GetLastError(), std::system_category());
-        }
-        return retval;
+        return this->write(src, cnt);
     }
 
     /// <summary>

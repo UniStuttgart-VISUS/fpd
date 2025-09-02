@@ -135,6 +135,9 @@
     <ClInclude Include="fpd\mmpld.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fpd\io.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\semantic.inl">

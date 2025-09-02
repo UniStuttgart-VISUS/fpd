@@ -18,6 +18,7 @@
 #include "fpd/format_description.h"
 #include "fpd/format_variant.h"
 #include "fpd/header_segment.h"
+#include "fpd/io.h"
 #include "fpd/swap_bytes.h"
 #include "fpd/with_code_page.h"
 
@@ -241,6 +242,15 @@ public:
     std::size_t particles(_In_ const std::size_t frame) const;
 
     /// <summary>
+    /// Write the whole meta data to the specified output.
+    /// </summary>
+    /// <typeparam name="TFile">The I/O traits used for writing.</typeparam>
+    /// <param name="file">The file to write to.</param>
+    /// <returns>The number of bytes that have been written, which is always the
+    /// overall size of the meta data block.</returns>
+    template<class TFile> std::size_t save(_In_ TFile& file) const;
+
+    /// <summary>
     /// Gets the textual description of the specified semantic.
     /// </summary>
     /// <param name="semantic">The semantic to get the human-readable
@@ -284,6 +294,10 @@ private:
 
     string_type to_string(_In_reads_(cnt) const void *data,
         _In_ const std::size_t cnt);
+
+    template<class TFile>
+    static void write(_In_ TFile& file, _In_ const bounding_box& bbox,
+        _In_ const FPD_NAMESPACE::endian endian);
 
     bounding_box _bounding_box;
     string_type _description;

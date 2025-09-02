@@ -177,6 +177,20 @@ public:
     /// <summary>
     /// Does nothing, because DirectStorage is read-only.
     /// </summary>
+    /// <param name="src">The location from where to get the data.</param>
+    /// <param name="cnt">The number of bytes to write.</param>
+    /// <returns>The number of bytes actually written.</returns>
+    inline std::size_t write(_In_reads_bytes_opt_(cnt) const void *src,
+            _In_ const std::size_t cnt) const {
+        UNREFERENCED_PARAMETER(src);
+        UNREFERENCED_PARAMETER(cnt);
+        throw std::system_error(ERROR_FILE_READ_ONLY,
+            std::system_category());
+    }
+
+    /// <summary>
+    /// Does nothing, because DirectStorage is read-only.
+    /// </summary>
     /// <param name="offset">The offset where to write the bytes to in bytes
     /// from the begin of the file.</param>
     /// <param name="src">The location from where to get the data.</param>

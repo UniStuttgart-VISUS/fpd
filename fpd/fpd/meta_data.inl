@@ -40,8 +40,7 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::check_header_size(
 
     // Determine the overall size of the header. If necessary, swap its byte
     // order to obtain something the caller can use.
-    const auto retval = swap_endian(*reinterpret_cast<const std::uint32_t *>(
-        bytes), output._endian);
+    const auto retval = swap_endian_as<std::uint32_t>(bytes, output._endian);
 
     return retval;
 }
@@ -55,6 +54,8 @@ FPD_NAMESPACE::meta_data<TChar>& FPD_NAMESPACE::meta_data<TChar>::parse(
         _Inout_ meta_data& meta_data,
         _In_ const void *data,
         _In_ const std::size_t cnt) {
+    assert(meta_data._endian != endian::undefined);
+    assert((data != nullptr) || (cnt == 0));
     auto cur = static_cast<const std::uint8_t * >(data);
     const auto end = cur + cnt;
     auto deferred_format = std::make_pair(static_cast<const void *>(nullptr),
@@ -209,6 +210,109 @@ FPD_NAMESPACE::meta_data<TChar>::particles(_In_ const std::size_t frame) const {
         throw std::range_error("The specified frame is out of range.");
     }
     return this->_frame_table[frame];
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data<TChar>::save
+ */
+template<class TChar>
+template<class TFile>
+std::size_t FPD_NAMESPACE::meta_data<TChar>::save(_In_ TFile& file) const {
+    detail::write_all(file, "FPD", 3);
+
+    detail::write_all(file, this->_version.first);
+    detail::write_all(file, this->_version.second);
+
+    // TODO: wouldn't it be reasonable to always write system?
+    detail::write_all(file, this->_endian);
+
+    assert(this->_header_size > fixed_header_size);
+    {
+        const auto header_size = swap_endian(
+            static_cast<std::uint32_t>(this->_header_size - fixed_header_size),
+            this->_endian);
+        detail::write_all(file, header_size);
+    }
+
+    // Write the frame table (# of particles only).
+    {
+        const auto segment = swap_enum_endian(
+            header_segment::frame_table,
+            this->_endian);
+        detail::write_all(file, segment);
+        // TODO: endian
+        detail::write_all(file, this->_frame_table.data(),
+            this->_frame_table.size() * sizeof(frame_table_type::value_type));
+    }
+
+    // Write the format description.
+    {
+        const auto segment = swap_enum_endian(
+            header_segment::format_description,
+            this->_endian);
+        detail::write_all(file, segment);
+        //for (std::size_t i = 0; i < this->_format_description.count(); ++i) {
+        //    const auto &e = this->_format_description[i];
+        //    detail::write_all(io, e.semantic());
+        //    detail::write_all(io, e.format());
+        //}
+    }
+
+    // Write the user-defined semantics. These are optional.
+    if (!this->_user_defined_semantics.empty()) {
+        const auto segment = swap_enum_endian(
+            header_segment::user_semantics,
+            this->_endian);
+        detail::write_all(file, segment);
+
+        for (const auto& s : this->_user_defined_semantics) {
+            //auto ss = convert_string<char>()
+            throw "TODO";
+        }
+    }
+
+    // Write the optioanl file description.
+    if (!this->_description.empty()) {
+        const auto segment = swap_enum_endian(
+            header_segment::description,
+            this->_endian);
+        throw "TODO";
+    }
+
+    // Write the (optional) bounding boxes.
+    if (this->_bounding_box) {
+        {
+            const auto segment = swap_enum_endian(
+                header_segment::bounding_box,
+                this->_endian);
+            detail::write_all(file, segment);
+        }
+
+        {
+            const auto format = swap_enum_endian(
+                this->_bounding_box.format(),
+                this->_endian);
+            detail::write_all(file, format);
+        }
+
+        write(file, this->_bounding_box, this->_endian);
+
+        if (this->_frame_bounding_boxes.size() == this->_frame_table.size()) {
+            for (auto& b : this->_frame_bounding_boxes) {
+                assert(b.format() == this->_bounding_box.format());
+                write(file, b, this->_endian);
+            }
+        }
+    } /* if (this->_bounding_box) */
+
+    // Write the spatial hierarchy meta data.
+    // TODO
+
+    // Write the compression meta data.
+    // TODO
+
+    return this->_header_size;
 }
 
 
@@ -536,4 +640,36 @@ FPD_NAMESPACE::meta_data<TChar>::to_string(_In_reads_(cnt) const void *data,
     auto beg = static_cast<const char *>(data);
     auto end = beg + cnt;
     return this->to_string(beg, end);
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data<TChar>::write
+ */
+template<class TChar>
+template<class TFile>
+void FPD_NAMESPACE::meta_data<TChar>::write(_In_ TFile& file,
+        _In_ const bounding_box& bbox,
+        _In_ const FPD_NAMESPACE::endian endian) {
+    assert(bbox);
+
+    if (requires_conversion(endian)) {
+        std::vector<std::uint8_t> buffer(bbox.size());
+
+        const auto size = to_size(this->_bounding_box.format());
+        assert(buffer.size() % size == 0);
+
+        swap_bytes(buffer.data(),
+            bbox.data(),
+            buffer.size() / size,
+            size,
+            size,
+            endian);
+
+        detail::write_all(file, buffer.data(), buffer.size());
+
+    } else {
+        // System endian requires no further processing.
+        detail::write_all(file, bbox.data(), bbox.size());
+    }
 }
