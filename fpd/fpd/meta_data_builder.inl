@@ -26,6 +26,12 @@ FPD_NAMESPACE::meta_data_builder<TChar>::build(void) {
     }
 
     meta_data_type retval;
+
+    // Preserve the measurements before we deconstruct the builder in the
+    // subsequent process.
+    retval._header_size = this->size();
+    retval._particle_size = this->_format.size();
+
     if (meta_data_builder::has_code_page) {
         retval.code_page(this->code_page());
     }
@@ -53,7 +59,6 @@ FPD_NAMESPACE::meta_data_builder<TChar>::build(void) {
 
     retval._frame_table = std::move(this->_frame_table);
     assert(this->_frame_table.empty());
-    retval._particle_size = retval._format_description.size();
     meta_data_type::calc_frame_offsets(retval);
     assert(retval._frame_table.size() == retval._frame_offsets.size());
 

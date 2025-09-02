@@ -241,6 +241,7 @@ FPD_NAMESPACE::meta_data<TChar>::user_defined_semantic(
 template<class TChar>
 void FPD_NAMESPACE::meta_data<TChar>::calc_frame_offsets(
         _Inout_ meta_data& meta_data) {
+    assert(meta_data._header_size > 0);
     assert(meta_data._particle_size > 0);
 
     auto offset = meta_data._header_size;
