@@ -42,6 +42,10 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::check_header_size(
     // order to obtain something the caller can use.
     const auto retval = swap_endian_as<std::uint32_t>(bytes, output._endian);
 
+    // Preserve the overall size of the header for subsequent computation of
+    // offsets into the file.
+    output._header_size = retval + fixed_header_size;
+
     return retval;
 }
 

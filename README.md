@@ -1,6 +1,52 @@
 # Flexible Particle Data
 The flexible particle data (FPD) format replaces the previously used MegaMol particle list data (MMPLD) in [TRRojan](https://github.com/UniStuttgart-VISUS/trrojan) as input of particle data. This repository holds the C++ reference implementation for processing files of this format. The description of the on-disk format can be found in the [specification](SPECIFICATION.md).
 
+## Usage
+The following examples illustrate how to interact withthe reference implementation of FPD.
+
+### Read the meta data
+```c++
+typedef fpd::meta_data<char> meta_data;
+
+// Open the input file for binary I/O.
+int fh = ::_open(path.c_str(), _O_BINARY | _O_RDONLY);
+if (fh == -1) { /* Handle error.* / }
+
+// Read the fixed-size header, which has always the same size.
+std::vector<std::uint8_t> data(meta_data::fixed_header_size);
+auto rem = static_cast<int>(data.size());
+while (rem > 0) {
+    auto read = ::_read(fh, data.data() + data.size() - rem, rem);
+    if (read <= 0) { /* Handle error.* / }
+    rem -= read;
+}
+
+// Parse what we have so far in order to determine what must be read
+// to get the complete header.
+meta_data md(fpd::encodings::utf8);
+rem = meta_data::check_header_size(md, data.data(), data.size());
+
+// Read the variable-size header segments.
+data.resize(rem);
+while (rem > 0) {
+    auto read = ::_read(fh, data.data() + data.size() - rem, rem);
+    if (read <= 0) { /* Handle error.* / }
+    rem -= read;
+}
+
+// Parse the variable-size header segments, which completes parsing of
+// the meta data.
+meta_data::parse(md, data.data(), data.size());
+
+// Seek to the start of the first frame.
+::_lseek(fh, md.frame_offset(0), SEEK_SET);
+data.resize(md.frame_size(0));
+
+// Read the data and do something useful with them ...
+
+::_close(fh);
+```
+
 ## Design goals
 FPD has been designed to address several shortcomings of the MMPLD format in context of TRRojan. The following sections detail the design goals of this new format.
 

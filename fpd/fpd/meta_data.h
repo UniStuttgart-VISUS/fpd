@@ -150,7 +150,7 @@ public:
     /// <see cref="char_type" /> does not implicitly carry an encoding. Note
     /// to MegaMol users: <c>char</c> is not UTF-8 by definition, it <i>can</i>
     /// be UTF-8 if the data are handled accordingly.</param>
-    explicit inline meta_data(_In_ const FPD_NAMESPACE::encoding encoding
+    explicit inline meta_data(_In_opt_ const FPD_NAMESPACE::encoding encoding
             = FPD_NAMESPACE::encodings::oem) noexcept
         : detail::with_encoding<TChar>(encoding),
             _endian(endian_type::undefined),

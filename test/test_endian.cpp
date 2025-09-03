@@ -17,6 +17,8 @@ namespace fpd {
             Assert::AreNotEqual(int(endian::undefined), int(endian::big), L"big != undefined", LINE_INFO());
             Assert::AreNotEqual(int(endian::undefined), int(endian::little), L"little != undefined", LINE_INFO());
             Assert::AreNotEqual(int(endian::undefined), int(endian::system), L"system != undefined", LINE_INFO());
+            // Note: we currently only test on x86 Windows, so the following should succeed.
+            Assert::AreEqual(int(endian::little), int(endian::system), L"system is little endian", LINE_INFO());
         }
 
         TEST_METHOD(swap8) {

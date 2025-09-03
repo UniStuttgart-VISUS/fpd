@@ -122,13 +122,13 @@ FPD_NAMESPACE::meta_data_builder<TChar>::size(void) const {
         // we force only the actual characters to be measured here.
         if (meta_data_builder::has_code_page) {
             retval += convert_string(
-                static_cast<char_type *>(nullptr), 0, this->code_page(),
+                static_cast<char *>(nullptr), 0, this->code_page(),
                 this->_description.c_str(), this->_description.size(),
                 encodings::utf8);
         } else {
             assert(sizeof(char_type) > 1);
             retval += convert_string(
-                static_cast<char_type *>(nullptr), 0,
+                static_cast<char *>(nullptr), 0,
                 this->_description.c_str(), this->_description.size(),
                 encodings::utf8);
         }
