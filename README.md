@@ -10,14 +10,14 @@ typedef fpd::meta_data<char> meta_data;
 
 // Open the input file for binary I/O.
 int fh = ::_open(path.c_str(), _O_BINARY | _O_RDONLY);
-if (fh == -1) { /* Handle error.* / }
+if (fh == -1) { /* Handle error. */ }
 
 // Read the fixed-size header, which has always the same size.
 std::vector<std::uint8_t> data(meta_data::fixed_header_size);
 auto rem = static_cast<int>(data.size());
 while (rem > 0) {
     auto read = ::_read(fh, data.data() + data.size() - rem, rem);
-    if (read <= 0) { /* Handle error.* / }
+    if (read <= 0) { /* Handle error. */ }
     rem -= read;
 }
 
@@ -30,7 +30,7 @@ rem = meta_data::check_header_size(md, data.data(), data.size());
 data.resize(rem);
 while (rem > 0) {
     auto read = ::_read(fh, data.data() + data.size() - rem, rem);
-    if (read <= 0) { /* Handle error.* / }
+    if (read <= 0) { /* Handle error. */ }
     rem -= read;
 }
 
