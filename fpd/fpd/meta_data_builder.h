@@ -178,6 +178,17 @@ public:
     /// Adds a new frame with the specified number of particles at the end of
     /// the frame table.
     /// </summary>
+    /// <remarks>
+    /// <para>Per-frame bounding boxes are all-or-nothing. Therefore, if the
+    /// first frame has a bounding box, all subsequent ones must have one, too.
+    /// Likewise, if there is already a frame in the table without a bounding
+    /// box, this method will fail, too.</para>
+    /// <para>If a frame with a bounding box is added, but there is no global
+    /// bounding box set yet, the global bounding box will be set to the one
+    /// of the first frame and &quot;tracking mode&quot; will be enabled, where
+    /// the builder will track the global bounding box as the union of all
+    /// per-frame bounding boxes.</para>
+    /// </remarks>
     /// <param name="particles">The number of particles in the frame.</param>
     /// <param name="bounding_box">The bounding box of the particles in the
     /// frame.</param>
