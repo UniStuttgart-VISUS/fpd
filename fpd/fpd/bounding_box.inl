@@ -172,7 +172,7 @@ void FPD_NAMESPACE::bounding_box::merge(_In_ const bounding_box& other) {
 
     detail::dispatch_format<void>(this->_format, [dst, src](const auto tag) {
         typedef std::decay_t<decltype(tag)> pointer_type;
-        typedef std::remove_pointer<pointer_type>::type value_type;
+        typedef std::remove_pointer_t<pointer_type> value_type;
         auto that = reinterpret_cast<pointer_type>(dst);
         auto other = reinterpret_cast<const value_type *>(src);
 
