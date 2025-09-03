@@ -263,5 +263,48 @@ namespace fpd {
             Assert::AreEqual(int(format::float32xyzw), int(data.format_description()(0, 1).format()), L"format of element 1", LINE_INFO());
             Assert::AreEqual(std::size_t(0), data.global_particle_properties().size(), L"no global property", LINE_INFO());
         }
+
+        TEST_METHOD(save_roundtrip) {
+            meta_data_builder<wchar_t> builder;
+
+            const auto description = L"Test description.";
+            builder.add_format_element(semantic::position_radius, nullptr, format::float32xyzw)
+                .add_format_element(semantic::intensity, format::float32, 1)
+                .with_uniform_frames(42, 10)
+                .with_description(description);
+
+            const auto size_on_disk = decltype(builder)::meta_data_type::fixed_header_size
+                // Two format elements
+                + sizeof(header_segment)
+                + 2 * element<wchar_t>::size_on_disk
+                // Frame table.
+                + sizeof(header_segment)
+                + 42 * sizeof(std::uint64_t)
+                // Description
+                + ::wcslen(description);
+            Assert::AreEqual(size_on_disk, builder.size(), L"Overall header size", LINE_INFO());
+
+            const auto expected = builder.build();
+            const auto path = get_temp_file();
+            win32_io io(path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
+
+            Assert::AreEqual(size_on_disk, expected.save(io), L"file size", LINE_INFO());
+        }
+
+
+    private:
+
+        static std::string get_temp_file(void) {
+            char retval[MAX_PATH];
+
+            const auto cnt = ::GetTempPathA(MAX_PATH, retval);
+            if ((cnt > MAX_PATH) || (cnt == 0)) {
+                Assert::Fail(L"Failed to get temporary path", LINE_INFO());
+            }
+
+            Assert::IsTrue(::GetTempFileNameA(retval, "fpd", 0, retval), L"GetTempFileName", LINE_INFO());
+
+            return retval;
+        }
     };
 }

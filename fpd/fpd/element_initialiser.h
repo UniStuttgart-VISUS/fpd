@@ -8,7 +8,6 @@
 #define _FPD_ELEMENT_INITIALISER_H
 #pragma once
 
-#include "fpd/annotations.h"
 #include "fpd/format.h"
 #include "fpd/semantic.h"
 

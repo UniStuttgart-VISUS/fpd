@@ -4,14 +4,17 @@
 // </copyright>
 // <author>Christoph Müller</author>
 
-#if !defined(_FPD_ABI_H_)
-#define _FPD_ABI_H_
+#if !defined(_FPD_ABI_H)
+#define _FPD_ABI_H
 #pragma once
 
 #include <cinttypes>
 
-// TODO: change to our new nosal.h
-#include "fpd/annotations.h"
+#if defined(_WIN32)
+#include <sal.h>
+#else /* defined(_WIN32) */
+#include "fpd/nosal.h"
+#endif /* defined(_WIN32) */
 
 
 #define FPD_FILE_MAJOR static_cast<std::uint8_t>(0)
@@ -79,4 +82,4 @@
 /// </summary>
 #define FPD_DETAIL_NAMESPACE_END } FPD_NAMESPACE_END
 
-#endif /* !defined(_FPD_ABI_H_) */
+#endif /* !defined(_FPD_ABI_H) */

@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <limits>
 
-#include "fpd/convert_string.h"
 #include "fpd/meta_data.h"
 #include "fpd/mmpld.h"
 
@@ -24,7 +23,7 @@ FPD_NAMESPACE_BEGIN
 /// </summary>
 /// <typeparam name="TChar">The type of a character in a string.</typeparam>
 template<class TChar>
-class meta_data_builder final : protected with_code_page<TChar> {
+class meta_data_builder final : protected detail::with_encoding<TChar> {
 
 public:
 

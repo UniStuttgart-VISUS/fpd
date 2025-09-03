@@ -10,8 +10,8 @@
 
 #include <cstdlib>
 #include <map>
+#include <memory>
 
-#include "fpd/annotations.h"
 #include "fpd/bounding_box.h"
 #include "fpd/convert_string.h"
 #include "fpd/endian.h"
@@ -20,7 +20,7 @@
 #include "fpd/header_segment.h"
 #include "fpd/io.h"
 #include "fpd/swap_bytes.h"
-#include "fpd/with_code_page.h"
+#include "fpd/with_encoding.h"
 
 
 FPD_NAMESPACE_BEGIN
@@ -29,7 +29,8 @@ FPD_NAMESPACE_BEGIN
 /// A container for all meta data in an FPD file.
 /// </summary>
 /// <typeparam name="TChar">The type of a character in a string.</typeparam>
-template<class TChar> class meta_data final : protected with_code_page<TChar> {
+template<class TChar>
+class meta_data final : protected detail::with_encoding<TChar> {
 
 public:
 
@@ -146,7 +147,7 @@ public:
     /// be UTF-8 if the data are handled accordingly.</param>
     explicit inline meta_data(_In_ const FPD_NAMESPACE::encoding encoding
             = FPD_NAMESPACE::encodings::oem) noexcept
-        : with_code_page<TChar>(encoding),
+        : detail::with_encoding<TChar>(encoding),
             _endian(endian_type::undefined),
             _header_size(0),
             _particle_size(0),
@@ -270,9 +271,14 @@ public:
 
 private:
 
+    typedef typename format_description_type::element_type element_type;
+
     static void calc_frame_offsets(_Inout_ meta_data& meta_data);
 
     static void parse_bounding_box(_Inout_ meta_data& meta_data,
+        _In_ const void *data, _In_ const std::size_t cnt);
+
+    static void parse_compression(_Inout_ meta_data& meta_data,
         _In_ const void *data, _In_ const std::size_t cnt);
 
     static void parse_description(_Inout_ meta_data& meta_data,
@@ -287,17 +293,52 @@ private:
     static void parse_global_particle_properties(_Inout_ meta_data& meta_data,
         _In_ const void *data, _In_ const std::size_t cnt);
 
+    static void parse_spatial_hierarchy(_Inout_ meta_data& meta_data,
+        _In_ const void *data, _In_ const std::size_t cnt);
+
     static void parse_user_semantics(_Inout_ meta_data& meta_data,
         _In_ const void *data, _In_ const std::size_t cnt);
 
-    string_type to_string(_In_ const char *begin, _In_ const char *end);
-
-    string_type to_string(_In_reads_(cnt) const void *data,
-        _In_ const std::size_t cnt);
+    template<class TFile>
+    static void write(_In_ TFile& file,
+        _In_ const bounding_box& bbox,
+        _In_ const FPD_NAMESPACE::endian endian);
 
     template<class TFile>
-    static void write(_In_ TFile& file, _In_ const bounding_box& bbox,
+    static void write(_In_ TFile& file,
+        _In_ const element_type& element,
+        _In_ std::uint16_t group,
         _In_ const FPD_NAMESPACE::endian endian);
+
+    template<class TFile>
+    static inline void write(_In_ TFile& file,
+            _In_ format format,
+            _In_ const FPD_NAMESPACE::endian endian) {
+        format = swap_enum_endian(format, endian);
+        detail::write_all(file, format);
+    }
+
+    template<class TFile>
+    static void write(_In_ TFile& file,
+        _In_ const header_segment segment,
+        _In_ const std::underlying_type_t<header_segment> size,
+        _In_ const FPD_NAMESPACE::endian endian);
+
+    template<class TFile, class TValue>
+    static void write(_In_ TFile& file,
+        _In_ const std::vector<TValue>& values,
+        _In_ const FPD_NAMESPACE::endian endian);
+
+    string_type to_string(_In_ const char *begin, _In_ const char *end) const;
+
+    string_type to_string(_In_reads_(cnt) const void *data,
+        _In_ const std::size_t cnt) const;
+
+    std::string to_utf8(_In_reads_or_z_opt_(cnt) const char_type *str,
+        _In_ const int cnt = -1) const;
+
+    std::vector<char> to_utf8(
+        _In_ const std::vector<string_type>& strings) const;
 
     bounding_box _bounding_box;
     string_type _description;

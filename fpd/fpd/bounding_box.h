@@ -370,6 +370,26 @@ private:
     format_type _format;
 
     template<class T> friend class meta_data;
+
+public:
+
+    /// <summary>
+    /// Answer an iterator for the begin of the bounding box.
+    /// </summary>
+    /// <returns>An iterator for the begin of the in-memory representation of
+    /// the bounding box.</returns>
+    inline auto begin(void) const noexcept -> decltype(this->_values.begin()) {
+        return this->_values.begin();
+    }
+
+    /// <summary>
+    /// Answer an iterator for the end of the bounding box.
+    /// </summary>
+    /// <returns>An iterator for the end of the in-memory representation of
+    /// the bounding box.</returns>
+    inline auto end(void) const noexcept -> decltype(this->_values.end()) {
+        return this->_values.end();
+    }
 };
 
 FPD_NAMESPACE_END

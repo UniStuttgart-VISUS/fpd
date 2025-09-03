@@ -33,7 +33,7 @@
     <ClInclude Include="fpd\literal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="fpd\annotations.h">
+    <ClInclude Include="fpd\nosal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="fpd\element.h">
@@ -111,7 +111,7 @@
     <ClInclude Include="fpd\file.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="fpd\with_code_page.h">
+    <ClInclude Include="fpd\with_encoding.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="fpd\pkd_tree_builder.h">
