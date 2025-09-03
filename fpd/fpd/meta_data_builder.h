@@ -152,7 +152,7 @@ public:
     /// semantic.</param>
     /// <param name="eval_offset">If <c>true</c>, add an explicit offset to the
     /// element based on the current content of the group.</param>
-    /// <returns><c>*this</c>.</returns>
+    /// <returns>*<see langword="this" />.</returns>
     inline meta_data_builder& add_format_element(
             _In_ const element_initialiser_type& initialiser,
             _In_ const bool eval_offset = false) {
@@ -161,6 +161,29 @@ public:
             initialiser._semantic_name);
         return *this;
     }
+
+    /// <summary>
+    /// Adds a new frame with the specified number of particles at the end of
+    /// the frame table.
+    /// </summary>
+    /// <remarks>
+    /// This method will fail if previous frames were specified with a per-frame
+    /// bounding box as per-frame bounding boxes are all-or-nothing.
+    /// </remarks>
+    /// <param name="particles">The number of particles in the frame.</param>
+    /// <returns>*<see langword="this" />.</returns>
+    meta_data_builder& add_frame(_In_ const size_type particles);
+
+    /// <summary>
+    /// Adds a new frame with the specified number of particles at the end of
+    /// the frame table.
+    /// </summary>
+    /// <param name="particles">The number of particles in the frame.</param>
+    /// <param name="bounding_box">The bounding box of the particles in the
+    /// frame.</param>
+    /// <returns>*<see langword="this" />.</returns>
+    meta_data_builder& add_frame(_In_ const size_type particles,
+        _In_ const bounding_box& bounding_box);
 
     /// <summary>
     /// Builds the <see cref="meta_data" /> and resets the builder.
@@ -376,6 +399,7 @@ private:
     std::map<semantic, format_variant> _global_particle_properties;
     std::vector<string_type> _user_defined_semantics;
     version_type _version;
+    bool _track_bbox;
 };
 
 FPD_NAMESPACE_END

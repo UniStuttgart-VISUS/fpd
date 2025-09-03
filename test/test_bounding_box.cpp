@@ -102,5 +102,23 @@ namespace fpd {
             (bb.min)(0, 42);
             Assert::AreEqual(42.0f, (bb.min<float>)(0), L"min(0)", LINE_INFO());
         }
+
+        TEST_METHOD(merge) {
+            bounding_box bb1(0.0f, 0.0f, 0.0f, 10.0f, 10.0f, 10.0f);
+
+            Assert::ExpectException<std::invalid_argument>([&bb1](void) {
+                bounding_box bb2(0, 0, 0, 100, 100, 100);
+                bb1.merge(bb2);
+            }, L"merge with other format", LINE_INFO());
+
+            bounding_box bb2(-1.0f, 1.0f, 0.0f, 5.0f, 100.0f, 10.0f);
+            bb1.merge(bb2);
+            Assert::AreEqual(-1.0f, bb1.get<float>(bounding_box::value::min_x), L"min_x", LINE_INFO());
+            Assert::AreEqual(0.0f, bb1.get<float>(bounding_box::value::min_y), L"min_y", LINE_INFO());
+            Assert::AreEqual(0.0f, bb1.get<float>(bounding_box::value::min_z), L"min_z", LINE_INFO());
+            Assert::AreEqual(10.0f, bb1.get<float>(bounding_box::value::max_x), L"max_x", LINE_INFO());
+            Assert::AreEqual(100.0f, bb1.get<float>(bounding_box::value::max_y), L"max_y", LINE_INFO());
+            Assert::AreEqual(10.0f, bb1.get<float>(bounding_box::value::max_z), L"max_z", LINE_INFO());
+        }
     };
 }

@@ -327,6 +327,12 @@ public:
     }
 
     /// <summary>
+    /// Extend this bounding box to include the given other bounding box.
+    /// </summary>
+    /// <param name="other">Another bounding box with the same format.</param>
+    inline void merge(_In_ const bounding_box& other);
+
+    /// <summary>
     /// Answer whether the bounding box is valid.
     /// </summary>
     /// <returns><c>true</c> if the bounding box has a valid format and valid

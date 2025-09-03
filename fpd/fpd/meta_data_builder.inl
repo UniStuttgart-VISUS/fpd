@@ -11,7 +11,69 @@
 template<class TChar>
 FPD_NAMESPACE::meta_data_builder<TChar>::meta_data_builder(void)
     : detail::with_encoding<TChar>(encodings::oem),
-      _version(std::make_pair(FPD_FILE_MAJOR, FPD_FILE_MINOR)) { }
+    _track_bbox(false),
+    _version(std::make_pair(FPD_FILE_MAJOR, FPD_FILE_MINOR)) { }
+
+
+/*
+ * FPD_NAMESPACE::meta_data_builder<TChar>::add_frame
+ */
+template<class TChar>
+FPD_NAMESPACE::meta_data_builder<TChar>&
+FPD_NAMESPACE::meta_data_builder<TChar>::add_frame(
+        _In_ const size_type particles) {
+    if (this->_bounding_boxes.size() > 1) {
+        throw std::logic_error("The current meta data format requires a "
+            "per-frame bounding box.");
+    }
+
+    this->_frame_table.push_back(particles);
+    return *this;
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data_builder<TChar>::add_frame
+ */
+template<class TChar>
+FPD_NAMESPACE::meta_data_builder<TChar> &
+FPD_NAMESPACE::meta_data_builder<TChar>::add_frame(
+        _In_ const size_type particles,
+        _In_ const bounding_box& bounding_box) {
+    if (!bounding_box) {
+        throw std::invalid_argument("A frame bounding box must be valid.");
+    }
+
+    if (this->_bounding_boxes.empty()) {
+        if (!this->_frame_table.empty()) {
+            throw std::logic_error("The current meta data format does not "
+                "allow for per-frame bounding boxes.");
+        }
+
+        // If this is the first bounding box ever, enter "tracking" mode where
+        // we track the global bounding box as the union of all per-frame
+        // bounding boxes. The global bounding box is therefore initialised with
+        // the bounding box of the first frame.
+        this->_track_bbox = true;
+        this->_bounding_boxes.push_back(bounding_box);
+
+    } else if (this->_bounding_boxes.front().format()
+            != bounding_box.format()) {
+        // For performance and processing reasons, all bounding boxes must use
+        // the same scalar format, which typically is float32.
+        throw std::invalid_argument("All bounding boxes must have the same "
+            "format.");
+    }
+
+    this->_bounding_boxes.push_back(bounding_box);
+
+    if (this->_track_bbox) {
+        this->_bounding_boxes.front().merge(this->_bounding_boxes.back());
+    }
+
+    this->_frame_table.push_back(particles);
+    return *this;
+}
 
 
 /*

@@ -18,7 +18,8 @@
 #include <mmpld.h>
 
 #define FPD_WITH_MMPLD
-#include <fpd/file.h>
+#include <fpd/encoding.h>
+#include <fpd/meta_data_builder.h>
 #include <fpd/posix_io.h>
 #include <fpd/win32_io.h>
 
@@ -94,8 +95,43 @@ int _tmain(const int argc, const _TCHAR **argv) {
             }
         }
 
+        // Open the MMPLD file and go to the first list of the first frame in
+        // order to construct the particle format.
         mmpld::file<handle_type, _TCHAR> mmpld(input.c_str());
-        fpd::file<_TCHAR, io_type> fpd(output.c_str());
+        mmpld::list_header reference_list { };
+
+        for (std::size_t f = 0; f < mmpld.frames(); ++f) {
+            mmpld.open_frame(f);
+
+            if (mmpld.frame_header().lists < 1) {
+                continue;
+            }
+
+            mmpld.read_particles(true, reference_list, nullptr, 0);
+            break;
+        }
+
+        if (reference_list.particles == 0) {
+            throw std::invalid_argument("The MMPLD file contains no usable "
+                "data.");
+        }
+
+        // Start building the FPD meta data from the MMPLD format.
+        fpd::meta_data_builder<_TCHAR> builder;
+
+        {
+            auto desc = std::basic_string<_TCHAR>(_T("Converted from "));
+            desc += input;
+            builder.with_description(std::move(desc));
+        }
+
+        builder.with_mmpld_format(reference_list);
+
+        // Add the frames.
+        for (std::size_t f = 0; f < mmpld.frames(); ++f) {
+
+        }
+
 
 
     } catch (std::exception& ex) {

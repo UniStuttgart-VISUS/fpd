@@ -156,3 +156,38 @@ void FPD_NAMESPACE::bounding_box::set(_In_ const value component,
         }, scalar_formats());
     }
 }
+
+
+/*
+ * FPD_NAMESPACE::bounding_box::merge
+ */
+void FPD_NAMESPACE::bounding_box::merge(_In_ const bounding_box& other) {
+    if (this->_format != other._format) {
+        throw std::invalid_argument("Only bounding boxes of the same format "
+            "can be merged.");
+    }
+
+    auto dst = this->_values.data();
+    auto src = other._values.data();
+
+    detail::dispatch_format<void>(this->_format, [dst, src](const auto tag) {
+        typedef std::decay_t<decltype(tag)> pointer_type;
+        typedef std::remove_pointer<pointer_type>::type value_type;
+        auto that = reinterpret_cast<pointer_type>(dst);
+        auto other = reinterpret_cast<const value_type *>(src);
+
+        for (auto i = static_cast<std::size_t>(value::min_x);
+                i <= static_cast<std::size_t>(value::min_z); ++i){
+            if (other[i] < that[i]) {
+                that[i] = other[i];
+            }
+        }
+
+        for (auto i = static_cast<std::size_t>(value::max_x);
+            i <= static_cast<std::size_t>(value::max_z); ++i) {
+            if (other[i] > that[i]) {
+                that[i] = other[i];
+            }
+        }
+    }, scalar_formats());
+}
