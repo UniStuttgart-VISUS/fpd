@@ -60,11 +60,44 @@ namespace fpd {
             ::_close(fh);
         }
 
+        TEST_METHOD(write_meta) {
+            typedef fpd::meta_data_builder<wchar_t> meta_data_builder;
+
+            // Create a builder that allows for programmatically creating a meta
+            // data object.
+            meta_data_builder builder;
+
+            // Describe our file format: We have the position and the radius in
+            // a single float4 vector and a floating-point intensity value.
+            // These are stored interleaved as array of structures. In a second
+            // stream, we have a user-defined integer ID per particle.
+            builder.add_format_element(fpd::semantic::position_radius, fpd::format::float32xyzw, 0)
+                .add_format_element(fpd::semantic::intensity, fpd::format::float32, 0)
+                .add_format_element(fpd::user_defined_semantic(0), L"id", fpd::format::uint64, 1);
+
+            // Add a description to the file.
+            builder.with_description(L"オ マイ ゴッド");
+
+            // Specify how many frames we have and how many particles are in
+            // each of them.
+            builder.with_frames({ 17, 42, 42 });
+
+            auto expected = builder.size();
+
+            // Create the meta data object and save it to disk.
+            auto md = builder.build();
+
+            auto path = get_temp_file();
+            fpd::win32_io file(path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
+            const auto size = md.save(file);
+
+            Assert::AreEqual(expected, size, L"size reported by save", LINE_INFO());
+        }
 
 
     private:
 
-        static std::string make_meta(void) {
+        static std::string get_temp_file(void) {
             char retval[MAX_PATH];
 
             const auto cnt = ::GetTempPathA(MAX_PATH, retval);
@@ -74,6 +107,12 @@ namespace fpd {
 
             Assert::IsTrue(::GetTempFileNameA(retval, "fpd", 0, retval), L"GetTempFileName", LINE_INFO());
 
+            return retval;
+        }
+
+        static std::string make_meta(void) {
+            auto retval = get_temp_file();
+
             meta_data_builder<wchar_t> builder;
             auto data = builder.add_format_element(semantic::position, format::float32xyz, 0)
                 .add_format_element(semantic::radius, format::float32, 1)
@@ -81,7 +120,7 @@ namespace fpd {
                 .with_frames({ 41, 42, 42 })
                 .with_description(L"オマイゴッド")
                 .build();
-            win32_io io(retval, GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
+            win32_io io(retval.c_str(), GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
             data.save(io);
 
             return retval;

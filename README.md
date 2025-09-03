@@ -1,10 +1,10 @@
-# Flexible Particle Data
+﻿# Flexible Particle Data
 The flexible particle data (FPD) format replaces the previously used MegaMol particle list data (MMPLD) in [TRRojan](https://github.com/UniStuttgart-VISUS/trrojan) as input of particle data. This repository holds the C++ reference implementation for processing files of this format. The description of the on-disk format can be found in the [specification](SPECIFICATION.md).
 
 ## Usage
 The following examples illustrate how to interact withthe reference implementation of FPD.
 
-### Read the meta data
+### Read meta data to consume a file
 ```c++
 typedef fpd::meta_data<char> meta_data;
 
@@ -45,6 +45,36 @@ data.resize(md.frame_size(0));
 // Read the data and do something useful with them ...
 
 ::_close(fh);
+```
+
+### Build in-memory meta data to create a new file
+```c++
+typedef fpd::meta_data_builder<wchar_t> meta_data_builder;
+
+// Create a builder that allows for programmatically creating a meta
+// data object.
+meta_data_builder builder;
+
+// Describe our file format: We have the position and the radius in
+// a single float4 vector and a floating-point intensity value.
+// These are stored interleaved as array of structures. In a second
+// stream, we have a user-defined integer ID per particle.
+builder.add_format_element(fpd::semantic::position_radius, fpd::format::float32xyzw, 0)
+    .add_format_element(fpd::semantic::intensity, fpd::format::float32, 0)
+    .add_format_element(fpd::user_defined_semantic(0), L"id", fpd::format::uint64, 1);
+
+// Add a description to the file.
+builder.with_description(L"オ マイ ゴッド");
+
+// Specify how many frames we have and how many particles are in
+// each of them.
+builder.with_frames({ 17, 42, 42 });
+
+// Create the meta data object and save it to disk.
+auto md = builder.build();
+
+fpd::win32_io file(L"demo.fpd", GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
+const auto size = md.save(file);
 ```
 
 ## Design goals
