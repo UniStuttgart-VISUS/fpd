@@ -118,15 +118,19 @@ FPD_NAMESPACE::meta_data_builder<TChar>::size(void) const {
     // Optional file description (0x04).
     if (!this->_description.empty()) {
         retval += sizeof(header_segment);
+        // Note: we write out the description without the terminating null, so
+        // we force only the actual characters to be measured here.
         if (meta_data_builder::has_code_page) {
             retval += convert_string(
                 static_cast<char_type *>(nullptr), 0, this->code_page(),
-                this->_description.c_str(), -1, encodings::utf8);
+                this->_description.c_str(), this->_description.size(),
+                encodings::utf8);
         } else {
             assert(sizeof(char_type) > 1);
             retval += convert_string(
                 static_cast<char_type *>(nullptr), 0,
-                this->_description.c_str(), -1, encodings::utf8);
+                this->_description.c_str(), this->_description.size(),
+                encodings::utf8);
         }
     }
 

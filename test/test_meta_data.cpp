@@ -90,7 +90,7 @@ namespace fpd {
 
                     // file description
                     + sizeof(header_segment)
-                    + (::wcslen(L"description") + 1) * sizeof(char);
+                    + (::wcslen(L"description")) * sizeof(char);
 
                 Assert::AreEqual(expected, builder.size(), L"Overall header size", LINE_INFO());
             }
@@ -281,14 +281,51 @@ namespace fpd {
                 + sizeof(header_segment)
                 + 42 * sizeof(std::uint64_t)
                 // Description
+                + sizeof(header_segment)
                 + ::wcslen(description);
             Assert::AreEqual(size_on_disk, builder.size(), L"Overall header size", LINE_INFO());
 
             const auto expected = builder.build();
             const auto path = get_temp_file();
-            win32_io io(path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
 
-            Assert::AreEqual(size_on_disk, expected.save(io), L"file size", LINE_INFO());
+            {
+                win32_io io(path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
+                Assert::AreEqual(size_on_disk, expected.save(io), L"file size", LINE_INFO());
+            }
+
+            meta_data<char> actual(encodings::utf8);
+
+            {
+                win32_io io(path.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING);
+                std::vector<std::uint8_t> buffer(size_on_disk);
+                detail::read_all(buffer.data(), buffer.size(), io);
+
+                const auto variable_header = size_on_disk - decltype(builder)::meta_data_type::fixed_header_size;
+                Assert::AreEqual(variable_header, meta_data<char>::check_header_size(actual, buffer.data(), buffer.size()), L"check header", LINE_INFO());
+
+                actual = meta_data<char>::parse(buffer.data(), buffer.size());
+            }
+
+            Assert::AreEqual(expected.version().first, actual.version().first, L"major version", LINE_INFO());
+            Assert::AreEqual(expected.version().second, actual.version().second, L"minor version", LINE_INFO());
+            Assert::AreEqual(int(expected.endian()), int(actual.endian()), L"endian", LINE_INFO());
+            Assert::AreEqual(expected.frames(), actual.frames(), L"# of frames", LINE_INFO());
+            Assert::AreEqual(expected.frame_offset(0), actual.frame_offset(0), L"First frame after header", LINE_INFO());
+            Assert::AreEqual(expected.particles(0), actual.particles(0), L"particles in frame", LINE_INFO());
+            Assert::AreEqual(expected.frame_size(0), actual.frame_size(0), L"size of frame", LINE_INFO());
+            Assert::IsTrue(actual.global_particle_properties().empty(), L"No global properties", LINE_INFO());
+            Assert::AreEqual(expected.format_description().count_elements(), actual.format_description().count_elements(), L"# of format elements", LINE_INFO());
+            Assert::AreEqual(expected.format_description().count_groups(), actual.format_description().count_groups(), L"# of format groups", LINE_INFO());
+            Assert::AreEqual(int(expected.format_description(0, 0).semantic()), int(actual.format_description(0, 0).semantic()), L"semantic 0, 0", LINE_INFO());
+            Assert::AreEqual(int(expected.format_description(0, 0).format()), int(actual.format_description(0, 0).format()), L"format 0, 0", LINE_INFO());
+            Assert::AreEqual(int(expected.format_description(0, 0).offset()), int(actual.format_description(0, 0).offset()), L"offset 0, 0", LINE_INFO());
+            Assert::AreEqual(int(expected.format_description(0, 0).size()), int(actual.format_description(0, 0).size()), L"size 0, 0", LINE_INFO());
+            Assert::AreEqual(int(expected.format_description(1, 0).semantic()), int(actual.format_description(1, 0).semantic()), L"semantic 1, 0", LINE_INFO());
+            Assert::AreEqual(int(expected.format_description(1, 0).format()), int(actual.format_description(1, 0).format()), L"format 1, 0", LINE_INFO());
+            Assert::AreEqual(int(expected.format_description(1, 0).offset()), int(actual.format_description(1, 0).offset()), L"offset 1, 0", LINE_INFO());
+            Assert::AreEqual(int(expected.format_description(1, 0).size()), int(actual.format_description(1, 0).size()), L"size 1, 0", LINE_INFO());
+            Assert::AreEqual(expected.description().size(), actual.description().size(), L"length of description", LINE_INFO());
+            Assert::AreEqual("Test description.", actual.description().c_str(), L"description", LINE_INFO());
         }
 
 

@@ -138,6 +138,32 @@ public:
     }
 
     /// <summary>
+    /// Reads at most <paramref name="cnt" /> bytes from the current location in
+    /// the file.
+    /// </summary>
+    /// <param name="dst">Receives the data that have been read.</param>
+    /// <param name="cnt">The size of <paramref name="dst" /> in bytes.</param>
+    /// <returns>The number of bytes actually read.</returns>
+    /// <exception cref="std::system_error">In case the operation failed.
+    /// </exception>
+    inline std::size_t read(_Out_writes_bytes_to_(cnt, return) void *dst,
+            _In_ const std::size_t cnt) const {
+#if defined(_WIN32)
+        auto retval = ::_read(this->_handle, dst,
+            static_cast<unsigned int>(cnt));
+        if (retval < 0) {
+            throw std::system_error(errno, std::generic_category());
+        }
+#else /* defined(_WIN32) */
+        auto retval = ::read(this->_handle, dst, cnt);
+        if (retval < 0) {
+            throw std::system_error(errno, std::system_category());
+        }
+#endif /* defined(_WIN32) */
+        return retval;
+    }
+
+    /// <summary>
     /// Reads at most <paramref name="cnt" /> bytes from the specified offset in
     /// the file.
     /// </summary>
@@ -152,19 +178,7 @@ public:
             _In_ const std::size_t cnt,
             _In_ const std::size_t offset) const {
         this->seek(offset);
-#if defined(_WIN32)
-        auto retval = ::_read(this->_handle, dst,
-            static_cast<unsigned int>(cnt));
-        if (retval < 0) {
-            throw std::system_error(errno, std::generic_category());
-        }
-#else /* defined(_WIN32) */
-        auto retval = ::read(this->_handle, dst, cnt);
-        if (retval < 0) {
-            throw std::system_error(errno, std::system_category());
-        }
-#endif /* defined(_WIN32) */
-        return retval;
+        return this->read(dst, cnt);
     }
 
     /// <summary>

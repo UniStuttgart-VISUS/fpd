@@ -108,6 +108,25 @@ public:
     }
 
     /// <summary>
+    /// Reads at most <paramref name="cnt" /> bytes from the current location in
+    /// the file.
+    /// </summary>
+    /// <param name="dst">Receives the data that have been read.</param>
+    /// <param name="cnt">The size of <paramref name="dst" /> in bytes.</param>
+    /// <returns>The number of bytes actually read.</returns>
+    /// <exception cref="std::system_error">In case the operation failed.
+    /// </exception>
+    inline std::size_t read(_Out_writes_bytes_to_opt_(cnt, return) void *dst,
+            _In_ const std::size_t cnt) const {
+        DWORD retval = 0;
+        if (!::ReadFile(this->_handle, dst, static_cast<DWORD>(cnt), &retval,
+                nullptr)) {
+            throw std::system_error(::GetLastError(), std::system_category());
+        }
+        return retval;
+    }
+
+    /// <summary>
     /// Reads at most <paramref name="cnt" /> bytes from the specified offset in
     /// the file.
     /// </summary>
@@ -121,14 +140,10 @@ public:
     inline std::size_t read(_Out_writes_bytes_to_opt_(cnt, return) void *dst,
             _In_ const std::size_t cnt,
             _In_ const std::size_t offset) const {
-        DWORD retval = 0;
         this->seek(offset);
-        if (!::ReadFile(this->_handle, dst, static_cast<DWORD>(cnt), &retval,
-                nullptr)) {
-            throw std::system_error(::GetLastError(), std::system_category());
-        }
-        return retval;
+        return this->read(dst, cnt);
     }
+
 
     /// <summary>
     /// Writes at most <paramref name="cnt" /> bytes from

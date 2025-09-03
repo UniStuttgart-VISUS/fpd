@@ -224,32 +224,28 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::save(_In_ TFile& file) const {
     typedef std::underlying_type_t<header_segment> segment_size;
 
     // Write the fixed-size part of the header.
-    detail::write_all(file, "FPD", 3);
+    auto retval = detail::write_all(file, "FPD", 3);
 
-    detail::write_all(file, this->_version.first);
-    detail::write_all(file, this->_version.second);
+    retval += detail::write_all(file, this->_version.first);
+    retval += detail::write_all(file, this->_version.second);
 
-    detail::write_all(file, this->_endian);
+    retval += detail::write_all(file, this->_endian);
 
     assert(this->_header_size > fixed_header_size);
     {
         const auto header_size = swap_endian(
             static_cast<std::uint32_t>(this->_header_size - fixed_header_size),
             this->_endian);
-        detail::write_all(file, header_size);
+        retval += detail::write_all(file, header_size);
     }
 
     // Write the frame table (# of particles only).
     {
         const auto size = this->_frame_table.size()
             * sizeof(frame_table_type::value_type);
-        write(file, header_segment::frame_table, size, this->_endian);
-
-        const auto segment = swap_enum_endian(
-            header_segment::frame_table,
+        retval += write(file, header_segment::frame_table, size,
             this->_endian);
-        detail::write_all(file, segment);
-        write(file, this->_frame_table, this->_endian);
+        retval += write(file, this->_frame_table, this->_endian);
     }
 
     // Write the user-defined semantics. These are optional, but we write them
@@ -259,15 +255,17 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::save(_In_ TFile& file) const {
     if (!this->_user_defined_semantics.empty()) {
         const auto data = this->to_utf8(this->_user_defined_semantics);
         const auto size = static_cast<segment_size>(data.size());
-        write(file, header_segment::user_semantics, size, this->_endian);
-        detail::write_all(file, data.data(), size);
+        retval += write(file, header_segment::user_semantics, size,
+            this->_endian);
+        retval += detail::write_all(file, data.data(), size);
     }
 
     // Write the format description.
     {
         const auto size = static_cast<segment_size>(element_type::size_on_disk
             * this->_format_description.count_elements());
-        write(file, header_segment::format_description, size, this->_endian);
+        retval += write(file, header_segment::format_description, size,
+            this->_endian);
 
         assert(this->_format_description.count_groups()
             < (std::numeric_limits<std::uint16_t>::max)());
@@ -275,7 +273,7 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::save(_In_ TFile& file) const {
             this->_format_description.count_groups());
         for (std::uint16_t g = 0; g < groups; ++g) {
             for (auto& e : this->_format_description[g]) {
-                write(file, e, g, this->_endian);
+                retval += write(file, e, g, this->_endian);
             }
         }
     }
@@ -287,8 +285,8 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::save(_In_ TFile& file) const {
         const auto data = this->to_utf8(this->_description.c_str(),
             this->_description.size());
         const auto size = static_cast<segment_size>(data.size());
-        write(file, header_segment::description, size, this->_endian);
-        detail::write_all(file, data.data(), size);
+        retval += write(file, header_segment::description, size, this->_endian);
+        retval += detail::write_all(file, data.data(), size);
     }
 
     // Write the (optional) bounding boxes.
@@ -298,13 +296,14 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::save(_In_ TFile& file) const {
         const auto size = static_cast<segment_size>(sizeof(format)
             + (1 + this->_frame_bounding_boxes.size())
             * this->_bounding_box.size());
-        write(file, header_segment::bounding_box, size, this->_endian);
-        write(file, this->_bounding_box.format(), this->_endian);
-        write(file, this->_bounding_box, this->_endian);
+        retval += write(file, header_segment::bounding_box, size,
+            this->_endian);
+        retval += write(file, this->_bounding_box.format(), this->_endian);
+        retval += write(file, this->_bounding_box, this->_endian);
 
         for (auto& b : this->_frame_bounding_boxes) {
             assert(b.format() == this->_bounding_box.format());
-            write(file, b, this->_endian);
+            retval += write(file, b, this->_endian);
         }
     } /* if (this->_bounding_box) */
 
@@ -314,7 +313,8 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::save(_In_ TFile& file) const {
     // Write the compression meta data.
     // TODO
 
-    return this->_header_size;
+    assert(retval == this->_header_size);
+    return retval;
 }
 
 
@@ -452,7 +452,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_format_description(
             "segment contains incomplete data."); \
     }
 
-    if (!meta_data._format_description) {
+    if (meta_data._format_description) {
         throw std::invalid_argument("The format description has already been "
             "parsed.");
     }
@@ -625,7 +625,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_user_semantics(
  */
 template<class TChar>
 template<class TFile>
-void FPD_NAMESPACE::meta_data<TChar>::write(
+std::size_t FPD_NAMESPACE::meta_data<TChar>::write(
         _In_ TFile& file,
         _In_ const bounding_box& bbox,
         _In_ const FPD_NAMESPACE::endian endian) {
@@ -637,11 +637,11 @@ void FPD_NAMESPACE::meta_data<TChar>::write(
         assert(buffer.size() % stride == 0);
         const auto cnt = buffer.size() / stride;
         swap_bytes(buffer.data(), cnt, stride);
-        detail::write_all(file, buffer.data(), buffer.size());
+        return detail::write_all(file, buffer.data(), buffer.size());
 
     } else {
         // System endian requires no further processing.
-        detail::write_all(file, bbox.data(), bbox.size());
+        return detail::write_all(file, bbox.data(), bbox.size());
     }
 }
 
@@ -651,24 +651,28 @@ void FPD_NAMESPACE::meta_data<TChar>::write(
  */
 template<class TChar>
 template<class TFile>
-void FPD_NAMESPACE::meta_data<TChar>::write(_In_ TFile& file,
+std::size_t FPD_NAMESPACE::meta_data<TChar>::write(_In_ TFile& file,
         _In_ const element_type& element,
         _In_ std::uint16_t group,
         _In_ const FPD_NAMESPACE::endian endian) {
+    std::size_t retval = 0;
+
     auto semantic = swap_enum_endian(element.semantic(), endian);
-    detail::write_all(file, semantic);
+    retval += detail::write_all(file, semantic);
 
     auto format = swap_enum_endian(element.format(), endian);
-    detail::write_all(file, format);
+    retval += detail::write_all(file, format);
 
     group = swap_endian(group, endian);
-    detail::write_all(file, group);
+    retval += detail::write_all(file, group);
 
     auto offset = swap_endian(element.offset(), endian);
-    detail::write_all(file, offset);
+    retval += detail::write_all(file, offset);
 
     auto size = swap_endian(element.size(), endian);
-    detail::write_all(file, size);
+    retval += detail::write_all(file, size);
+
+    return retval;
 }
 
 
@@ -677,7 +681,7 @@ void FPD_NAMESPACE::meta_data<TChar>::write(_In_ TFile& file,
  */
 template<class TChar>
 template<class TFile>
-void FPD_NAMESPACE::meta_data<TChar>::write(
+std::size_t FPD_NAMESPACE::meta_data<TChar>::write(
         _In_ TFile& file,
         _In_ const header_segment segment,
         _In_ const std::underlying_type_t<header_segment> size,
@@ -687,7 +691,7 @@ void FPD_NAMESPACE::meta_data<TChar>::write(
     auto value = static_cast<decltype(size)>(segment);
     value |= (size & size_mask);
     value = swap_endian(value, endian);
-    detail::write_all(file, value);
+    return detail::write_all(file, value);
 }
 
 
@@ -696,7 +700,7 @@ void FPD_NAMESPACE::meta_data<TChar>::write(
  */
 template<class TChar>
 template<class TFile, class TValue>
-void FPD_NAMESPACE::meta_data<TChar>::write(_In_ TFile& file,
+std::size_t FPD_NAMESPACE::meta_data<TChar>::write(_In_ TFile& file,
         _In_ const std::vector<TValue>& values,
         _In_ const FPD_NAMESPACE::endian endian) {
     static_assert(std::is_arithmetic_v<TValue>, "This method is only intended "
@@ -704,10 +708,14 @@ void FPD_NAMESPACE::meta_data<TChar>::write(_In_ TFile& file,
     if (requires_conversion(endian)) {
         auto buffer = values;
         swap_bytes(buffer.data(), buffer.size());
-        detail::write_all(file, buffer.data(), buffer.size() * sizeof(TValue));
+        return detail::write_all(file,
+            buffer.data(),
+            buffer.size() * sizeof(TValue));
 
     } else {
-        detail::write_all(file, values.data(), values.size() * sizeof(TValue));
+        return detail::write_all(file,
+            values.data(),
+            values.size() * sizeof(TValue));
     }
 }
 

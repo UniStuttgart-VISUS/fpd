@@ -40,6 +40,11 @@ public:
     typedef TChar char_type;
 
     /// <summary>
+    /// The type of an element in the format descriptor.
+    /// </summary>
+    typedef typename format_description<char_type>::element_type element_type;
+
+    /// <summary>
     /// The type used to specify the endian of the data.
     /// </summary>
     typedef FPD_NAMESPACE::endian endian_type;
@@ -154,6 +159,14 @@ public:
             _version(std::uint8_t(0), std::uint8_t(0)) { }
 
     /// <summary>
+    /// Gets, if available a human-readable description of the file.
+    /// </summary>
+    /// <returns>The description of the file.</returns>
+    inline const string_type& description(void) const noexcept {
+        return this->_description;
+    }
+
+    /// <summary>
     /// Gets the endian of the file.
     /// </summary>
     /// <returns>The endian of the data in the file.</returns>
@@ -168,6 +181,25 @@ public:
     inline const format_description_type& format_description(
             void) const noexcept {
         return this->_format_description;
+    }
+
+    /// <summary>
+    /// Provides access to the <paramref name="element" />th element of the
+    /// <paramref name="group" />th group of elements in the format description.
+    /// </summary>
+    /// <remarks>
+    /// This is a convenience method that provides a shortcut for a path
+    /// otherwise requiring to call <see cref="format_description()" />.
+    /// </remarks>
+    /// <param name="group">The zero-based index of the group from which to
+    /// retrieve the element.</param>
+    /// <param name="element">THe zero-based index of the element within the
+    /// group.</param>
+    /// <returns>A reference to the specified element.</returns>
+    inline const element_type& format_description(
+            _In_ const std::size_t group,
+            _In_ const std::size_t element) const {
+        return this->_format_description(group, element);
     }
 
     /// <summary>
@@ -271,8 +303,6 @@ public:
 
 private:
 
-    typedef typename format_description_type::element_type element_type;
-
     static void calc_frame_offsets(_Inout_ meta_data& meta_data);
 
     static void parse_bounding_box(_Inout_ meta_data& meta_data,
@@ -300,32 +330,32 @@ private:
         _In_ const void *data, _In_ const std::size_t cnt);
 
     template<class TFile>
-    static void write(_In_ TFile& file,
+    static std::size_t write(_In_ TFile& file,
         _In_ const bounding_box& bbox,
         _In_ const FPD_NAMESPACE::endian endian);
 
     template<class TFile>
-    static void write(_In_ TFile& file,
+    static std::size_t write(_In_ TFile& file,
         _In_ const element_type& element,
         _In_ std::uint16_t group,
         _In_ const FPD_NAMESPACE::endian endian);
 
     template<class TFile>
-    static inline void write(_In_ TFile& file,
+    static inline std::size_t write(_In_ TFile& file,
             _In_ format format,
             _In_ const FPD_NAMESPACE::endian endian) {
         format = swap_enum_endian(format, endian);
-        detail::write_all(file, format);
+        return detail::write_all(file, format);
     }
 
     template<class TFile>
-    static void write(_In_ TFile& file,
+    static std::size_t write(_In_ TFile& file,
         _In_ const header_segment segment,
         _In_ const std::underlying_type_t<header_segment> size,
         _In_ const FPD_NAMESPACE::endian endian);
 
     template<class TFile, class TValue>
-    static void write(_In_ TFile& file,
+    static std::size_t write(_In_ TFile& file,
         _In_ const std::vector<TValue>& values,
         _In_ const FPD_NAMESPACE::endian endian);
 
