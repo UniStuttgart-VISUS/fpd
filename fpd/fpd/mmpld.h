@@ -10,16 +10,63 @@
 
 #if defined(FPD_WITH_MMPLD)
 
+#include <algorithm>
 #include <cstdlib>
 #include <limits>
 #include <set>
+#include <stdexcept>
+#include <vector>
 
 #include <mmpld.h>
 
-#include "fpd/element.h"
+#include "fpd/element_group.h"
 
 
 FPD_NAMESPACE_BEGIN
+
+/// <summary>
+/// Converts an MMPLD colour type to the corresponding FPD format.
+/// </summary>
+/// <param name="colour">The MMPLD colour type to convert.</param>
+/// <returns>The corresponding FPD format, or <see cref="format::unknown" />
+/// if no corresponding format could be found.</returns>
+inline format mmpld_format(_In_ const mmpld::colour_type colour) noexcept;
+
+
+/// <summary>
+/// Converts an MMPLD vertex type to the corresponding FPD format.
+/// </summary>
+/// <param name="vertex">The MMPLD vertex type to convert.</param>
+/// <returns>The corresponding FPD format, or <see cref="format::unknown" />
+/// if no corresponding format could be found.</returns>
+inline format mmpld_format(_In_ const mmpld::vertex_type vertex) noexcept;
+
+
+/// <summary>
+/// Determines the FPD format that is able to hold all information in any of
+/// the MMPLD list headers in the given range.
+/// </summary>
+/// <remarks>
+/// <para>The format computed here prefers per-particle data whenever it is
+/// available in any of the lists. For example, if one list has per-vertex
+/// radius, but the others do not, the resulting format will have a per-vertex
+/// radius. The format computed here always uses the widest type found for any
+/// of the data and it will prefer floating-point formats over integral ones.
+/// That is, an integral format will only be emitted if none of the input lists
+/// uses a floating-point format for the same data.</para>
+/// </remarks>
+/// <typeparam name="TChar">The character type used by the elememt group being
+/// generated.</typeparam>
+/// <typeparam name="TIterator">An input iterator type over MMPLD list headers.
+/// </typeparam>
+/// <param name="begin">The begin of the range of MMPLD list headers.</param>
+/// <param name="end">The end of the range of MMPLD list headers.</param>
+/// <returns>An element group describing the FPD format that is best suited to
+/// represent all data in the given range of MMPLD lists.</returns>
+template<class TChar, class TIterator>
+element_group<TChar> mmpld_format(_In_ const TIterator begin,
+    _In_ const TIterator end);
+
 
 /// <summary>
 /// Produces the (distinct) FPD element groups corresponding to the particle
@@ -38,23 +85,6 @@ FPD_NAMESPACE_BEGIN
 template<class TOut, class TIn>
 std::size_t mmpld_formats(_In_ TOut oit, _In_ const TIn begin,
     _In_ const TIn end);
-
-/// <summary>
-/// Converts an MMPLD colour type to the corresponding FPD format.
-/// </summary>
-/// <param name="colour">The MMPLD colour type to convert.</param>
-/// <returns>The corresponding FPD format, or <see cref="format::unknown" />
-/// if no corresponding format could be found.</returns>
-inline format mmpld_format(_In_ const mmpld::colour_type colour) noexcept;
-
-
-/// <summary>
-/// Converts an MMPLD vertex type to the corresponding FPD format.
-/// </summary>
-/// <param name="vertex">The MMPLD vertex type to convert.</param>
-/// <returns>The corresponding FPD format, or <see cref="format::unknown" />
-/// if no corresponding format could be found.</returns>
-inline format mmpld_format(_In_ const mmpld::vertex_type vertex) noexcept;
 
 
 /// <summary>

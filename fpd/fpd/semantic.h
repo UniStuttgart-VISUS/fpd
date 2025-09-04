@@ -60,6 +60,10 @@ enum class semantic : std::uint64_t {
     /// <summary>
     /// Identifies the colour of the particle.
     /// </summary>
+    /// <remarks>
+    /// The colour carries the <see cref="intensity" /> semantic as well, so it
+    /// can be interpreted as a vector-valued intensity.
+    /// </remarks>
     colour = 0x0000000C,
 
     /// <summary>

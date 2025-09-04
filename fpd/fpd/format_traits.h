@@ -229,6 +229,32 @@ struct filter_format_list<format_list<Format, Formats...>, TPredicate> final {
 
 
 /// <summary>
+/// Resolves the format with the specified scalar type and component count.
+/// </summary>
+template<class TScalar, std::size_t Components>
+struct format_from_type final {
+    typedef format_reverse_traits<std::array<TScalar, Components>> traits;
+    static constexpr const format value = traits::format;
+};
+
+/// <summary>
+/// Specialisation for scalar formats.
+/// </summary>
+template<class TScalar>
+struct format_from_type<TScalar, 1> final {
+    typedef format_reverse_traits<TScalar> traits;
+    static constexpr const format value = traits::format;
+};
+
+/// <summary>
+/// Resolves the format with the specified scalar type and component count.
+/// </summary>
+template<class TScalar, std::size_t Components>
+constexpr auto format_from_type_v
+    = format_from_type<TScalar, Components>::value;
+
+
+/// <summary>
 /// Defines a list of formats that can be expanded to dynamically dispatch to
 /// a per-format handler.
 /// </summary>
@@ -330,6 +356,66 @@ TReturn dispatch_format(_In_ const format format,
 
 
 /// <summary>
+/// Recursion stop for <see cref="is_floating_point" />.
+/// </summary>
+inline constexpr bool is_floating_point(_In_ const format_list<>,
+        _In_ const format) noexcept {
+    return false;
+}
+
+/// <summary>
+/// Determines whether a format uses floating-point scalars.
+/// </summary>
+template<format Format, format... Formats>
+inline constexpr std::size_t is_floating_point(
+        _In_ const format_list<Format, Formats...>,
+        _In_ const format format) noexcept {
+    if (format == Format) {
+        return std::is_floating_point_v<scalar_t<Format>>;
+    } else {
+        return is_floating_point(format_list<Formats...>(), format);
+    }
+}
+
+
+/// <summary>
+/// Recursion stop for <see cref="make_format" />.
+/// </summary>
+inline constexpr format make_format(
+        _In_ const format_list<>,
+        _In_ const format,
+        _In_ const std::size_t) noexcept {
+    return format::unknown;
+}
+
+/// <summary>
+/// Creates a new format using the same scalar type as
+/// <paramref name="format" />, but another number of
+/// <paramref name="components" />.
+/// </summary>
+template<format Format, format... Formats>
+inline constexpr format make_format(
+        _In_ const format_list<Format, Formats...>,
+        _In_ const format format,
+        _In_ const std::size_t components) noexcept {
+    if (format == Format) {
+        typedef scalar_t<Format> value_type;
+
+        switch (components) {
+            case 1: return format_from_type_v<value_type, 1>;
+            case 2: return format_from_type_v<value_type, 2>;
+            case 3: return format_from_type_v<value_type, 3>;
+            case 4: return format_from_type_v<value_type, 4>;
+            default: return format::unknown;
+        }
+
+    } else {
+        return make_format(format_list<Formats...>(), format, components);
+    }
+}
+
+
+/// <summary>
 /// Recursion stop for <see cref="to_components" />.
 /// </summary>
 inline constexpr std::size_t to_components(_In_ const format_list<>,
@@ -376,6 +462,47 @@ inline constexpr DXGI_FORMAT to_dxgi(
 }
 #endif /* defined(_WIN32) */
 
+/// <summary>
+/// Recursion stop for <see cref="to_floating_point" />.
+/// </summary>
+inline format to_floating_point(_In_ const format_list<>, _In_ const format) {
+    throw std::logic_error("The specified format is unknown. Please ensure "
+        "that the format is a valid enumeration member and that all "
+        "enumeration members are registered in the formats list.");
+}
+
+/// <summary>
+/// Determines a similarly sized floating-point format for the given format.
+/// </summary>
+template<format Format, format... Formats>
+inline format to_floating_point(
+        _In_ const format_list<Format, Formats...>,
+        _In_ const format format) {
+    if (format == Format) {
+        typedef scalar_t<Format> value_type;
+
+        if (std::is_floating_point_v<value_type>) {
+            // The format is already a floating-point format, so we can use it
+            // directly.
+            return Format;
+
+        } else {
+            // If we have an integral type, use float for everything up to its
+            // size and double otherwise.
+            if (sizeof(value_type) <= sizeof(float)) {
+                return format_from_type_v<float,
+                    type_components<format_t<Format>>::value>;
+            } else {
+                return format_from_type_v<double,
+                    type_components<format_t<Format>>::value>;
+            }
+        }
+
+    } else {
+        return to_floating_point(format_list<Formats...>(), format);
+    }
+}
+
 
 /// <summary>
 /// Recursion stop for <see cref="to_opengl" />.
@@ -404,19 +531,16 @@ inline constexpr GLenum to_opengl(
 /// <summary>
 /// Recursion stop for <see cref="to_scalar_size" />.
 /// </summary>
-inline std::size_t to_scalar_size(_In_ const format_list<>,
+inline constexpr std::size_t to_scalar_size(_In_ const format_list<>,
         _In_ const format) {
-    throw std::logic_error("The size of the specified format could not be "
-        "derived. Please ensure that the format is a valid enumeration "
-        "member and that all enumeration members are registered in the "
-        "formats list.");
+    return 0;
 }
 
 /// <summary>
 /// Determines the size of a scalar of the given <paramref name="format" />.
 /// </summary>
 template<format Format, format... Formats>
-inline std::size_t to_scalar_size(
+inline constexpr std::size_t to_scalar_size(
         _In_ const format_list<Format, Formats...>,
         _In_ const format format) {
     if (format == Format) {
@@ -430,18 +554,16 @@ inline std::size_t to_scalar_size(
 /// <summary>
 /// Recursion stop for <see cref="to_size" />.
 /// </summary>
-inline std::size_t to_size(_In_ const format_list<>, _In_ const format) {
-    throw std::logic_error("The size of the specified format could not be "
-        "derived. Please ensure that the format is a valid enumeration "
-        "member and that all enumeration members are registered in the "
-        "formats list.");
+inline constexpr std::size_t to_size(_In_ const format_list<>,
+        _In_ const format) {
+    return 0;
 }
 
 /// <summary>
 /// Determines the size of the given <paramref name="format" />.
 /// </summary>
 template<format Format, format... Formats>
-inline std::size_t to_size(
+inline constexpr std::size_t to_size(
         _In_ const format_list<Format, Formats...>,
         _In_ const format format) {
     if (format == Format) {
@@ -568,6 +690,37 @@ inline TReturn dispatch_format(_In_ const format format,
 
 
 /// <summary>
+/// Answer whether the given <paramref name="format" /> uses floating-point
+/// scalar values.
+/// </summary>
+/// <param name="format">The format to check for floating-point scalars.</param>
+/// <returns><see langword="true "/> if the format is a floating-point format,
+/// <see langword="false" /> otherwise.</returns>
+inline constexpr bool is_floating_point(_In_ const format format) noexcept {
+    return detail::is_floating_point(formats(), format);
+}
+
+
+/// <summary>
+/// Creates a format using the same scalar type as <parmaref name="scalar" />,
+/// but which has the given number of <paramref name="components" />.
+/// </summary>
+/// <param name="scalar">The scalar format to be used. Note that this can be a
+/// vector format, too, in which case the format of a component will be used.
+/// </param>
+/// <param name="components">The number of components of the new format, which
+/// must be within [1, 4].</param>
+/// <returns>A new format with the specified number of components. If the
+/// resulting format would be invalid (for instance vectors with zero components
+/// or more than four), the result will be <see cref="format::unknonw" />.
+/// </returns>
+inline constexpr format make_format(_In_ const format scalar,
+        _In_ const std::size_t components) noexcept {
+    return detail::make_format(formats(), scalar, components);
+}
+
+
+/// <summary>
 /// Answer a runtime list of the given compile-time list of formats.
 /// </summary>
 /// <typeparam name="Formats">A list of formats.</param>
@@ -586,7 +739,7 @@ constexpr inline std::array<format, sizeof...(Formats)> to_array(
 /// <param name="format">The format to determine the number of components
 /// of.</param>
 /// <returns>The number of components used by the given format.</returns>
-inline std::size_t to_components(_In_ const format format) noexcept {
+inline constexpr std::size_t to_components(_In_ const format format) noexcept {
     return detail::to_components(formats(), format);
 }
 
@@ -602,6 +755,35 @@ inline constexpr DXGI_FORMAT to_dxgi(_In_ const format format) noexcept {
     return detail::to_dxgi(formats(), format);
 }
 #endif /* defined(_WIN32) */
+
+
+/// <summary>
+/// If <paramref name="format" /> does not use a floating-point scalar type,
+/// create a similarly sized format using floating-point scalars.
+/// </summary>
+/// <param name="format">The format to create a similarly sized floating-point
+/// format for.</param>
+/// <returns>A floating-point format.</returns>
+inline format to_floating_point(_In_ const format format) {
+    return detail::to_floating_point(formats(), format);
+}
+
+
+/// <summary>
+/// Make a similarly sized floating-point format as <paramref name="format" />
+/// with the specified number of components.
+/// </summary>
+/// <param name="format">The format to create a similarly sized floating-point
+/// format for.</param>
+/// <param name="components">The number of components the resulting format will
+/// have, which must be within [1, 4].</param>
+/// <returns>The floating-point vector format if it is supported, or
+/// <see cref="format::unknown" /> if the number of components are illegal.
+/// </returns>
+inline format to_floating_point(_In_ const format format,
+        _In_ const std::size_t components) {
+    return make_format(to_floating_point(format), components);
+}
 
 
 /// <summary>
@@ -631,10 +813,7 @@ inline constexpr GLenum to_opengl(_In_ const format format) noexcept {
 /// </remarks>
 /// <param name="format">The format to get the scalar size of.</param>
 /// <returns>The size of the scalar in bytes.</returns>
-/// <exception cref="std::logic_error">If an invalid <paramref name="format" />
-/// was provided or if the type traits have not been setup properly. The latter
-/// is a bug in the implementation of the library.</exception>
-inline std::size_t to_scalar_size(_In_ const format format) {
+inline constexpr std::size_t to_scalar_size(_In_ const format format) {
     typedef format_list_cat_t<formats, format::unknown> dispatch_type;
     return detail::to_scalar_size(dispatch_type(), format);
 }
@@ -645,10 +824,7 @@ inline std::size_t to_scalar_size(_In_ const format format) {
 /// </summary>
 /// <param name="format">The format to get the size of.</param>
 /// <returns>The size of the format in bytes.</returns>
-/// <exception cref="std::logic_error">If an invalid <paramref name="format" />
-/// was provided or if the type traits have not been setup properly. The latter
-/// is a bug in the implementation of the library.</exception>
-inline std::size_t to_size(_In_ const format format) {
+inline constexpr std::size_t to_size(_In_ const format format) {
     typedef format_list_cat_t<formats, format::unknown> dispatch_type;
     return detail::to_size(dispatch_type(), format);
 }

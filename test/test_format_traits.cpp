@@ -158,5 +158,24 @@ namespace fpd {
             Assert::IsTrue(detail::in_format_list_v<scalar_formats, format::float32>, L"float32", LINE_INFO());
             Assert::IsFalse(detail::in_format_list_v<scalar_formats, format::float32xy>, L"float32xy", LINE_INFO());
         }
+
+        TEST_METHOD(test_to_float) {
+            Assert::AreEqual(int(format::float32), int(to_floating_point(format::float32)), L"float32", LINE_INFO());
+            Assert::AreEqual(int(format::float32), int(to_floating_point(format::int8x)), L"int8x", LINE_INFO());
+            Assert::AreEqual(int(format::float32), int(to_floating_point(format::int32x)), L"int32x", LINE_INFO());
+            Assert::AreEqual(int(format::float32xy), int(to_floating_point(format::int32xy)), L"int32xy", LINE_INFO());
+            Assert::AreEqual(int(format::float64), int(to_floating_point(format::float64)), L"float64", LINE_INFO());
+            Assert::AreEqual(int(format::float64), int(to_floating_point(format::int64)), L"int64", LINE_INFO());
+            Assert::AreEqual(int(format::float64xyzw), int(to_floating_point(format::int64xyzw)), L"int64xyzw", LINE_INFO());
+        }
+
+        TEST_METHOD(test_make_format) {
+            Assert::AreEqual(int(format::float32), int(make_format(format::float32, 1)), L"float32, 1", LINE_INFO());
+            Assert::AreEqual(int(format::float32xy), int(make_format(format::float32, 2)), L"float32, 2", LINE_INFO());
+            Assert::AreEqual(int(format::float32xyz), int(make_format(format::float32xy, 3)), L"float32xy, 3", LINE_INFO());
+            Assert::AreEqual(int(format::float32xyzw), int(make_format(format::float32xy, 4)), L"float32xy, 4", LINE_INFO());
+            Assert::AreEqual(int(format::unknown), int(make_format(format::float32xy, 0)), L"float32xy, 0", LINE_INFO());
+            Assert::AreEqual(int(format::unknown), int(make_format(format::float32xy, 5)), L"float32xy, 5", LINE_INFO());
+        }
     };
 }

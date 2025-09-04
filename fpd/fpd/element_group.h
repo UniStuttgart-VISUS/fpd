@@ -57,6 +57,11 @@ public:
     typedef typename element_type::semantic_type semantic_type;
 
     /// <summary>
+    /// Initialises a new instance.
+    /// </summary>
+    element_group(void) = default;
+
+    /// <summary>
     /// In-place constructs a new element at the end of the group.
     /// </summary>
     /// <param name="semantic">The semantic of the element to be added.</param>
