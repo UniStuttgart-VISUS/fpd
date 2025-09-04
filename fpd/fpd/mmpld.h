@@ -61,10 +61,10 @@ inline format mmpld_format(_In_ const mmpld::vertex_type vertex) noexcept;
 /// </typeparam>
 /// <param name="begin">The begin of the range of MMPLD list headers.</param>
 /// <param name="end">The end of the range of MMPLD list headers.</param>
-/// <returns>An element group describing the FPD format that is best suited to
-/// represent all data in the given range of MMPLD lists.</returns>
+/// <returns>An description of the FPD format that is best suited to represent
+/// all data in the given range of MMPLD lists.</returns>
 template<class TChar, class TIterator>
-element_group<TChar> mmpld_format(_In_ const TIterator begin,
+format_description<TChar> mmpld_format(_In_ const TIterator begin,
     _In_ const TIterator end);
 
 

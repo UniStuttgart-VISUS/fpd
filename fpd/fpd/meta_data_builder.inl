@@ -280,18 +280,14 @@ FPD_NAMESPACE::meta_data_builder<TChar>::with_description(
  * FPD_NAMESPACE::meta_data_builder<TChar>::with_frames
  */
 template<class TChar>
-FPD_NAMESPACE::meta_data_builder<TChar>&
+template<class TIterator>
+FPD_NAMESPACE::meta_data_builder<TChar> &
 FPD_NAMESPACE::meta_data_builder<TChar>::with_frames(
-        _In_ const std::initializer_list<size_type>& particles) {
-    if (particles.size() < 1) {
-        throw std::invalid_argument("An FPD file must contain at least one "
-            "frame.");
-    }
-
+        _In_ const TIterator begin,
+        _In_ const TIterator end) {
     this->_frame_table.clear();
-    this->_frame_table.reserve(particles.size());
 
-    for (auto it = particles.begin(), end = particles.end(); it != end; ++it) {
+    for (auto it = begin; it != end; ++it) {
         this->_frame_table.push_back(*it);
     }
 

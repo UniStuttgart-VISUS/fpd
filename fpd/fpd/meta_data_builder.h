@@ -327,10 +327,22 @@ public:
     /// </summary>
     /// <param name="particles">The number of particles in each frame.</param>
     /// <returns>*<see langword="this" />.</returns>
-    /// <exception cref="std::invalid_argument">If the number of frames is less
-    /// than one.</exception>
-    meta_data_builder& with_frames(
-        _In_ const std::initializer_list<size_type>& particles);
+    inline meta_data_builder& with_frames(
+            _In_ const std::initializer_list<size_type>& particles) {
+        return this->with_frames(particles.begin(), particles.end());
+    }
+
+    /// <summary>
+    /// Sets the frames in the file.
+    /// </summary>
+    /// <typeparam name="TIterator">An iterator over the number of particles in
+    /// each frame.</typeparam>
+    /// <param name="begin">The begin of the range of particle counts.</param>
+    /// <param name="end">The end of the range of particle counts.</param>
+    /// <returns>*<see langword="this" />.</returns>
+    template<class TIterator>
+    meta_data_builder& with_frames(_In_ const TIterator begin,
+        _In_ const TIterator end);
 
 #if defined(FPD_WITH_MMPLD)
     /// <summary>

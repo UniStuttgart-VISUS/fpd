@@ -217,10 +217,11 @@ namespace fpd {
 
             {
                 auto format = mmpld_format<char>(lists.begin(), lists.end());
-                Assert::AreEqual(std::size_t(1), format.count(), L"one element", LINE_INFO());
-                Assert::AreEqual(std::uint16_t(3 * sizeof(float)), format.size(), L"size of format", LINE_INFO());
-                Assert::AreEqual(int(semantic::position), int(format[0].semantic()), L"vertex semantic", LINE_INFO());
-                Assert::AreEqual(int(format::float32xyz), int(format[0].format()), L"vertex format", LINE_INFO());
+                Assert::AreEqual(std::size_t(1), format.count_elements(), L"one element", LINE_INFO());
+                Assert::AreEqual(std::size_t(1), format.count_groups(), L"one group", LINE_INFO());
+                Assert::AreEqual(std::size_t(3 * sizeof(float)), format.size(), L"size of format", LINE_INFO());
+                Assert::AreEqual(int(semantic::position), int(format(0, 0).semantic()), L"vertex semantic", LINE_INFO());
+                Assert::AreEqual(int(format::float32xyz), int(format(0, 0).format()), L"vertex format", LINE_INFO());
             }
 
             lists.emplace_back();
@@ -229,10 +230,11 @@ namespace fpd {
 
             {
                 auto format = mmpld_format<char>(lists.begin(), lists.end());
-                Assert::AreEqual(std::size_t(1), format.count(), L"one element", LINE_INFO());
-                Assert::AreEqual(std::uint16_t(4 * sizeof(float)), format.size(), L"size of format", LINE_INFO());
-                Assert::AreEqual(int(semantic::position_radius), int(format[0].semantic()), L"vertex semantic", LINE_INFO());
-                Assert::AreEqual(int(format::float32xyzw), int(format[0].format()), L"vertex format", LINE_INFO());
+                Assert::AreEqual(std::size_t(1), format.count_elements(), L"one element", LINE_INFO());
+                Assert::AreEqual(std::size_t(1), format.count_groups(), L"one group", LINE_INFO());
+                Assert::AreEqual(std::size_t(4 * sizeof(float)), format.size(), L"size of format", LINE_INFO());
+                Assert::AreEqual(int(semantic::position_radius), int(format(0, 0).semantic()), L"vertex semantic", LINE_INFO());
+                Assert::AreEqual(int(format::float32xyzw), int(format(0, 0).format()), L"vertex format", LINE_INFO());
             }
 
             lists.emplace_back();
@@ -241,12 +243,13 @@ namespace fpd {
 
             {
                 auto format = mmpld_format<char>(lists.begin(), lists.end());
-                Assert::AreEqual(std::size_t(2), format.count(), L"two element2", LINE_INFO());
-                Assert::AreEqual(std::uint16_t(4 * sizeof(float) + sizeof(float)), format.size(), L"size of format", LINE_INFO());
-                Assert::AreEqual(int(semantic::position_radius), int(format[0].semantic()), L"vertex semantic", LINE_INFO());
-                Assert::AreEqual(int(format::float32xyzw), int(format[0].format()), L"vertex format", LINE_INFO());
-                Assert::AreEqual(int(semantic::intensity), int(format[1].semantic()), L"colour semantic", LINE_INFO());
-                Assert::AreEqual(int(format::float32), int(format[1].format()), L"colour format", LINE_INFO());
+                Assert::AreEqual(std::size_t(2), format.count_elements(), L"two elements", LINE_INFO());
+                Assert::AreEqual(std::size_t(1), format.count_groups(), L"one group", LINE_INFO());
+                Assert::AreEqual(std::size_t(4 * sizeof(float) + sizeof(float)), format.size(), L"size of format", LINE_INFO());
+                Assert::AreEqual(int(semantic::position_radius), int(format(0, 0).semantic()), L"vertex semantic", LINE_INFO());
+                Assert::AreEqual(int(format::float32xyzw), int(format(0, 0).format()), L"vertex format", LINE_INFO());
+                Assert::AreEqual(int(semantic::intensity), int(format(0, 1).semantic()), L"colour semantic", LINE_INFO());
+                Assert::AreEqual(int(format::float32), int(format(0, 1).format()), L"colour format", LINE_INFO());
             }
 
             lists.emplace_back();
@@ -255,12 +258,13 @@ namespace fpd {
 
             {
                 auto format = mmpld_format<char>(lists.begin(), lists.end());
-                Assert::AreEqual(std::size_t(2), format.count(), L"two element2", LINE_INFO());
-                Assert::AreEqual(std::uint16_t(4 * sizeof(float) + 3 * sizeof(float)), format.size(), L"size of format", LINE_INFO());
-                Assert::AreEqual(int(semantic::position_radius), int(format[0].semantic()), L"vertex semantic", LINE_INFO());
-                Assert::AreEqual(int(format::float32xyzw), int(format[0].format()), L"vertex format", LINE_INFO());
-                Assert::AreEqual(int(semantic::colour), int(format[1].semantic()), L"colour semantic", LINE_INFO());
-                Assert::AreEqual(int(format::float32xyz), int(format[1].format()), L"colour format", LINE_INFO());
+                Assert::AreEqual(std::size_t(2), format.count_elements(), L"two elements", LINE_INFO());
+                Assert::AreEqual(std::size_t(1), format.count_groups(), L"one group", LINE_INFO());
+                Assert::AreEqual(std::size_t(4 * sizeof(float) + 3 * sizeof(float)), format.size(), L"size of format", LINE_INFO());
+                Assert::AreEqual(int(semantic::position_radius), int(format(0, 0).semantic()), L"vertex semantic", LINE_INFO());
+                Assert::AreEqual(int(format::float32xyzw), int(format(0, 0).format()), L"vertex format", LINE_INFO());
+                Assert::AreEqual(int(semantic::colour), int(format(0, 1).semantic()), L"colour semantic", LINE_INFO());
+                Assert::AreEqual(int(format::float32xyz), int(format(0, 1).format()), L"colour format", LINE_INFO());
             }
         }
 

@@ -42,7 +42,7 @@ FPD_NAMESPACE::format FPD_NAMESPACE::mmpld_format(
  * FPD_NAMESPACE::mmpld_format
  */
 template<class TChar, class TIterator>
-FPD_NAMESPACE::element_group<TChar> FPD_NAMESPACE::mmpld_format(
+FPD_NAMESPACE::format_description<TChar> FPD_NAMESPACE::mmpld_format(
         _In_ const TIterator begin,
         _In_ const TIterator end) {
     typedef element_group<TChar> group_type;
@@ -122,7 +122,7 @@ FPD_NAMESPACE::element_group<TChar> FPD_NAMESPACE::mmpld_format(
     } /* for (std::size_t c = 1; c < candidates.size(); ++c) */
 
     // Rebuild the group from the merged formats.
-    group_type retval;
+    format_description<TChar> retval;
     for (auto& f : formats) {
         retval.add(f.first, f.second);
     }

@@ -63,15 +63,8 @@ TIterator find_argument(_In_ const TIterator begin,
 /// <param name="argv"></param>
 /// <returns></returns>
 int _tmain(const int argc, const _TCHAR **argv) {
-#if defined(_WIN32)
-    typedef HANDLE handle_type;
-    typedef fpd::win32_io io_type;
-#else /* defined(_WIN32) */
-    typedef int handle_type;
-    typedef fpd::posix_io io_type;
-#endif /* defined(_WIN32) */
-
     try {
+        std::basic_string<_TCHAR> description;
         std::basic_string<_TCHAR> input;
         std::basic_string<_TCHAR> output;
 
@@ -95,42 +88,72 @@ int _tmain(const int argc, const _TCHAR **argv) {
             }
         }
 
-        // Open the MMPLD file and go to the first list of the first frame in
-        // order to construct the particle format.
-        mmpld::file<handle_type, _TCHAR> mmpld(input.c_str());
-        mmpld::list_header reference_list { };
-
-        for (std::size_t f = 0; f < mmpld.frames(); ++f) {
-            mmpld.open_frame(f);
-
-            if (mmpld.frame_header().lists < 1) {
-                continue;
-            }
-
-            mmpld.read_particles(true, reference_list, nullptr, 0);
-            break;
-        }
-
-        if (reference_list.particles == 0) {
-            throw std::invalid_argument("The MMPLD file contains no usable "
-                "data.");
-        }
-
-        // Start building the FPD meta data from the MMPLD format.
-        fpd::meta_data_builder<_TCHAR> builder;
-
         {
-            auto desc = std::basic_string<_TCHAR>(_T("Converted from "));
-            desc += input;
-            builder.with_description(std::move(desc));
+            auto end = argv + argc;
+            auto it = ::find_argument(argv, end, _T("--description"));
+            if (it != end) {
+                description = *it;
+            } else {
+                description = std::basic_string<_TCHAR>(_T("Converted from "));
+                description += input;
+                description += _T(".");
+            }
         }
 
-        builder.with_mmpld_format(reference_list);
+        // Open the MMPLD file and scan its contents to build the particle
+        // format.
+        mmpld::file_header file_header;
+        std::vector<std::uint64_t> frame_sizes;
+        std::vector<mmpld::list_header> list_headers;
+        mmpld::seek_table seek_table;
 
-        // Add the frames.
-        for (std::size_t f = 0; f < mmpld.frames(); ++f) {
+        std::ifstream mmpld;
+        mmpld.exceptions(mmpld.exceptions() | std::ios::failbit);
+        mmpld.open(input, std::ios::binary);
 
+        mmpld::read_file_header(mmpld, file_header, seek_table);
+
+        for (decltype(file_header.frames) f = 0; f < file_header.frames; ++f) {
+            mmpld::frame_header frame_header;
+
+            mmpld.seekg(seek_table[f]);
+            mmpld::read_frame_header(mmpld, file_header.version, frame_header);
+
+            frame_sizes.push_back(0);
+
+            for (decltype(frame_header.lists) l = 0; l < frame_header.lists;
+                    ++l) {
+                list_headers.emplace_back();
+                auto& lh = list_headers.back();
+                mmpld::read_list_header(mmpld, file_header.version, lh);
+                frame_sizes.back() += lh.particles;
+            }
         }
+
+        // Determine the particle format in the FPD file. From this format,
+        // which might be a superset of all lists in the MMPLD file, we derive
+        // the common MMPLD format that we will use to convert the data while
+        // reading.
+        auto fpd_format = fpd::mmpld_format<_TCHAR>(list_headers.begin(),
+            list_headers.end());
+        auto mmpld_format = fpd::mmpld_list(fpd_format);
+
+        fpd::meta_data_builder<_TCHAR> builder;
+        builder.with_format(fpd_format)
+            .with_description(description)
+            .with_frames(frame_sizes.begin(), frame_sizes.end());
+        auto meta_data = builder.build();
+
+        // Write the meta data to the FPD file.
+#if defined(_WIN32)
+        fpd::win32_io fpd(output.c_str(), GENERIC_READ | GENERIC_WRITE,
+            FILE_SHARE_READ, CREATE_ALWAYS);
+#else /* defined(_WIN32) */
+        fpd::posix_io fpd(output.c_str(), O_RDWR | O_BINARY | O_TRUNC);
+#endif /* defined(_WIN32) */
+        meta_data.save(fpd);
+
+        //mmpld::read_as()
 
     } catch (std::exception& ex) {
         std::cerr << ex.what() << std::endl;
