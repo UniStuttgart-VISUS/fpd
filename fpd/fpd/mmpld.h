@@ -19,7 +19,7 @@
 
 #include <mmpld.h>
 
-#include "fpd/element_group.h"
+#include "fpd/format_description.h"
 
 
 FPD_NAMESPACE_BEGIN
@@ -85,6 +85,22 @@ element_group<TChar> mmpld_format(_In_ const TIterator begin,
 template<class TOut, class TIn>
 std::size_t mmpld_formats(_In_ TOut oit, _In_ const TIn begin,
     _In_ const TIn end);
+
+
+/// <summary>
+/// Create an MMPLD list header for the given FPD format. In case of success,
+/// the MMPLD list header will represent the same in-memory layout as the input
+/// format. The function will fail if the input format cannot be represented
+/// by means of the MMPLD format specification.
+/// </summary>
+/// <typeparam name="TChar">The character type used in the format description.
+/// </typeparam>
+/// <param name="format">The format description.</param>
+/// <returns>A list header for the given format.</returns>
+/// <exception cref="std::invalid_argument">If the input format cannot be
+/// converted to MMPLD.</exception>
+template<class TChar>
+mmpld::list_header mmpld_list(_In_ const format_description<TChar>& format);
 
 
 /// <summary>

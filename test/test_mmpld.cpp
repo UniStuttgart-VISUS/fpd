@@ -263,5 +263,159 @@ namespace fpd {
                 Assert::AreEqual(int(format::float32xyz), int(format[1].format()), L"colour format", LINE_INFO());
             }
         }
+
+        TEST_METHOD(test_mmpld_list) {
+            {
+                const format_description<char> format {
+                    { semantic::position, format::float32xyz }
+                };
+                const auto list = mmpld_list(format);
+                Assert::AreEqual(int(mmpld::vertex_type::float_xyz), int(list.vertex_type), L"vertex type", LINE_INFO());
+                Assert::AreEqual(int(mmpld::colour_type::none), int(list.colour_type), L"colour type", LINE_INFO());
+            }
+
+            {
+                const format_description<char> format{
+                    { semantic::position_radius, format::float32xyzw }
+                };
+                const auto list = mmpld_list(format);
+                Assert::AreEqual(int(mmpld::vertex_type::float_xyzr), int(list.vertex_type), L"vertex type", LINE_INFO());
+                Assert::AreEqual(int(mmpld::colour_type::none), int(list.colour_type), L"colour type", LINE_INFO());
+            }
+
+            {
+                const format_description<char> format{
+                    { semantic::position, format::float32xyz },
+                    { semantic::intensity, format::float32 }
+                };
+                const auto list = mmpld_list(format);
+                Assert::AreEqual(int(mmpld::vertex_type::float_xyz), int(list.vertex_type), L"vertex type", LINE_INFO());
+                Assert::AreEqual(int(mmpld::colour_type::intensity), int(list.colour_type), L"colour type", LINE_INFO());
+            }
+
+            {
+                const format_description<char> format{
+                    { semantic::position, format::float32xyz },
+                    { semantic::colour, format::uint8xyz }
+                };
+                const auto list = mmpld_list(format);
+                Assert::AreEqual(int(mmpld::vertex_type::float_xyz), int(list.vertex_type), L"vertex type", LINE_INFO());
+                Assert::AreEqual(int(mmpld::colour_type::rgb8), int(list.colour_type), L"colour type", LINE_INFO());
+            }
+
+            {
+                const format_description<char> format{
+                    { semantic::position, format::float32xyz },
+                    { semantic::colour, format::uint8xyzw }
+                };
+                const auto list = mmpld_list(format);
+                Assert::AreEqual(int(mmpld::vertex_type::float_xyz), int(list.vertex_type), L"vertex type", LINE_INFO());
+                Assert::AreEqual(int(mmpld::colour_type::rgba8), int(list.colour_type), L"colour type", LINE_INFO());
+            }
+
+            {
+                const format_description<char> format{
+                    { semantic::position, format::float32xyz },
+                    { semantic::radius, format::float32 },
+                    { semantic::colour, format::uint8xyz }
+                };
+                const auto list = mmpld_list(format);
+                Assert::AreEqual(int(mmpld::vertex_type::float_xyzr), int(list.vertex_type), L"vertex type", LINE_INFO());
+                Assert::AreEqual(int(mmpld::colour_type::rgb8), int(list.colour_type), L"colour type", LINE_INFO());
+            }
+
+            {
+                const format_description<char> format{
+                    { semantic::position, format::int16xyz },
+                    { semantic::colour, format::float32xyzw }
+                };
+                const auto list = mmpld_list(format);
+                Assert::AreEqual(int(mmpld::vertex_type::short_xyz), int(list.vertex_type), L"vertex type", LINE_INFO());
+                Assert::AreEqual(int(mmpld::colour_type::rgba32), int(list.colour_type), L"colour type", LINE_INFO());
+            }
+
+            {
+                const format_description<char> format{
+                    { semantic::position, format::float64xyz },
+                    { semantic::intensity, format::float64 }
+                };
+                const auto list = mmpld_list(format);
+                Assert::AreEqual(int(mmpld::vertex_type::double_xyz), int(list.vertex_type), L"vertex type", LINE_INFO());
+                Assert::AreEqual(int(mmpld::colour_type::intensity64), int(list.colour_type), L"colour type", LINE_INFO());
+            }
+
+            {
+                const format_description<char> format{
+                    { semantic::position, format::float32xyz },
+                    { semantic::colour, format::uint8xyz },
+                    { semantic::intensity, format::float32 }
+                };
+                Assert::ExpectException<std::invalid_argument>([format](void) {
+                    mmpld_list(format);
+                }, L"colour and intensity are not allowed at the same time", LINE_INFO());
+            }
+
+            {
+                const format_description<char> format{
+                    { semantic::position, format::float32xyz },
+                    { semantic::position, format::float32xyz }
+                };
+                Assert::ExpectException<std::invalid_argument>([format](void) {
+                    mmpld_list(format);
+                }, L"multiple positions are not allowed", LINE_INFO());
+            }
+
+            {
+                const format_description<char> format{
+                    { semantic::intensity, format::float32 },
+                    { semantic::position, format::float32xyz }
+                };
+                Assert::ExpectException<std::invalid_argument>([format](void) {
+                    mmpld_list(format);
+                }, L"intensity cannot be before positon", LINE_INFO());
+            }
+
+            {
+                const format_description<char> format{
+                    { semantic::colour, format::float32xyzw },
+                    { semantic::position, format::float32xyz }
+                };
+                Assert::ExpectException<std::invalid_argument>([format](void) {
+                    mmpld_list(format);
+                }, L"colour cannot be before positon", LINE_INFO());
+            }
+
+            {
+                const format_description<char> format{
+                    { semantic::position_radius, format::float32xyzw },
+                    { semantic::radius, format::float32 }
+                };
+                Assert::ExpectException<std::invalid_argument>([format](void) {
+                    mmpld_list(format);
+                }, L"radius cannot be specified twice", LINE_INFO());
+            }
+
+            {
+                const format_description<char> format{
+                    { semantic::position, format::float32xyz },
+                    { semantic::colour, format::uint8xyzw },
+                    { semantic::radius, format::float32 }
+                };
+                Assert::ExpectException<std::invalid_argument>([format](void) {
+                    mmpld_list(format);
+                }, L"radius must follow position", LINE_INFO());
+            }
+
+            {
+                const format_description<char> format{
+                    { semantic::position, format::int16xyz },
+                    { semantic::radius, format::float32 }
+                };
+                Assert::ExpectException<std::invalid_argument>([format](void) {
+                    mmpld_list(format);
+                }, L"separate radius is not supported for int16", LINE_INFO());
+            }
+
+        }
     };
 }

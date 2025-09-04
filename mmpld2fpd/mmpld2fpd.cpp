@@ -132,8 +132,6 @@ int _tmain(const int argc, const _TCHAR **argv) {
 
         }
 
-
-
     } catch (std::exception& ex) {
         std::cerr << ex.what() << std::endl;
     }

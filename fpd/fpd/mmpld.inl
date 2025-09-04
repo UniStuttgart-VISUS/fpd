@@ -186,6 +186,160 @@ std::size_t FPD_NAMESPACE::mmpld_formats(
 
 
 /*
+ * FPD_NAMESPACE::mmpld_list
+ */
+template<class TChar>
+mmpld::list_header FPD_NAMESPACE::mmpld_list(
+        _In_ const format_description<TChar>& format) {
+    if (format.count_groups() > 1) {
+        throw std::invalid_argument("MMPLD lists only support a single data "
+            "stream wherefore formats comprising multiple groups cannot be "
+            "represented.");
+    }
+    if (format.count_elements() < 1) {
+        throw std::invalid_argument("The input format must contain at least "
+            "one element.");
+    }
+
+    mmpld::list_header retval { };
+
+    for (auto& e : format[0]) {
+        switch (e.semantic()) {
+            case semantic::position:
+                if (retval.vertex_type != mmpld::vertex_type::none) {
+                    throw std::invalid_argument("The input format contains "
+                        "multiple positions, which cannot be represented in "
+                        "MMPLD.");
+                }
+                if (retval.colour_type != mmpld::colour_type::none) {
+                    throw std::invalid_argument("The input format specifies "
+                        "the vertex colour or intensity before its position, "
+                        "which is not supported in MMPLD.");
+                }
+
+                switch (e.format()) {
+                    case format::float32xyz:
+                        retval.vertex_type = mmpld::vertex_type::float_xyz;
+                        break;
+
+                    case format::int16xyz:
+                        retval.vertex_type = mmpld::vertex_type::short_xyz;
+                        break;
+
+                    case format::float64xyz:
+                        retval.vertex_type = mmpld::vertex_type::double_xyz;
+                        break;
+
+                    default:
+                        throw std::invalid_argument("The input format uses a "
+                            "vertex representation that is not supported by "
+                            "MMPLD.");
+                }
+                break;
+
+            case semantic::radius:
+                if ((retval.vertex_type != mmpld::vertex_type::float_xyz)
+                        || (retval.colour_type != mmpld::colour_type::none)) {
+                    throw std::invalid_argument("If the radius is represented "
+                        "by an individual input element, it must directly "
+                        "follow the position. Only float32 radii are supported "
+                        "in this case.");
+                }
+                retval.vertex_type = mmpld::vertex_type::float_xyzr;
+                break;
+
+            case semantic::position_radius:
+                if (retval.vertex_type != mmpld::vertex_type::none) {
+                    throw std::invalid_argument("The input format contains "
+                        "multiple positions, which cannot be represented in "
+                        "MMPLD.");
+                }
+                if (retval.colour_type != mmpld::colour_type::none) {
+                    throw std::invalid_argument("The input format specifies "
+                        "the vertex colour or intensity before its position, "
+                        "which is not supported in MMPLD.");
+                }
+
+                switch (e.format()) {
+                    case format::float32xyzw:
+                        retval.vertex_type = mmpld::vertex_type::float_xyzr;
+                        break;
+
+                    default:
+                        throw std::invalid_argument("The input format uses a "
+                            "vertex representation that is not supported by "
+                            "MMPLD.");
+                }
+                break;
+
+            case semantic::intensity:
+                if (retval.colour_type != mmpld::colour_type::none) {
+                    throw std::invalid_argument("The input format contains "
+                        "multiple colour/intensity values, which cannot be "
+                        "represented in MMPLD.");
+                }
+
+                switch (e.format()) {
+                    case format::float32:
+                        retval.colour_type = mmpld::colour_type::intensity;
+                        break;
+
+                    case format::float64:
+                        retval.colour_type = mmpld::colour_type::intensity64;
+                        break;
+
+                        throw std::invalid_argument("The input format uses a "
+                            "intensity representation that is not supported by "
+                            "MMPLD.");
+                }
+                break;
+
+            case semantic::colour:
+                if (retval.colour_type != mmpld::colour_type::none) {
+                    throw std::invalid_argument("The input format contains "
+                        "multiple colour/intensity values, which cannot be "
+                        "represented in MMPLD.");
+                }
+
+                switch (e.format()) {
+                    case format::uint8xyz:
+                        retval.colour_type = mmpld::colour_type::rgb8;
+                        break;
+
+                    case format::uint8xyzw:
+                        retval.colour_type = mmpld::colour_type::rgba8;
+                        break;
+
+                    case format::float32xyz:
+                        retval.colour_type = mmpld::colour_type::rgb32;
+                        break;
+
+                    case format::float32xyzw:
+                        retval.colour_type = mmpld::colour_type::rgba32;
+                        break;
+
+                    case format::uint16xyzw:
+                        retval.colour_type = mmpld::colour_type::rgba16;
+                        break;
+
+                    default:
+                        throw std::invalid_argument("The input format uses a "
+                            "colour representation that is not supported by "
+                            "MMPLD.");
+                }
+                break;
+
+            default:
+                throw std::invalid_argument("The input format contains a "
+                    "semantic that cannot be represented in MMPLD.");
+        }
+    }
+
+    return retval;
+}
+
+
+/*
  * FPD_NAMESPACE::mmpld_semantic
  */
 FPD_NAMESPACE::semantic FPD_NAMESPACE::mmpld_semantic(

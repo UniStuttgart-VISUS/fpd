@@ -71,7 +71,7 @@ FPD_NAMESPACE::meta_data<TChar>& FPD_NAMESPACE::meta_data<TChar>::parse(
         cur += sizeof(header);
 
         // Split the header_segments and the length of the segment.
-        constexpr const decltype(header) header_segment_mask = (0xFF << 24);
+        constexpr const decltype(header) header_segment_mask = (0xFFu << 24);
         const auto segment = header_segment_mask & header;
         const auto length = ~header_segment_mask & header;
 
@@ -245,8 +245,8 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::save(_In_ TFile& file) const {
 
     // Write the frame table (# of particles only).
     {
-        const auto size = this->_frame_table.size()
-            * sizeof(frame_table_type::value_type);
+        const auto size = static_cast<segment_size>(this->_frame_table.size()
+            * sizeof(frame_table_type::value_type));
         retval += write(file, header_segment::frame_table, size,
             this->_endian);
         retval += write(file, this->_frame_table, this->_endian);
@@ -287,7 +287,7 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::save(_In_ TFile& file) const {
     // specification.
     if (!this->_description.empty()) {
         const auto data = this->to_utf8(this->_description.c_str(),
-            this->_description.size());
+            static_cast<int>(this->_description.size()));
         const auto size = static_cast<segment_size>(data.size());
         retval += write(file, header_segment::description, size, this->_endian);
         retval += detail::write_all(file, data.data(), size);
@@ -580,11 +580,11 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_global_particle_properties(
         const auto f = swap_enum_endian<format_type>(cur, meta_data.endian());
         cur += sizeof(f);
 
-        const auto cnt = to_size(f);
-        _FPD_THROW_IF_INCOMPLETE(cnt);
+        const auto l = to_size(f);
+        _FPD_THROW_IF_INCOMPLETE(l);
         meta_data._global_particle_properties[s] = format_variant(
-            f, cur, cnt, meta_data.endian());
-        cur += cnt;
+            f, cur, l, meta_data.endian());
+        cur += l;
     }
 
 #undef _FPD_THROW_IF_INCOMPLETE
@@ -596,9 +596,9 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_global_particle_properties(
  */
 template<class TChar>
 void FPD_NAMESPACE::meta_data<TChar>::parse_spatial_hierarchy(
-        _Inout_ meta_data& meta_data,
-        _In_ const void *data,
-        _In_ const std::size_t cnt) {
+        _Inout_ meta_data& ,
+        _In_ const void *,
+        _In_ const std::size_t ) {
     throw "TODO";
 }
 
