@@ -103,7 +103,7 @@ public:
             _In_ const std::uint16_t offset = 0,
             _In_ const std::uint16_t size = 0,
             _In_ const bool eval_offset = false) {
-        this->add(semantic, nullptr, offset, size, eval_offset);
+        this->add(semantic, nullptr, format, offset, size, eval_offset);
     }
 
     /// <summary>

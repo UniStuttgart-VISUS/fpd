@@ -173,5 +173,35 @@ namespace fpd {
             const auto sem = mmpld_semantic(mmpld);
             Assert::AreEqual(int(semantic::position), int(sem), L"FPD semantic", LINE_INFO());
         }
+
+        TEST_METHOD(test_mmpld_elements) {
+            std::vector<element_group<char>> formats;
+            std::vector<mmpld::list_header> lists;
+
+            lists.emplace_back();
+            lists.back().vertex_type = mmpld::vertex_type::float_xyz;
+            lists.back().colour_type = mmpld::colour_type::rgb8;
+            lists.back().radius = 42.0f;
+
+            lists.emplace_back();
+            lists.back().vertex_type = mmpld::vertex_type::float_xyzr;
+            lists.back().colour_type = mmpld::colour_type::intensity32;
+
+            lists.emplace_back();
+            lists.back().vertex_type = mmpld::vertex_type::float_xyz;
+            lists.back().colour_type = mmpld::colour_type::rgb8;
+            lists.back().radius = 42.0f;
+
+            lists.emplace_back();
+            lists.back().vertex_type = mmpld::vertex_type::float_xyz;
+            lists.back().colour_type = mmpld::colour_type::rgb8;
+            lists.back().radius = 42.0f;
+
+            lists.emplace_back();
+            lists.back().vertex_type = mmpld::vertex_type::float_xyzr;
+            lists.back().colour_type = mmpld::colour_type::intensity32;
+
+            Assert::AreEqual(std::size_t(2), mmpld_formats(std::back_inserter(formats), lists.begin(), lists.end()), L"# distinct elements", LINE_INFO());
+        }
     };
 }

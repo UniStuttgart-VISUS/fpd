@@ -196,6 +196,7 @@
     <None Include="fpd\icu_category.inl" />
     <None Include="fpd\meta_data.inl" />
     <None Include="fpd\meta_data_builder.inl" />
+    <None Include="fpd\mmpld.inl" />
     <None Include="fpd\pkd_tree_builder.inl" />
     <None Include="fpd\semantic.inl" />
   </ItemGroup>
