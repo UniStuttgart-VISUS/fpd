@@ -419,9 +419,9 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_bounding_box(
  */
 template<class TChar>
 void FPD_NAMESPACE::meta_data<TChar>::parse_compression(
-        _Inout_ meta_data& meta_data,
-        _In_ const void *data,
-        _In_ const std::size_t cnt) {
+        _Inout_ meta_data&,
+        _In_ const void *,
+        _In_ const std::size_t) {
     throw "TODO";
 }
 

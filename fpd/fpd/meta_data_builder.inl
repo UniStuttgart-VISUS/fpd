@@ -182,16 +182,19 @@ FPD_NAMESPACE::meta_data_builder<TChar>::size(void) const {
         retval += sizeof(header_segment);
         // Note: we write out the description without the terminating null, so
         // we force only the actual characters to be measured here.
+        assert(this->_description.size() < (std::numeric_limits<int>::max)());
+        const auto len = static_cast<int>(this->_description.size());
+
         if (meta_data_builder::has_code_page) {
             retval += convert_string(
                 static_cast<char *>(nullptr), 0, this->code_page(),
-                this->_description.c_str(), this->_description.size(),
+                this->_description.c_str(), len,
                 encodings::utf8);
         } else {
             assert(sizeof(char_type) > 1);
             retval += convert_string(
                 static_cast<char *>(nullptr), 0,
-                this->_description.c_str(), this->_description.size(),
+                this->_description.c_str(), len,
                 encodings::utf8);
         }
     }
