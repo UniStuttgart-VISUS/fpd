@@ -14,6 +14,7 @@ namespace fpd {
     public:
 
         TEST_METHOD(win32) {
+            typedef detail::io_traits<HANDLE> win32_io;
             const auto expected = "Horst";
             char actual[] = "\0\0\0\0\0\0";
 
@@ -30,9 +31,9 @@ namespace fpd {
                 Assert::IsTrue(::GetTempFileNameW(path, L"fpd", 0, path), L"GetTempFileName", LINE_INFO());
 
                 win32_io io(path, GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
-                Assert::IsTrue(::strlen(expected) <= io.write(0, expected, ::strlen(expected)), L"write", LINE_INFO());
+                Assert::IsTrue(::strlen(expected) <= win32_io::write(io, 0, expected, ::strlen(expected)), L"write", LINE_INFO());
                 ::ZeroMemory(actual, sizeof(actual));
-                Assert::IsTrue(::strlen(expected) <= io.read(actual, ::strlen(expected), 0), L"read", LINE_INFO());
+                Assert::IsTrue(::strlen(expected) <= win32_io::read(actual, ::strlen(expected), io, 0), L"read", LINE_INFO());
                 Assert::AreEqual(actual, expected, L"roundtrip", LINE_INFO());
             }
 
@@ -49,14 +50,15 @@ namespace fpd {
                 Assert::IsTrue(::GetTempFileNameA(path, "fpd", 0, path), L"GetTempFileName", LINE_INFO());
 
                 win32_io io(path, GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
-                Assert::IsTrue(::strlen(expected) <= io.write(0, expected, ::strlen(expected)), L"write", LINE_INFO());
+                Assert::IsTrue(::strlen(expected) <= win32_io::write(io, 0, expected, ::strlen(expected)), L"write", LINE_INFO());
                 ::ZeroMemory(actual, sizeof(actual));
-                Assert::IsTrue(::strlen(expected) <= io.read(actual, ::strlen(expected), 0), L"read", LINE_INFO());
+                Assert::IsTrue(::strlen(expected) <= win32_io::read(actual, ::strlen(expected), io, 0), L"read", LINE_INFO());
                 Assert::AreEqual(actual, expected, L"roundtrip", LINE_INFO());
             }
         }
 
         TEST_METHOD(posix) {
+            typedef detail::io_traits<int> posix_io;
             const auto expected = "Horst";
             char actual[] = "\0\0\0\0\0\0";
 
@@ -73,9 +75,9 @@ namespace fpd {
                 Assert::IsTrue(::GetTempFileNameW(path, L"fpd", 0, path), L"GetTempFileName", LINE_INFO());
 
                 posix_io io(path, _O_RDWR | _O_CREAT | _O_TRUNC);
-                Assert::IsTrue(::strlen(expected) <= io.write(0, expected, ::strlen(expected)), L"write", LINE_INFO());
+                Assert::IsTrue(::strlen(expected) <= posix_io::write(io, 0, expected, ::strlen(expected)), L"write", LINE_INFO());
                 ::ZeroMemory(actual, sizeof(actual));
-                Assert::IsTrue(::strlen(expected) <= io.read(actual, ::strlen(expected), 0), L"read", LINE_INFO());
+                Assert::IsTrue(::strlen(expected) <= posix_io::read(actual, ::strlen(expected), io, 0), L"read", LINE_INFO());
                 Assert::AreEqual(actual, expected, L"roundtrip", LINE_INFO());
             }
 
@@ -92,9 +94,9 @@ namespace fpd {
                 Assert::IsTrue(::GetTempFileNameA(path, "fpd", 0, path), L"GetTempFileName", LINE_INFO());
 
                 posix_io io(path, _O_RDWR | _O_CREAT | _O_TRUNC);
-                Assert::IsTrue(::strlen(expected) <= io.write(0, expected, ::strlen(expected)), L"write", LINE_INFO());
+                Assert::IsTrue(::strlen(expected) <= posix_io::write(io, 0, expected, ::strlen(expected)), L"write", LINE_INFO());
                 ::ZeroMemory(actual, sizeof(actual));
-                Assert::IsTrue(::strlen(expected) <= io.read(actual, ::strlen(expected), 0), L"read", LINE_INFO());
+                Assert::IsTrue(::strlen(expected) <= posix_io::read(actual, ::strlen(expected), io, 0), L"read", LINE_INFO());
                 Assert::AreEqual(actual, expected, L"roundtrip", LINE_INFO());
             }
         }
@@ -156,6 +158,8 @@ namespace fpd {
 
 #if defined(FPD_WITH_DSTORAGE)
         TEST_METHOD(dstorage) {
+            typedef detail::io_traits<HANDLE> win32_io;
+            typedef detail::io_traits<IDStorageFile> dstorage_io;
             const auto expected = "Horst";
             char actual[] = "\0\0\0\0\0\0";
 
@@ -174,7 +178,7 @@ namespace fpd {
             // Fill the temporary file.
             {
                 win32_io io(path, GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
-                Assert::IsTrue(::strlen(expected) <= io.write(0, expected, ::strlen(expected)), L"write", LINE_INFO());
+                Assert::IsTrue(::strlen(expected) <= win32_io::write(io, 0, expected, ::strlen(expected)), L"write", LINE_INFO());
             }
 
             // Test dstorage_io.
@@ -209,7 +213,7 @@ namespace fpd {
                 factory->Release();
 
                 ::ZeroMemory(actual, sizeof(actual));
-                Assert::IsTrue(::strlen(expected) <= io.read(actual, ::strlen(expected), 0), L"read", LINE_INFO());
+                Assert::IsTrue(::strlen(expected) <= dstorage_io::read(actual, ::strlen(expected), io, 0), L"read", LINE_INFO());
                 Assert::AreEqual(actual, expected, L"roundtrip", LINE_INFO());
             }
         }

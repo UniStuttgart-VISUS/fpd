@@ -88,7 +88,14 @@ namespace fpd {
             auto md = builder.build();
 
             auto path = get_temp_file();
-            fpd::win32_io file(path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
+            auto file = ::CreateFileA(path.c_str(),
+                GENERIC_READ | GENERIC_WRITE,
+                0,
+                nullptr,
+                CREATE_ALWAYS,
+                FILE_ATTRIBUTE_NORMAL,
+                nullptr);
+            Assert::IsTrue(file != INVALID_HANDLE_VALUE, L"file opened", LINE_INFO());
             const auto size = md.save(file);
 
             Assert::AreEqual(expected, size, L"size reported by save", LINE_INFO());
@@ -120,7 +127,7 @@ namespace fpd {
                 .with_frames({ 41, 42, 42 })
                 .with_description(L"オマイゴッド")
                 .build();
-            win32_io io(retval.c_str(), GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
+            detail::io_traits<HANDLE> io(retval.c_str(), GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
             data.save(io);
 
             return retval;

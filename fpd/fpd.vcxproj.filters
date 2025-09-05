@@ -81,12 +81,6 @@
     <ClInclude Include="fpd\format_variant.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="fpd\win32_io.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fpd\posix_io.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="fpd\invoke.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -94,9 +88,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="fpd\memory_io.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fpd\dstorage_io.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="fpd\com_category.h">
@@ -138,6 +129,9 @@
     <ClInclude Include="fpd\io.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fpd\io_traits.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\semantic.inl">
@@ -177,6 +171,9 @@
       <Filter>Header Files</Filter>
     </None>
     <None Include="fpd\mmpld.inl">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="fpd\io_traits.inl">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>

@@ -13,7 +13,7 @@
 #include <cstdlib>
 #include <type_traits>
 
-#include "fpd/abi.h"
+#include "fpd/io_traits.h"
 
 
 FPD_DETAIL_NAMESPACE_BEGIN
@@ -24,7 +24,8 @@ FPD_DETAIL_NAMESPACE_BEGIN
 /// reads up to <paramref name="cnt" /> bytes or until the end of the input has
 /// been reached.
 /// </summary>
-/// <typeparam name="TFile"></typeparam>
+/// <typeparam name="TFile">The type of a file handle or of a specialisation of
+/// <see cref="io_traits" />.</typeparam>
 /// <param name="data"></param>
 /// <param name="cnt"></param>
 /// <param name="file"></param>
@@ -34,13 +35,14 @@ template<class TFile> std::size_t read_all(
         _Out_writes_bytes_opt_(cnt) void *data,
         _In_ const std::size_t cnt,
         _In_ TFile& file) {
+    typedef io_traits<TFile> traits;
     std::size_t retval = 0;
 
     if ((data != nullptr) && (cnt > 0)) {
         auto cur = static_cast<std::uint8_t *>(data);
 
         while (retval < cnt) {
-            const auto read = file.read(cur, cnt - retval);
+            const auto read = traits::read(cur, cnt - retval, file);
             assert(read <= cnt);
 
             if (read == 0) {
@@ -72,13 +74,14 @@ template<class TFile> std::size_t read_all(
 template<class TFile> std::size_t write_all(_In_ TFile& file,
         _In_reads_bytes_opt_(cnt) const void *data,
         _In_ const std::size_t cnt) {
+    typedef io_traits<TFile> traits;
     std::size_t retval = 0;
 
     if ((data != nullptr) && (cnt > 0)) {
         auto cur = static_cast<const std::uint8_t *>(data);
 
         while (retval < cnt) {
-            const auto written = file.write(cur, cnt - retval);
+            const auto written = traits::write(file, cur, cnt - retval);
             assert(written <= cnt);
             cur += written;
             retval += written;

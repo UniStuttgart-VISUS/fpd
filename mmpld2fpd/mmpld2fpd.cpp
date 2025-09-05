@@ -20,8 +20,6 @@
 #define FPD_WITH_MMPLD
 #include <fpd/encoding.h>
 #include <fpd/meta_data_builder.h>
-#include <fpd/posix_io.h>
-#include <fpd/win32_io.h>
 
 
 /// <summary>
@@ -146,10 +144,11 @@ int _tmain(const int argc, const _TCHAR **argv) {
 
         // Write the meta data to the FPD file.
 #if defined(_WIN32)
-        fpd::win32_io fpd(output.c_str(), GENERIC_READ | GENERIC_WRITE,
-            FILE_SHARE_READ, CREATE_ALWAYS);
+        fpd::detail::io_traits<HANDLE> fpd(output.c_str(),
+            GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, CREATE_ALWAYS);
 #else /* defined(_WIN32) */
-        fpd::posix_io fpd(output.c_str(), O_RDWR | O_BINARY | O_TRUNC);
+        fpd::detail::io_traits<int> fpd(output.c_str(),
+            O_RDWR | O_BINARY | O_TRUNC);
 #endif /* defined(_WIN32) */
         meta_data.save(fpd);
 

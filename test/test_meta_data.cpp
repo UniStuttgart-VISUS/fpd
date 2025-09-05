@@ -289,14 +289,14 @@ namespace fpd {
             const auto path = get_temp_file();
 
             {
-                win32_io io(path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
+                detail::io_traits<HANDLE> io(path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
                 Assert::AreEqual(size_on_disk, expected.save(io), L"file size", LINE_INFO());
             }
 
             meta_data<char> actual(encodings::utf8);
 
             {
-                win32_io io(path.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING);
+                detail::io_traits<HANDLE> io(path.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING);
                 std::vector<std::uint8_t> buffer(size_on_disk);
                 detail::read_all(buffer.data(), buffer.size(), io);
 

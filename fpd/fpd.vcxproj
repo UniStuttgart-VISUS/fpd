@@ -144,6 +144,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="fpd\abi.h" />
+    <ClInclude Include="fpd\io_traits.h" />
     <ClInclude Include="fpd\nosal.h" />
     <ClInclude Include="fpd\bounding_box.h" />
     <ClInclude Include="fpd\compression.h" />
@@ -151,7 +152,6 @@
     <ClInclude Include="fpd\convert_string.h" />
     <ClInclude Include="fpd\dependent_bool.h" />
     <ClInclude Include="fpd\detector.h" />
-    <ClInclude Include="fpd\dstorage_io.h" />
     <ClInclude Include="fpd\element.h" />
     <ClInclude Include="fpd\element_group.h" />
     <ClInclude Include="fpd\element_initialiser.h" />
@@ -174,7 +174,6 @@
     <ClInclude Include="fpd\mmpld.h" />
     <ClInclude Include="fpd\null_coalesce.h" />
     <ClInclude Include="fpd\pkd_tree_builder.h" />
-    <ClInclude Include="fpd\posix_io.h" />
     <ClInclude Include="fpd\semantic.h" />
     <ClInclude Include="fpd\spatial_hierarchy.h" />
     <ClInclude Include="fpd\swap_bytes.h" />
@@ -182,7 +181,6 @@
     <ClInclude Include="fpd\type_components.h" />
     <ClInclude Include="fpd\type_list.h" />
     <ClInclude Include="fpd\type_size.h" />
-    <ClInclude Include="fpd\win32_io.h" />
     <ClInclude Include="fpd\with_encoding.h" />
   </ItemGroup>
   <ItemGroup>
@@ -194,6 +192,7 @@
     <None Include="fpd\format_description.inl" />
     <None Include="fpd\format_variant.inl" />
     <None Include="fpd\icu_category.inl" />
+    <None Include="fpd\io_traits.inl" />
     <None Include="fpd\meta_data.inl" />
     <None Include="fpd\meta_data_builder.inl" />
     <None Include="fpd\mmpld.inl" />

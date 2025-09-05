@@ -73,7 +73,13 @@ builder.with_frames({ 17, 42, 42 });
 // Create the meta data object and save it to disk.
 auto md = builder.build();
 
-fpd::win32_io file(L"demo.fpd", GENERIC_READ | GENERIC_WRITE, 0, CREATE_ALWAYS);
+auto file = ::CreateFileA("demo.fpd",
+    GENERIC_READ | GENERIC_WRITE,
+    0,
+    nullptr,
+    CREATE_ALWAYS,
+    FILE_ATTRIBUTE_NORMAL,
+    nullptr);
 const auto size = md.save(file);
 ```
 
