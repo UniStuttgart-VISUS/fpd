@@ -24,7 +24,8 @@ while (rem > 0) {
 // Parse what we have so far in order to determine what must be read
 // to get the complete header.
 meta_data md(fpd::encodings::utf8);
-rem = meta_data::check_header_size(md, data.data(), data.size());
+rem = static_cast<int>(meta_data::check_header_size(md, data.data(),
+    data.size()));
 
 // Read the variable-size header segments.
 data.resize(rem);
@@ -39,7 +40,7 @@ while (rem > 0) {
 meta_data::parse(md, data.data(), data.size());
 
 // Seek to the start of the first frame.
-::_lseek(fh, md.frame_offset(0), SEEK_SET);
+::_lseek(fh, static_cast<long>(md.frame_offset(0)), SEEK_SET);
 data.resize(md.frame_size(0));
 
 // Read the data and do something useful with them ...

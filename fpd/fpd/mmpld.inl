@@ -85,7 +85,7 @@ FPD_NAMESPACE::format_description<TChar> FPD_NAMESPACE::mmpld_format(
             const auto fs = static_cast<std::underlying_type_t<semantic>>(
                 formats[i].first);
 
-            if (cs & fs == 0) {
+            if ((cs & fs) == 0) {
                 // The semantics do not match, so we cannot merge.
                 continue;
             }
@@ -150,7 +150,8 @@ std::size_t FPD_NAMESPACE::mmpld_formats(
     for (auto it = begin; it != end; ++it) {
         const auto ci = static_cast<std::uint8_t>(it->colour_type);
         const auto vi = static_cast<std::uint8_t>(it->vertex_type);
-        const auto id = (vi << std::numeric_limits<std::uint8_t>::digits) | ci;
+        const auto id = static_cast<std::uint16_t>(
+            (vi << std::numeric_limits<std::uint8_t>::digits) | ci);
 
         if (formats.find(id) == formats.end()) {
             // We have not seen this format yet, so we add it to the list of
@@ -288,6 +289,7 @@ mmpld::list_header FPD_NAMESPACE::mmpld_list(
                         retval.colour_type = mmpld::colour_type::intensity64;
                         break;
 
+                    default:
                         throw std::invalid_argument("The input format uses a "
                             "intensity representation that is not supported by "
                             "MMPLD.");
