@@ -113,19 +113,34 @@ This segment specifies whether there is a spatial hierarchy in the data and pote
 | spatial_hierarchy | 4 Bytes  | The type of the spatial hierarchy, which must be one of the built-in `spatial_hierarchy`s. |
 | ...               | Variable | Additional data depend on the type of the spatial hierarchy specified before.              |
 
+### None (0x00000000)
+No additional data are present.
+
+### OSPRay-style P-kd tree (0x00000001)
+For this type of tree, the file must store how the split axes are chosen:
+| Type  | Length  | Description                                                                                                                                                                                  |
+|-------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| uint8 | 1 Bytes | The zero-based index of the coordinate where the split axis is embedded in the last three bits. If larger than the number of components, the splits are performed round robin starting at x. |
+
 ### Compression (0x08)
 This segment is optional.
 
 This segment specifies whether and how the particle data are compressed. The segment looks like:
 
-| Type        | Length  | Description                                                                                                                                                                                        |
-|-------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| compression | 4 Bytes | The type of the compression algorithm used, which must be one of the built-in `compression`s.                                                                                                      |
-| uint32      | 4 Bytes | The level of a potential hierarchy at which the compression occurs. If the frame is compressed as a whole, this must be zero (0). If the algorithm is `compression::none`, this value is optional. |
-| uint64      | 8 Bytes | The number of particles that have been compressed. If the algorithm is `compression::none`, this value is optional.                                                                                |
-| ...         | 8 Bytes | If the compression was not performed at level zero of the hierarchy, additional numbers of particles follow.                                                                                       |
+| Type        | Length   | Description                                                                                                                                                                                        |
+|-------------|----------|-----------------------------------------------------------------------------------------------------------------------|
+| compression | 4 Bytes  | The type of the compression algorithm used, which must be one of the built-in `compression`s.                         |
+| uint8       | Variable | Additional data that descibe how to decompress the data. This can be empty if the compression is `compression::none`. |
 
-TODO: Describe how the hierarchy thing is working.
+### None (0x00000000)
+No additional data are present.
+
+#### GDeflate (0x00000001)
+The variable data is a list of four-bytes numbers that specify the size of the compressed blocks. There must be one for each frame, but frames might also be subdivided into (the same) number of sub-blocks:
+| Type   | Length   | Description                                                                                                                                                                                        |
+|--------|----------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| uint32 | 4 Bytes  | The length of each compressed block. There must be one for each frame. The total number of blocks must be divisible by the number of frames. |
+| ...    | 4 Bytes  | ...                                                                                                                                          |
 
 ## Frame data
 The frame data is a raw consecutive list of frames each of which is a list of consecutive particles as described in the format description header segment. The number of particles is determined by the size of the frame in bytes divided by the size of a single particle as described in the format description header segment.

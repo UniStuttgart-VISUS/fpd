@@ -62,7 +62,11 @@ FPD_NAMESPACE::meta_data<TChar>& FPD_NAMESPACE::meta_data<TChar>::parse(
     assert((data != nullptr) || (cnt == 0));
     auto cur = static_cast<const std::uint8_t * >(data);
     const auto end = cur + cnt;
-    auto deferred_format = std::make_pair(static_cast<const void *>(nullptr),
+    auto deferred_compression = std::make_pair(
+        static_cast<const void *>(nullptr),
+        static_cast<std::size_t>(0));
+    auto deferred_format = std::make_pair(
+        static_cast<const void *>(nullptr),
         static_cast<std::size_t>(0));
 
     while (cur + sizeof(header_segment) < end) {
@@ -114,7 +118,15 @@ FPD_NAMESPACE::meta_data<TChar>& FPD_NAMESPACE::meta_data<TChar>::parse(
                 break;
 
             case header_segment::compression:
-                parse_compression(meta_data, cur, length);
+                try {
+                    parse_compression(meta_data, cur, length);
+                } catch (...) {
+                    // The compression might depend on the frame table already
+                    // being processed. Therefore, we schedule a "second chance"
+                    // in case this information might still come later on.
+                    deferred_compression.first = cur;
+                    deferred_compression.second = length;
+                }
                 break;
         }
 
@@ -124,9 +136,19 @@ FPD_NAMESPACE::meta_data<TChar>& FPD_NAMESPACE::meta_data<TChar>::parse(
     // If we have postponed parsing the format, do it now. If it fails again,
     // the input is invalid.
     if (deferred_format.first != nullptr) {
-        parse_format_description(meta_data, deferred_format.first,
+        parse_format_description(meta_data,
+            deferred_format.first,
             deferred_format.second);
     }
+
+    // If we have postponed parsing the compression, do it now. If it fails
+    // again, the input is invalid.
+    if (deferred_compression.first != nullptr) {
+        parse_compression(meta_data,
+            deferred_compression.first,
+            deferred_compression.second);
+    }
+
 
     return meta_data;
 }
@@ -351,6 +373,7 @@ FPD_NAMESPACE::meta_data<TChar>::user_defined_semantic(
 template<class TChar>
 void FPD_NAMESPACE::meta_data<TChar>::calc_frame_offsets(
         _Inout_ meta_data& meta_data) {
+    assert(meta_data._frame_offsets.empty());
     assert(meta_data._header_size > 0);
     assert(meta_data._particle_size > 0);
 
@@ -419,10 +442,72 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_bounding_box(
  */
 template<class TChar>
 void FPD_NAMESPACE::meta_data<TChar>::parse_compression(
-        _Inout_ meta_data&,
-        _In_ const void *,
-        _In_ const std::size_t) {
-    throw "TODO";
+        _Inout_ meta_data& meta_data,
+        _In_ const void *data,
+        _In_ const std::size_t cnt) {
+    typedef FPD_NAMESPACE::compression comp_type;
+    typedef detail::compression_meta_data_impl<comp_type::gdeflate>
+        gdeflate_type;
+
+    auto cur = static_cast<const std::uint8_t *>(data);
+    const auto end = cur + cnt;
+
+    if ((end - cur) < sizeof(comp_type)) {
+        throw std::invalid_argument("The compression header segment contains "
+            "incomplete data.");
+    }
+    const auto type = swap_enum_endian<comp_type>(cur, meta_data._endian);
+    cur += sizeof(type);
+
+    switch (type) {
+        case compression::none:
+            break;
+
+        case compression::gdeflate: {
+            // GDeflate has an uint32 table of block sizes that tell us how
+            // many bytes we should decompress at once. Each frame may comprise
+            // one or more blocks, but all frames must be split into the same
+            // number of blocks.
+            if ((end - cur) % sizeof(std::uint32_t) != 0) {
+                throw std::invalid_argument("The size of the GDeflate "
+                    "compressed blocks is invalid.");
+            }
+
+            auto md = std::make_shared<gdeflate_type>();
+
+            std::copy(reinterpret_cast<const std::uint32_t *>(cur),
+                reinterpret_cast<const std::uint32_t *>(end),
+                std::back_inserter(md->_blocks));
+            if (md->_blocks.size() % meta_data.frames() != 0) {
+                throw std::invalid_argument("GDeflate compression requires "
+                    "that all frames are split into an equal number of "
+                    "blocks.");
+            }
+
+            swap_endian(md->_blocks.data(), md->_blocks.size(),
+                meta_data._endian);
+            meta_data._compression = md;
+
+            // At this point, we can compute the frame offsets.
+            assert(meta_data._header_size > fixed_header_size);
+            const auto blocks = md->_blocks.size() / meta_data.frames();
+            auto offset = meta_data._header_size;
+            meta_data._frame_offsets.clear();
+            meta_data._frame_offsets.resize(meta_data._frame_table.size());
+
+            for (std::size_t i = 0; i < meta_data._frame_table.size(); ++i) {
+                meta_data._frame_offsets[i] = offset;
+                for (std::size_t b = 0; b < blocks; ++b) {
+                    offset += md->_blocks[i * blocks + b];
+                }
+            }
+
+            } break;
+
+        default:
+            throw std::invalid_argument("The particle data are compressed "
+                "using an unsupported method.");
+    }
 }
 
 
@@ -518,8 +603,13 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_format_description(
     meta_data._particle_size = meta_data._format_description.size();
 
     // We now pre-compute the frame offsets in the file from the number of
-    // particles such that we can seek directly later on.
-    calc_frame_offsets(meta_data);
+    // particles such that we can seek directly later on. Note that compression
+    // methods result in frame sizes that are not computable from the number of
+    // particles. Therefore, these must have been handled while parsing the
+    // compression header.
+    if (meta_data._frame_offsets.empty()) {
+        calc_frame_offsets(meta_data);
+    }
 }
 
 

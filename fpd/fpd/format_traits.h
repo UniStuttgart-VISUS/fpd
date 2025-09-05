@@ -489,7 +489,7 @@ inline format to_floating_point(
         } else {
             // If we have an integral type, use float for everything up to its
             // size and double otherwise.
-            if (sizeof(value_type) <= sizeof(float)) {
+            if FPD_IF_CONSTEXPR (sizeof(value_type) <= sizeof(float)) {
                 return format_from_type_v<float,
                     type_components<format_t<Format>>::value>;
             } else {

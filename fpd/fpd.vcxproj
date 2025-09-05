@@ -144,6 +144,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="fpd\abi.h" />
+    <ClInclude Include="fpd\compression_meta_data.h" />
     <ClInclude Include="fpd\io_traits.h" />
     <ClInclude Include="fpd\nosal.h" />
     <ClInclude Include="fpd\bounding_box.h" />

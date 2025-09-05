@@ -45,8 +45,6 @@ enum class spatial_hierarchy : std::uint32_t {
     /// <remarks>
     ospray_pkd_tree = 0x00000001,
 
-    //fpd_pkd_tree = 0x00000002,
-
     ///// <summary>
     ///// The data are organised in an axis-aligned octree.
     ///// </summary>

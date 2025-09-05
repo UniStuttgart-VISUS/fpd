@@ -143,6 +143,7 @@ namespace fpd {
             Assert::IsTrue(data.global_particle_properties().empty(), L"No global properties", LINE_INFO());
             Assert::AreEqual(std::size_t(1), data.format_description().count_elements(), L"# of format elements", LINE_INFO());
             Assert::AreEqual(std::size_t(1), data.format_description().count_groups(), L"# of format groups", LINE_INFO());
+            Assert::AreEqual(int(compression::none), int(data.compression().method()), L"compression method", LINE_INFO());
         }
 
         TEST_METHOD(frame_table_from_initialiser) {

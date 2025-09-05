@@ -82,4 +82,12 @@
 /// </summary>
 #define FPD_DETAIL_NAMESPACE_END } FPD_NAMESPACE_END
 
+
+#if defined(__cpp_if_constexpr)
+#define FPD_IF_CONSTEXPR constexpr
+#else /* defined(__cpp_if_constexpr) */
+#define FPD_IF_CONSTEXPR
+#endif /* defined(__cpp_if_constexpr) */
+
+
 #endif /* !defined(_FPD_ABI_H) */

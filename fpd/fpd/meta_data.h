@@ -13,12 +13,14 @@
 #include <memory>
 
 #include "fpd/bounding_box.h"
+#include "fpd/compression_meta_data.h"
 #include "fpd/convert_string.h"
 #include "fpd/endian.h"
 #include "fpd/format_description.h"
 #include "fpd/format_variant.h"
 #include "fpd/header_segment.h"
 #include "fpd/io.h"
+#include "fpd/spatial_hierarchy.h"
 #include "fpd/swap_bytes.h"
 #include "fpd/with_encoding.h"
 
@@ -153,10 +155,21 @@ public:
     explicit inline meta_data(_In_opt_ const FPD_NAMESPACE::encoding encoding
             = FPD_NAMESPACE::encodings::oem) noexcept
         : detail::with_encoding<TChar>(encoding),
+            _compression(std::make_shared<detail::compression_meta_data_impl<
+                compression::none>>()),
             _endian(endian_type::undefined),
             _header_size(0),
             _particle_size(0),
             _version(std::uint8_t(0), std::uint8_t(0)) { }
+
+    /// <summary>
+    /// Answer the compression method used for the particle data.
+    /// </summary>
+    /// <returns>The compression method.</returns>
+    inline const compression_meta_data& compression(void) const noexcept {
+        assert(this->_compression != nullptr);
+        return *this->_compression;
+    }
 
     /// <summary>
     /// Gets, if available a human-readable description of the file.
@@ -371,6 +384,7 @@ private:
         _In_ const std::vector<string_type>& strings) const;
 
     bounding_box _bounding_box;
+    std::shared_ptr<compression_meta_data> _compression;
     string_type _description;
     endian_type _endian;
     format_description_type _format_description;
