@@ -62,6 +62,8 @@ TIterator find_argument(_In_ const TIterator begin,
 /// <returns></returns>
 int _tmain(const int argc, const _TCHAR **argv) {
     try {
+        std::size_t batch_size = 0;
+        std::vector<std::uint8_t> buffer;
         std::basic_string<_TCHAR> description;
         std::basic_string<_TCHAR> input;
         std::basic_string<_TCHAR> output;
@@ -98,6 +100,14 @@ int _tmain(const int argc, const _TCHAR **argv) {
             }
         }
 
+        {
+            auto end = argv + argc;
+            auto it = ::find_argument(argv, end, _T("--batch"));
+            if (it != end) {
+                output = std::stoi(*it);
+            }
+        }
+
         // Open the MMPLD file and scan its contents to build the particle
         // format.
         mmpld::file_header file_header;
@@ -112,15 +122,14 @@ int _tmain(const int argc, const _TCHAR **argv) {
         mmpld::read_file_header(mmpld, file_header, seek_table);
 
         for (decltype(file_header.frames) f = 0; f < file_header.frames; ++f) {
-            mmpld::frame_header frame_header;
+            mmpld::frame_header fh;
 
             mmpld.seekg(seek_table[f]);
-            mmpld::read_frame_header(mmpld, file_header.version, frame_header);
+            mmpld::read_frame_header(mmpld, file_header.version, fh);
 
             frame_sizes.push_back(0);
 
-            for (decltype(frame_header.lists) l = 0; l < frame_header.lists;
-                    ++l) {
+            for (decltype(fh.lists) l = 0; l < fh.lists; ++l) {
                 list_headers.emplace_back();
                 auto& lh = list_headers.back();
                 mmpld::read_list_header(mmpld, file_header.version, lh);
@@ -152,7 +161,38 @@ int _tmain(const int argc, const _TCHAR **argv) {
 #endif /* defined(_WIN32) */
         meta_data.save(fpd);
 
-        //mmpld::read_as()
+        // Append the frames.
+        for (decltype(file_header.frames) f = 0; f < file_header.frames; ++f) {
+            mmpld::frame_header fh;
+
+            mmpld.seekg(seek_table[f]);
+            mmpld::read_frame_header(mmpld, file_header.version, fh);
+
+            for (decltype(fh.lists) l = 0; l < fh.lists; ++l) {
+                mmpld::list_header lh;
+                mmpld::read_list_header(mmpld, file_header.version, lh);
+
+                mmpld_format.particles = lh.particles;
+
+                const auto cnt = mmpld::get_size<std::size_t>(mmpld_format);
+                if (buffer.size() < cnt) {
+                    buffer.resize(cnt);
+                }
+
+                if (batch_size > 0) {
+                    ::mmpld::read_as(mmpld, lh, buffer.data(), mmpld_format,
+                        batch_size);
+                } else {
+                    mmpld::read_as(mmpld, lh, buffer.data(), mmpld_format);
+                }
+
+                if (file_header.version == mmpld::make_version(1, 1)) {
+                    mmpld::skip_cluster_info(mmpld);
+                }
+
+                ::fpd::detail::write_all(fpd, buffer.data(), cnt);
+            } /* for (decltype(fh.lists) l = 0; l < fh.lists; ++l) */
+        } /* for (decltype(file_header.frames) f = 0; ... */
 
     } catch (std::exception& ex) {
         std::cerr << ex.what() << std::endl;
