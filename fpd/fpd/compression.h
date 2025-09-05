@@ -27,7 +27,10 @@ enum class compression : std::uint32_t {
 
     /// <summary>
     /// The data are compressed using GDeflate, which can be decompressed using
-    /// DirectStorage on the GPU.
+    /// DirectStorage on the GPU. Each frame comprises one or more blocks that
+    /// are compressed individually, and all frames in the file have the same
+    /// number of blocks, which can be obtained from the remaining data in the
+    /// compression header.
     /// </summary>
     gdeflate = 0x00000001,
 
