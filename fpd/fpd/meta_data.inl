@@ -445,25 +445,24 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_compression(
         _Inout_ meta_data& meta_data,
         _In_ const void *data,
         _In_ const std::size_t cnt) {
-    typedef FPD_NAMESPACE::compression comp_type;
-    typedef detail::compression_meta_data_impl<comp_type::gdeflate>
-        gdeflate_type;
+    typedef FPD_NAMESPACE::compression enum_type;
+    typedef compression_meta_data<enum_type::gdeflate> gdeflate_type;
 
     auto cur = static_cast<const std::uint8_t *>(data);
     const auto end = cur + cnt;
 
-    if ((end - cur) < sizeof(comp_type)) {
+    if ((end - cur) < sizeof(enum_type)) {
         throw std::invalid_argument("The compression header segment contains "
             "incomplete data.");
     }
-    const auto type = swap_enum_endian<comp_type>(cur, meta_data._endian);
+    const auto type = swap_enum_endian<enum_type>(cur, meta_data._endian);
     cur += sizeof(type);
 
     switch (type) {
-        case compression::none:
+        case enum_type::none:
             break;
 
-        case compression::gdeflate: {
+        case enum_type::gdeflate: {
             // GDeflate has an uint32 table of block sizes that tell us how
             // many bytes we should decompress at once. Each frame may comprise
             // one or more blocks, but all frames must be split into the same
@@ -686,10 +685,40 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_global_particle_properties(
  */
 template<class TChar>
 void FPD_NAMESPACE::meta_data<TChar>::parse_spatial_hierarchy(
-        _Inout_ meta_data& ,
-        _In_ const void *,
-        _In_ const std::size_t ) {
-    throw "TODO";
+        _Inout_ meta_data& meta_data,
+        _In_ const void *data,
+        _In_ const std::size_t cnt) {
+#define _FPD_THROW_IF_INCOMPLETE(req) \
+    if ((end - cur) < req) { \
+        throw std::invalid_argument("The spatial hierarchy header segment "\
+            "contains incomplete data."); \
+    }
+
+    typedef FPD_NAMESPACE::spatial_hierarchy enum_type;
+    typedef hierarchy_meta_data<enum_type::ospray_pkd_tree> ospray_type;
+
+    auto cur = static_cast<const std::uint8_t *>(data);
+    const auto end = cur + cnt;
+
+    _FPD_THROW_IF_INCOMPLETE(sizeof(enum_type));
+    const auto type = swap_enum_endian<enum_type>(cur, meta_data._endian);
+    cur += sizeof(type);
+
+    switch (type) {
+        case enum_type::none:
+            break;
+
+        case enum_type::ospray_pkd_tree: {
+            _FPD_THROW_IF_INCOMPLETE(sizeof(std::uint8_t));
+            auto md = std::make_shared<ospray_type>();
+            assert(sizeof(std::uint8_t) == sizeof(md->_axis_component));
+            md->_axis_component = *cur++;
+            } break;
+
+        default:
+            throw std::invalid_argument("The particle data are spatially "
+                "organised in an unsupported way.");
+    }
 }
 
 

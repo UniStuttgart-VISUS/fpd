@@ -4,8 +4,8 @@
 // </copyright>
 // <author>Christoph Müller</author>
 
-#if !defined(_FPD_COMPRESSION_META_DATA_H_)
-#define _FPD_COMPRESSION_META_DATA_H_
+#if !defined(_FPD_COMPRESSION_META_DATA_H)
+#define _FPD_COMPRESSION_META_DATA_H
 #pragma once
 
 #include <vector>
@@ -18,14 +18,14 @@ FPD_NAMESPACE_BEGIN
 /// <summary>
 /// The interface for compression meta data.
 /// </summary>
-class compression_meta_data {
+class compression_meta_data_base {
 
 public:
 
     /// <summary>
     /// Finalises the instance.
     /// </summary>
-    virtual ~compression_meta_data(void) = default;
+    virtual ~compression_meta_data_base(void) = default;
 
     /// <summary>
     /// Answer the compression method that has been used.
@@ -38,24 +38,20 @@ protected:
     /// <summary>
     /// Initialises a new instance.
     /// </summary>
-    compression_meta_data(void) = default;
+    compression_meta_data_base(void) = default;
 };
 
-FPD_NAMESPACE_END
-
-
-FPD_DETAIL_NAMESPACE_BEGIN
 
 /// <summary>
-/// Implements the <see cref="compression_meta_data" /> interface. This default
-/// implementation only carries the information about the compression method. If
-/// additional data are required to decompress the data, a specialised
-/// implementation of the meta data class is required.
+/// Implements the <see cref="compression_meta_data_base" /> interface. This
+/// default implementation only carries the information about the compression
+/// method. If additional data are required to decompress the data, a
+/// specialised implementation of the meta data class is required.
 /// </summary>
 /// <typeparam name="Compression">The compression type the data are for.
 /// </typeparam>
 template<compression Compression>
-class compression_meta_data_impl final : public compression_meta_data {
+class compression_meta_data final : public compression_meta_data_base {
 
 public:
 
@@ -69,8 +65,8 @@ public:
 /// <summary>
 /// Specialisation for GDeflate.
 /// </summary>
-template<> class compression_meta_data_impl<compression::gdeflate> final
-        : public compression_meta_data {
+template<> class compression_meta_data<compression::gdeflate> final
+        : public compression_meta_data_base {
 
 public:
 
@@ -95,6 +91,6 @@ private:
 };
 
 
-FPD_DETAIL_NAMESPACE_END
+FPD_NAMESPACE_END
 
-#endif /* !defined(_FPD_COMPRESSION_META_DATA_H_) */
+#endif /* !defined(_FPD_COMPRESSION_META_DATA_H) */

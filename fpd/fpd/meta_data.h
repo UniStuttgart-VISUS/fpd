@@ -19,8 +19,8 @@
 #include "fpd/format_description.h"
 #include "fpd/format_variant.h"
 #include "fpd/header_segment.h"
+#include "fpd/hierarchy_meta_data.h"
 #include "fpd/io.h"
-#include "fpd/spatial_hierarchy.h"
 #include "fpd/swap_bytes.h"
 #include "fpd/with_encoding.h"
 
@@ -155,18 +155,27 @@ public:
     explicit inline meta_data(_In_opt_ const FPD_NAMESPACE::encoding encoding
             = FPD_NAMESPACE::encodings::oem) noexcept
         : detail::with_encoding<TChar>(encoding),
-            _compression(std::make_shared<detail::compression_meta_data_impl<
+            _compression(std::make_shared<compression_meta_data<
                 compression::none>>()),
             _endian(endian_type::undefined),
             _header_size(0),
+            _hierarchy(std::make_shared<hierarchy_meta_data<
+                spatial_hierarchy::none>>()),
             _particle_size(0),
             _version(std::uint8_t(0), std::uint8_t(0)) { }
 
     /// <summary>
     /// Answer the compression method used for the particle data.
     /// </summary>
+    /// <remarks>
+    /// The method returns an interface that allows for at least determining the
+    /// compression method. Depending on this method, the interface can be
+    /// casted to a more specific specialisation of
+    /// <see cref="compression_meta_data" /> that provides additional
+    /// information on how to decompress the data.
+    /// </remarks>
     /// <returns>The compression method.</returns>
-    inline const compression_meta_data& compression(void) const noexcept {
+    inline const compression_meta_data_base& compression(void) const noexcept {
         assert(this->_compression != nullptr);
         return *this->_compression;
     }
@@ -278,6 +287,22 @@ public:
         _In_ const std::size_t group) const;
 
     /// <summary>
+    /// Answer the spatial hierarchy used to organise the particle data.
+    /// </summary>
+    /// <remarks>
+    /// The method returns an interface that allows for at least determining the
+    /// type of the hierarchy. Depending on this type, the interface can be
+    /// casted to a more specific specialisation of
+    /// <see cref="hierarchy_meta_data" /> that provides additional information
+    /// on how to interpret the data.
+    /// </remarks>
+    /// <returns>The type of the spatial hierarchy.</returns>
+    inline const hierarchy_meta_data_base& hierarchy(void) const noexcept {
+        assert(this->_hierarchy != nullptr);
+        return *this->_hierarchy;
+    }
+
+    /// <summary>
     /// Answer the number of particles in the given frame.
     /// </summary>
     /// <param name="frame">The zero-based index of the frame to compute the
@@ -384,7 +409,7 @@ private:
         _In_ const std::vector<string_type>& strings) const;
 
     bounding_box _bounding_box;
-    std::shared_ptr<compression_meta_data> _compression;
+    std::shared_ptr<compression_meta_data_base> _compression;
     string_type _description;
     endian_type _endian;
     format_description_type _format_description;
@@ -393,6 +418,7 @@ private:
     frame_table_type _frame_table;
     std::map<semantic, format_variant> _global_particle_properties;
     size_type _header_size;
+    std::shared_ptr<hierarchy_meta_data_base> _hierarchy;
     size_type _particle_size;
     std::vector<string_type> _user_defined_semantics;
     version_type _version;

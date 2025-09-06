@@ -118,9 +118,9 @@ No additional data are present.
 
 ### OSPRay-style P-kd tree (0x00000001)
 For this type of tree, the file must store how the split axes are chosen:
-| Type  | Length  | Description                                                                                                                                                                                  |
-|-------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| uint8 | 1 Bytes | The zero-based index of the coordinate where the split axis is embedded in the last three bits. If larger than the number of components, the splits are performed round robin starting at x. |
+| Type  | Length | Description                                                                                                                                                                                  |
+|-------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| uint8 | 1 Byte | The zero-based index of the coordinate where the split axis is embedded in the last three bits. If larger than the number of components, the splits are performed round robin starting at x. |
 
 ### Compression (0x08)
 This segment is optional.
