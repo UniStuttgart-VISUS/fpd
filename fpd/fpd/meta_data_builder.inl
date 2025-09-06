@@ -201,9 +201,13 @@ FPD_NAMESPACE::meta_data_builder<TChar>::size(void) const {
 
     // Optional bounding boxes (0x05).
     if (!this->_bounding_boxes.empty()) {
+        const auto size = this->_bounding_boxes.front().size();
+        assert(std::all_of(this->_bounding_boxes.begin(),
+            this->_bounding_boxes.end(),
+            [size](const bounding_box& b) { return b.size() == size; }));
         retval += sizeof(header_segment);
-        retval += this->_bounding_boxes.front().size()
-            * this->_bounding_boxes.size();
+        retval += sizeof(format);
+        retval += size * this->_bounding_boxes.size();
     }
 
     // Optional global particle properties (0x06).
