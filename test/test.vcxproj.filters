@@ -75,6 +75,9 @@
     <ClCompile Include="test_samples.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="test_file.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">

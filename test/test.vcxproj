@@ -187,6 +187,7 @@
     <ClCompile Include="test_element.cpp" />
     <ClCompile Include="test_element_group.cpp" />
     <ClCompile Include="test_endian.cpp" />
+    <ClCompile Include="test_file.cpp" />
     <ClCompile Include="test_format_description.cpp" />
     <ClCompile Include="test_format_traits.cpp" />
     <ClCompile Include="test_format_variant.cpp" />
