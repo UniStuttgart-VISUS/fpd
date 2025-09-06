@@ -316,19 +316,20 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::save(_In_ TFile& file) const {
     }
 
     // Write the (optional) bounding boxes.
-    if (this->_bounding_box) {
-        assert((this->_frame_bounding_boxes.size() == this->_frame_table.size())
-            || (this->_frame_bounding_boxes.size() == 0));
+    if (!this->_bounding_boxes.empty() && (this->_bounding_boxes.front())) {
+        assert((this->_bounding_boxes.size() == 1)
+            || (this->_bounding_boxes.size() == this->_frame_table.size() + 1));
+        const auto bbox_format = this->_bounding_boxes.front().format();
+        const auto bbox_size = this->_bounding_boxes.front().size();
         const auto size = static_cast<segment_size>(sizeof(format)
-            + (1 + this->_frame_bounding_boxes.size())
-            * this->_bounding_box.size());
+            + this->_bounding_boxes.size() * bbox_size);
         retval += write(file, header_segment::bounding_box, size,
             this->_endian);
-        retval += write(file, this->_bounding_box.format(), this->_endian);
-        retval += write(file, this->_bounding_box, this->_endian);
+        retval += write(file, bbox_format, this->_endian);
 
-        for (auto& b : this->_frame_bounding_boxes) {
-            assert(b.format() == this->_bounding_box.format());
+        for (auto& b : this->_bounding_boxes) {
+            assert(b);
+            assert(b.format() == bbox_format);
             retval += write(file, b, this->_endian);
         }
     } /* if (this->_bounding_box) */
@@ -395,19 +396,19 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_bounding_box(
         _Inout_ meta_data& meta_data,
         _In_ const void *data,
         _In_ const std::size_t cnt) {
-    if (meta_data._bounding_box || !meta_data._frame_bounding_boxes.empty()) {
-        throw std::invalid_argument("The bounding boxes have already been "
-            "parsed.");
-    }
     if (cnt < sizeof(format)) {
         throw std::invalid_argument("The bounding boxes must contain a format "
             "specification.");
     }
 
+    auto cur = static_cast<const std::uint8_t *>(data);
+    const auto end = cur + cnt;
+
     // Determine the format of the bounding boxes and how big one is on disk.
     const auto fmt = static_cast<format>(
-        swap_endian_as<std::underlying_type<format>::type>(data,
+        swap_endian_as<std::underlying_type<format>::type>(cur,
         meta_data._endian));
+    cur += sizeof(format);
     const auto stride = 6 * to_size(fmt);
 
     if (cnt < sizeof(format) + stride) {
@@ -415,22 +416,17 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_bounding_box(
             "provided in the bounding box header segment.");
     }
 
-    // Read the global bounding box, which must always be present if the header
-    // segment exists.
-    auto cur = static_cast<const std::uint8_t *>(data);
-    const auto end = cur + cnt;
-    cur += sizeof(format);
-    meta_data._bounding_box = bounding_box(fmt, cur, end - cur);
-    cur += stride;
-
-    // Read all optional per-frame bounding boxes.
-    if (((cur - end) % stride) != 0) {
+    // Read the bounding boxes per-frame bounding boxes.
+    if (((end - cur) % stride) != 0) {
         throw std::invalid_argument("The bounding box header has an unexpected "
-            "size.");
+            "size. The number of elements in the header must be divisble by "
+            "the size of a bounding box.");
     }
-    meta_data._frame_bounding_boxes.reserve((end - cur) / stride);
+    meta_data._bounding_boxes.clear();
+    meta_data._bounding_boxes.reserve((end - cur) / stride);
     while (cur < end) {
-        meta_data._frame_bounding_boxes.emplace_back(fmt, cur, end - cur,
+        const auto rem = end - cur;
+        meta_data._bounding_boxes.emplace_back(fmt, cur, rem,
             meta_data._endian);
         cur += stride;
     }
@@ -713,6 +709,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_spatial_hierarchy(
             auto md = std::make_shared<ospray_type>();
             assert(sizeof(std::uint8_t) == sizeof(md->_axis_component));
             md->_axis_component = *cur++;
+            meta_data._hierarchy = md;
             } break;
 
         default:
@@ -747,15 +744,15 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_user_semantics(
  * FPD_NAMESPACE::meta_data<TChar>::write
  */
 template<class TChar>
-template<class TFile>
+template<class TFile, class TByte>
 std::size_t FPD_NAMESPACE::meta_data<TChar>::write(
         _In_ TFile& file,
-        _In_ const bounding_box& bbox,
+        _In_ const basic_bounding_box<TByte>& bbox,
         _In_ const FPD_NAMESPACE::endian endian) {
     assert(bbox);
 
     if (requires_conversion(endian)) {
-        std::vector<std::uint8_t> buffer(bbox.begin(), bbox.end());
+        std::vector<TByte> buffer(bbox.begin(), bbox.end());
         const auto stride = to_size(bbox.format());
         assert(buffer.size() % stride == 0);
         const auto cnt = buffer.size() / stride;

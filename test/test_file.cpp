@@ -15,7 +15,7 @@ namespace fpd {
 
         TEST_METHOD(ctor_char) {
             auto path = make_meta();
-            file<char, HANDLE> file(encodings::oem, path.c_str());
+            file<char, HANDLE> file(encodings::utf8, path.c_str());
             Assert::AreEqual(int(endian::system), int(file.meta_data().endian()), L"endian", LINE_INFO());
             Assert::AreEqual(std::size_t(3), file.meta_data().format_description().count_elements(), L"format elements", LINE_INFO());
             Assert::AreEqual(std::size_t(3), file.meta_data().format_description().count_groups(), L"format groups", LINE_INFO());
@@ -29,7 +29,7 @@ namespace fpd {
             Assert::AreEqual(std::size_t(41), file.meta_data().particles(0), L"particles frame 0", LINE_INFO());
             Assert::AreEqual(std::size_t(42), file.meta_data().particles(1), L"particles frame 1", LINE_INFO());
             Assert::AreEqual(std::size_t(43), file.meta_data().particles(2), L"particles frame 2", LINE_INFO());
-            //Assert::AreEqual(u8"オマイゴッド", file.meta_data().description().c_str(), L"description", LINE_INFO());
+            Assert::AreEqual(u8"オマイゴッド", file.meta_data().description().c_str(), L"description", LINE_INFO());
         }
 
         TEST_METHOD(ctor_wchar) {

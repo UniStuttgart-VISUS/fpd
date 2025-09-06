@@ -98,16 +98,6 @@ FPD_NAMESPACE::meta_data_builder<TChar>::build(void) {
         retval.code_page(this->code_page());
     }
 
-    if (this->_bounding_boxes.empty()) {
-        retval._bounding_box = bounding_box();
-    } else {
-        retval._bounding_box = std::move(this->_bounding_boxes[0]);
-        this->_bounding_boxes.erase(this->_bounding_boxes.begin());
-    }
-
-    // TODO: Why?!
-    //this->code_page(encodings::oem);
-
     retval._description = std::move(this->_description);
     assert(this->_description.empty());
 
@@ -116,8 +106,11 @@ FPD_NAMESPACE::meta_data_builder<TChar>::build(void) {
     retval._format_description = std::move(this->_format);
     assert(!this->_format);
 
-    retval._frame_bounding_boxes = std::move(this->_bounding_boxes);
+    retval._bounding_boxes = std::move(this->_bounding_boxes);
     assert(this->_bounding_boxes.empty());
+    if (retval._bounding_boxes.empty()) {
+        retval._bounding_boxes.emplace_back();
+    }
 
     retval._frame_table = std::move(this->_frame_table);
     assert(this->_frame_table.empty());
@@ -134,6 +127,8 @@ FPD_NAMESPACE::meta_data_builder<TChar>::build(void) {
     retval._version = this->_version;
     this->_version = std::make_pair(FPD_FILE_MAJOR, FPD_FILE_MINOR);
 
+    assert(retval._compression != nullptr);
+    assert(retval._hierarchy != nullptr);
     return retval;
 }
 
@@ -424,7 +419,7 @@ FPD_NAMESPACE::meta_data_builder<TChar>::operator bool(void) const noexcept {
         const auto mismatch = std::any_of(
             this->_bounding_boxes.begin(),
             this->_bounding_boxes.end(),
-            [format](const bounding_box &b) {
+            [format](const bounding_box& b) {
                 return !b || (b.format() != format);
             });
 

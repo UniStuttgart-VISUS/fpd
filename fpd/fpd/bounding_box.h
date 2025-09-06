@@ -1,11 +1,11 @@
-﻿// <copyright file="bounding_box.h" company="Visualisierungsinstitut der Universität Stuttgart">
+﻿// <copyright file="basic_bounding_box.h" company="Visualisierungsinstitut der Universität Stuttgart">
 // Copyright © 2023 - 2025 Visualisierungsinstitut der Universität Stuttgart.
 // Licensed under the MIT licence. See LICENCE file for details.
 // </copyright>
 // <author>Christoph Müller</author>
 
-#if !defined(_FPD_BOUNDING_BOX_H_)
-#define _FPD_BOUNDING_BOX_H_
+#if !defined(_FPD_BOUNDING_BOX_H)
+#define _FPD_BOUNDING_BOX_H
 #pragma once
 
 #include <algorithm>
@@ -29,7 +29,11 @@ FPD_NAMESPACE_BEGIN
 /// Before retrieving data, the <see cref="format" /> must be checked to
 /// interpret the data correctly.
 /// </remarks>
-class bounding_box final {
+/// <typeparam name="TByte">The type used to represent a byte.</typeparam>
+template<class TByte = std::uint8_t> class basic_bounding_box final {
+
+    static_assert(sizeof(TByte) == 1, "The byte type must be exactly one "
+        "byte in size.");
 
 public:
 
@@ -71,6 +75,11 @@ public:
     };
 
     /// <summary>
+    /// The type used to represent a byte.
+    /// </summary>
+    typedef TByte byte_type;
+
+    /// <summary>
     /// The type used to specify the format of the components.
     /// </summary>
     typedef FPD_NAMESPACE::format format_type;
@@ -78,15 +87,15 @@ public:
     /// <summary>
     /// Initialises a new instance.
     /// </summary>
-    inline bounding_box(void) noexcept : _format(format_type::unknown) { }
+    inline basic_bounding_box(void) noexcept : _format(format_type::unknown) { }
 
     /// <summary>
     /// Initialises an empty bounding box of the given format.
     /// </summary>
     /// <param name="format">The scalar format of the bounding box.</param>
-    explicit inline bounding_box(_In_ const format_type format)
+    explicit inline basic_bounding_box(_In_ const format_type format)
             : _format(format) {
-        constexpr auto zero = static_cast<std::uint8_t>(0);
+        constexpr auto zero = static_cast<byte_type>(0);
         this->_values.resize(6 * to_size(this->_format));
         assert(*this);
         std::fill(this->_values.begin(), this->_values.end(), zero);
@@ -105,7 +114,7 @@ public:
     /// <param name="max_z">The maximum value on the z-axis.</param>
     /// <exception cref="std::logic_error">If <typeparamref name="TValue" />
     /// is not a valid scalar arithmetic type.</exception>
-    template<class TValue> bounding_box(
+    template<class TValue> basic_bounding_box(
         _In_ const TValue min_x, _In_ const TValue min_y,
         _In_ const TValue min_z, _In_ const TValue max_x,
         _In_ const TValue max_y, _In_ const TValue max_z);
@@ -113,7 +122,8 @@ public:
     /// <summary>
     /// Initialises a new instance.
     /// </summary>
-    /// <typeparam name="TByte">A type to represent a single byte.</typeparam>
+    /// <typeparam name="TInput">The type used to represent an input byte.
+    /// </typeparam>
     /// <param name="format">The scalar format of the bounding box.</param>
     /// <param name="values">A pointer to at least six values of the specified
     /// format.</param>
@@ -122,11 +132,37 @@ public:
     /// <param name="endian">The endian in which <paramref name="values" /> are
     /// represented. If this is not the system endian, the constructor will
     /// convert the data. This parameter defaults to the system endian.</param>
-    template<class TByte> bounding_box(
-        _In_ const std::enable_if_t<sizeof(TByte) == 1, format_type> format,
-        _In_reads_bytes_(cnt) const TByte *values,
+    template<class TInput>
+    basic_bounding_box(
+        _In_ const std::enable_if_t<sizeof(TInput) == 1, format_type> format,
+        _In_reads_bytes_(cnt) const TInput *values,
         _In_ std::size_t cnt,
         _In_ endian endian = endian::system);
+
+    /// <summary>
+    /// Initialise a copy.
+    /// </summary>
+    /// <param name="rhs">The object to be cloned.</param>
+    inline basic_bounding_box(_In_ const basic_bounding_box& rhs)
+        : _format(rhs._format), _values(rhs._values) { }
+
+    /// <summary>
+    /// Initialise a copy.
+    /// </summary>
+    /// <typeparam name="TOther">The byte type used by <paramref name="rhs" />.
+    /// </typeparam>
+    /// <param name="rhs">The object to be cloned.</param>
+    template<class TOther>
+    basic_bounding_box(_In_ const basic_bounding_box<TOther>& rhs);
+
+    /// <summary>
+    /// Initialise from move.
+    /// </summary>
+    /// <param name="rhs">The object to be moved.</param>
+    inline basic_bounding_box(_Inout_ basic_bounding_box&& rhs) noexcept
+            : _format(rhs._format), _values(std::move(rhs._values)) {
+        rhs._format = format::unknown;
+    }
 
     /// <summary>
     /// Answer the values of the bounding box in linear memory.
@@ -144,7 +180,7 @@ public:
     inline bool empty(void) const noexcept {
         return this->_values.empty() || std::all_of(this->_values.begin(),
             this->_values.end(),
-            [](const std::uint8_t v) { return (v == 0); });
+            [](const byte_type v) { return (v == 0); });
     }
 
     /// <summary>
@@ -329,8 +365,28 @@ public:
     /// <summary>
     /// Extend this bounding box to include the given other bounding box.
     /// </summary>
+    /// <typeparam name="TOther">The byte representation used by
+    /// <paramref name="other" />.</typeparam>
     /// <param name="other">Another bounding box with the same format.</param>
-    inline void merge(_In_ const bounding_box& other);
+    template<class TOther>
+    inline void merge(_In_ const basic_bounding_box<TOther>& other);
+
+    /// <summary>
+    /// Assignment.
+    /// </summary>
+    /// <typeparam name="TOther">The byte type used by <paramref name="rhs" />.
+    /// </typeparam>
+    /// <param name="rhs">The right-hand-side operand.</param>
+    /// <returns>*<see langword="this" />.</returns>
+    template<class TOther>
+    basic_bounding_box& operator =(_In_ const basic_bounding_box<TOther>& rhs);
+
+    /// <summary>
+    /// Move assignment.
+    /// </summary>
+    /// <param name="rhs">The right-hand-side operand.</param>
+    /// <returns>*<see langword="this" />.</returns>
+    basic_bounding_box& operator =(_Inout_ basic_bounding_box&& rhs) noexcept;
 
     /// <summary>
     /// Answer whether the bounding box is valid.
@@ -372,7 +428,7 @@ private:
         return std::make_pair(start, end <= this->_values.size());
     }
 
-    std::vector<std::uint8_t> _values;
+    std::vector<byte_type> _values;
     format_type _format;
 
     template<class T> friend class meta_data;
@@ -380,7 +436,7 @@ private:
 public:
 
     /// <summary>
-    /// Answer an iterator for the begin of the bounding box.
+    /// Answer an iterator for the first byte of the bounding box.
     /// </summary>
     /// <returns>An iterator for the begin of the in-memory representation of
     /// the bounding box.</returns>
@@ -389,7 +445,7 @@ public:
     }
 
     /// <summary>
-    /// Answer an iterator for the end of the bounding box.
+    /// Answer an iterator past the last byte of the bounding box.
     /// </summary>
     /// <returns>An iterator for the end of the in-memory representation of
     /// the bounding box.</returns>
@@ -398,8 +454,14 @@ public:
     }
 };
 
+
+/// <summary>
+/// Representation of a 3D bounding box.
+/// </summary>
+typedef basic_bounding_box<> bounding_box;
+
 FPD_NAMESPACE_END
 
 #include "fpd/bounding_box.inl"
 
-#endif /* !defined(_FPD_BOUNDING_BOX_H_) */
+#endif /* !defined(_FPD_BOUNDING_BOX_H) */

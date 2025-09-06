@@ -155,6 +155,7 @@ public:
     explicit inline meta_data(_In_opt_ const FPD_NAMESPACE::encoding encoding
             = FPD_NAMESPACE::encodings::oem) noexcept
         : detail::with_encoding<TChar>(encoding),
+            _bounding_boxes({ bounding_box() }),
             _compression(std::make_shared<compression_meta_data<
                 compression::none>>()),
             _endian(endian_type::undefined),
@@ -343,7 +344,7 @@ private:
 
     static void calc_frame_offsets(_Inout_ meta_data& meta_data);
 
-    static void parse_bounding_box(_Inout_ meta_data& meta_data,
+    static void parse_bounding_box(_Inout_ meta_data &meta_data,
         _In_ const void *data, _In_ const std::size_t cnt);
 
     static void parse_compression(_Inout_ meta_data& meta_data,
@@ -367,9 +368,9 @@ private:
     static void parse_user_semantics(_Inout_ meta_data& meta_data,
         _In_ const void *data, _In_ const std::size_t cnt);
 
-    template<class TFile>
+    template<class TFile, class TByte>
     static std::size_t write(_In_ TFile& file,
-        _In_ const bounding_box& bbox,
+        _In_ const basic_bounding_box<TByte>& bbox,
         _In_ const FPD_NAMESPACE::endian endian);
 
     template<class TFile>
@@ -408,12 +409,11 @@ private:
     std::vector<char> to_utf8(
         _In_ const std::vector<string_type>& strings) const;
 
-    bounding_box _bounding_box;
+    std::vector<bounding_box> _bounding_boxes;
     std::shared_ptr<compression_meta_data_base> _compression;
     string_type _description;
     endian_type _endian;
     format_description_type _format_description;
-    std::vector<bounding_box> _frame_bounding_boxes;
     frame_table_type _frame_offsets;
     frame_table_type _frame_table;
     std::map<semantic, format_variant> _global_particle_properties;

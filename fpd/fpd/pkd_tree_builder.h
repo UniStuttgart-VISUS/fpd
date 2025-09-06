@@ -189,7 +189,7 @@ private:
     /// <param name="depth"></param>
     template<class TScalar> void build_ospray(
         _In_ const std::size_t node,
-        _In_ const bounding_box bounds,
+        _In_ const bounding_box /* [sic] */ bounds,
         _In_ const std::size_t depth) const;
 
     /// <summary>
