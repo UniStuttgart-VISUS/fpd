@@ -78,6 +78,9 @@
     <ClCompile Include="test_file.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="test_gdeflate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">

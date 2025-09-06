@@ -8,8 +8,12 @@
 #define _FPD_IO_TRAITS_H
 #pragma once
 
+#include <algorithm>
+#include <atomic>
 #include <memory>
+#include <numeric>
 #include <system_error>
+#include <thread>
 
 #include <fcntl.h>
 
@@ -73,12 +77,41 @@ public:
     typedef IDStorageQueue *queue_type;
 
     /// <summary>
+    /// Compress the data from <paramref name="begin" /> to
+    /// <paramref name="end" /> as <paramref name="blocks" />.
+    /// </summary>
+    /// <typeparam name="TByte"></typeparam>
+    /// <typeparam name="TIterator"></typeparam>
+    /// <param name="format"></param>
+    /// <param name="begin"></param>
+    /// <param name="end"></param>
+    /// <param name="blocks"></param>
+    /// <returns></returns>
+    template<class TByte, class TIterator>
+    static std::vector<std::vector<std::enable_if_t<sizeof(TByte) == 1, TByte>>>
+    compress(_In_ const DSTORAGE_COMPRESSION_FORMAT format,
+        _In_ const TIterator begin,
+        _In_ const TIterator end,
+        _In_ std::size_t blocks);
+
+    /// <summary>
+    /// Gets a DirectStorage compression codec.
+    /// </summary>
+    /// <param name="format">The compression format, which must be GDeflate.
+    /// </param>
+    /// <returns>The compression codec.</returns>
+    /// <exception cref="std::system_error">If the codec could not be retrieved.
+    /// </exception>
+    inline static _Ret_valid_ IDStorageCompressionCodec *get_codec(
+        _In_ const DSTORAGE_COMPRESSION_FORMAT format);
+
+    /// <summary>
     /// Gets a DirectStorage factory.
     /// </summary>
     /// <returns>A DirectStorage factory. The caller must release the object
     /// once it is no longer needed.</returns>
     /// <exception cref="std::system_error">If the factory could not be
-    /// retrieved</exception>
+    /// retrieved.</exception>
     inline static _Ret_valid_ IDStorageFactory *get_factory(void);
 
     /// <summary>

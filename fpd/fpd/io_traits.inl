@@ -7,6 +7,98 @@
 
 #if defined(FPD_WITH_DSTORAGE)
 /*
+ * FPD_DETAIL_NAMESPACE::io_traits<IDStorageFile>::compress
+ */
+template<class TByte, class TIterator>
+std::vector<std::vector<std::enable_if_t<sizeof(TByte) == 1, TByte>>>
+FPD_DETAIL_NAMESPACE::io_traits<IDStorageFile>::compress(
+        _In_ const DSTORAGE_COMPRESSION_FORMAT format,
+        _In_ const TIterator begin,
+        _In_ const TIterator end,
+        _In_ std::size_t blocks) {
+    // Adapted from https://github.com/microsoft/DirectStorage/blob/main/Samples/GpuDecompressionBenchmark/GpuDecompressionBenchmark.cpp
+    if (blocks < 1) {
+        blocks = 1;
+    }
+
+    std::vector<std::vector<TByte>> retval(blocks);
+    std::atomic<std::size_t> cur_block;
+    std::vector<std::thread> workers;
+
+    const auto cnt = std::distance(begin, end);
+    std::vector<std::size_t> block_size(blocks, cnt / blocks);
+    block_size[0] += (cnt % blocks);
+
+    workers.reserve(std::thread::hardware_concurrency());
+
+    for (decltype(std::thread::hardware_concurrency()) i = 0;
+            (i < blocks) && (i < std::thread::hardware_concurrency());
+            ++i) {
+        workers.emplace_back([&](void) {
+            auto codec = get_codec(format);
+
+            while (true) {
+                const auto b = cur_block++;
+                if (b >= retval.size()) {
+                    return;
+                }
+
+                auto data = begin;
+                for (std::size_t i = 0; i < b; ++i) {
+                    std::advance(data, block_size[i]);
+                }
+                const auto size = block_size[b];
+
+                // Allocate sufficient memory to hold all compressed data.
+                std::size_t compressed = codec->CompressBufferBound(size);
+                retval[b].resize(compressed);
+
+                // Compress the block.
+                auto hr = codec->CompressBuffer(std::addressof(*data), size,
+                    DSTORAGE_COMPRESSION_BEST_RATIO, retval[b].data(),
+                    retval[b].size(), &compressed);
+                if (FAILED(hr)) {
+                    codec->Release();
+                    throw std::system_error(hr, com_category());
+                }
+
+                // Resize above was to upper bound, we need to make sure that we
+                // truncate to the actual size now.
+                retval[b].resize(compressed);
+            }
+
+            codec->Release();
+        });
+    }
+
+    // Wait for all workers at exit.
+    for (auto& w : workers) {
+        assert(w.joinable());
+        w.join();
+    }
+
+    return retval;
+}
+
+
+/*
+ * FPD_DETAIL_NAMESPACE::io_traits<IDStorageFile>::get_codec
+ */
+_Ret_valid_ IDStorageCompressionCodec *
+FPD_DETAIL_NAMESPACE::io_traits<IDStorageFile>::get_codec(
+        _In_ const DSTORAGE_COMPRESSION_FORMAT format) {
+    IDStorageCompressionCodec *retval = nullptr;
+    auto hr = ::DStorageCreateCompressionCodec(format, 0,
+        IID_PPV_ARGS(&retval));
+    if (FAILED(hr)) {
+        throw std::system_error(hr, com_category());
+    }
+
+    return retval;
+}
+
+
+/*
  * FPD_DETAIL_NAMESPACE::io_traits<IDStorageFile>::get_factory
  */
 _Ret_valid_ IDStorageFactory *

@@ -191,6 +191,7 @@
     <ClCompile Include="test_format_description.cpp" />
     <ClCompile Include="test_format_traits.cpp" />
     <ClCompile Include="test_format_variant.cpp" />
+    <ClCompile Include="test_gdeflate.cpp" />
     <ClCompile Include="test_invoke.cpp" />
     <ClCompile Include="test_io.cpp" />
     <ClCompile Include="test_make_unsigned.cpp" />
