@@ -30,6 +30,13 @@ namespace fpd {
             Assert::AreEqual(std::size_t(42), file.meta_data().particles(1), L"particles frame 1", LINE_INFO());
             Assert::AreEqual(std::size_t(43), file.meta_data().particles(2), L"particles frame 2", LINE_INFO());
             Assert::AreEqual(u8"オマイゴッド", file.meta_data().description().c_str(), L"description", LINE_INFO());
+            Assert::AreEqual(int(format::float32), int(file.meta_data().bounding_box().format()), L"bbox format", LINE_INFO());
+            Assert::AreEqual(0.0f, file.meta_data().bounding_box().get<float>(bounding_box::value::min_x), L"bbox min_x", LINE_INFO());
+            Assert::AreEqual(1.0f, file.meta_data().bounding_box().get<float>(bounding_box::value::min_y), L"bbox min_y", LINE_INFO());
+            Assert::AreEqual(2.0f, file.meta_data().bounding_box().get<float>(bounding_box::value::min_z), L"bbox min_z", LINE_INFO());
+            Assert::AreEqual(42.0f, file.meta_data().bounding_box().get<float>(bounding_box::value::max_x), L"bbox max_x", LINE_INFO());
+            Assert::AreEqual(43.0f, file.meta_data().bounding_box().get<float>(bounding_box::value::max_y), L"bbox max_y", LINE_INFO());
+            Assert::AreEqual(44.0f, file.meta_data().bounding_box().get<float>(bounding_box::value::max_z), L"bbox max_z", LINE_INFO());
         }
 
         TEST_METHOD(ctor_wchar) {
@@ -48,7 +55,14 @@ namespace fpd {
             Assert::AreEqual(std::size_t(41), file.meta_data().particles(0), L"particles frame 0", LINE_INFO());
             Assert::AreEqual(std::size_t(42), file.meta_data().particles(1), L"particles frame 1", LINE_INFO());
             Assert::AreEqual(std::size_t(43), file.meta_data().particles(2), L"particles frame 2", LINE_INFO());
-            //Assert::AreEqual(u8"オマイゴッド", file.meta_data().description().c_str(), L"description", LINE_INFO());
+            Assert::AreEqual(L"オマイゴッド", file.meta_data().description().c_str(), L"description", LINE_INFO());
+            Assert::AreEqual(int(format::float32), int(file.meta_data().bounding_box().format()), L"bbox format", LINE_INFO());
+            Assert::AreEqual(0.0f, file.meta_data().bounding_box().get<float>(bounding_box::value::min_x), L"bbox min_x", LINE_INFO());
+            Assert::AreEqual(1.0f, file.meta_data().bounding_box().get<float>(bounding_box::value::min_y), L"bbox min_y", LINE_INFO());
+            Assert::AreEqual(2.0f, file.meta_data().bounding_box().get<float>(bounding_box::value::min_z), L"bbox min_z", LINE_INFO());
+            Assert::AreEqual(42.0f, file.meta_data().bounding_box().get<float>(bounding_box::value::max_x), L"bbox max_x", LINE_INFO());
+            Assert::AreEqual(43.0f, file.meta_data().bounding_box().get<float>(bounding_box::value::max_y), L"bbox max_y", LINE_INFO());
+            Assert::AreEqual(44.0f, file.meta_data().bounding_box().get<float>(bounding_box::value::max_z), L"bbox max_z", LINE_INFO());
         }
 
 

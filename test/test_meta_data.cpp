@@ -86,6 +86,7 @@ namespace fpd {
 
                     // Single bounding box.
                     + sizeof(header_segment)
+                    + sizeof(format)
                     + 6 * sizeof(float)
 
                     // file description

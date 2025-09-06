@@ -179,6 +179,23 @@ FPD_NAMESPACE::meta_data<TChar> FPD_NAMESPACE::meta_data<TChar>::parse(
 
 
 /*
+ * FPD_NAMESPACE::meta_data<TChar>::bounding_box
+ */
+template<class TChar>
+const typename FPD_NAMESPACE::meta_data<TChar>::bounding_box_type&
+FPD_NAMESPACE::meta_data<TChar>::bounding_box(
+        _In_ std::size_t frame) const noexcept {
+    assert(!this->_bounding_boxes.empty());
+    if (frame + 1 > this->_bounding_boxes.size()) {
+        // Fall back to global bounding box.
+        frame = 0;
+    }
+
+    return this->_bounding_boxes[frame];
+}
+
+
+/*
  * FPD_NAMESPACE::meta_data<TChar>::frame_offset
  */
 template<class TChar>

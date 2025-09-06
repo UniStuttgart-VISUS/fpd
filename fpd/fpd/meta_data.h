@@ -37,6 +37,11 @@ class meta_data final : protected detail::with_encoding<TChar> {
 public:
 
     /// <summary>
+    /// The type used for a bounding box.
+    /// </summary>
+    typedef bounding_box bounding_box_type;
+
+    /// <summary>
     /// The type of a character in a string.
     /// </summary>
     typedef TChar char_type;
@@ -155,7 +160,7 @@ public:
     explicit inline meta_data(_In_opt_ const FPD_NAMESPACE::encoding encoding
             = FPD_NAMESPACE::encodings::oem) noexcept
         : detail::with_encoding<TChar>(encoding),
-            _bounding_boxes({ bounding_box() }),
+            _bounding_boxes({ bounding_box_type() }),
             _compression(std::make_shared<compression_meta_data<
                 compression::none>>()),
             _endian(endian_type::undefined),
@@ -164,6 +169,29 @@ public:
                 spatial_hierarchy::none>>()),
             _particle_size(0),
             _version(std::uint8_t(0), std::uint8_t(0)) { }
+
+    /// <summary>
+    /// Answer the global bounding box.
+    /// </summary>
+    /// <returns>The global bounding box or an invalid one if the meta data do
+    /// not contain a bounding box.</returns>
+    inline const bounding_box_type& bounding_box(void) const noexcept {
+        assert(!this->_bounding_boxes.empty());
+        return this->_bounding_boxes.front();
+    }
+
+    /// <summary>
+    /// Answer the bounding box for the given <paramref name="frame" /> or the
+    /// global bounding box if the meta data do not hold per-frame bounding
+    /// boxes.
+    /// </summary>
+    /// <param name="frame">The zero-based index of the frame to retrieve the
+    /// bounding box for.</param>
+    /// <returns>The bounding box for the frame or the global bounding box,
+    /// which still might be invalid, because bounding boxes are optional.
+    /// </returns>
+    const bounding_box_type& bounding_box(
+        _In_ std::size_t frame) const noexcept;
 
     /// <summary>
     /// Answer the compression method used for the particle data.
@@ -409,7 +437,7 @@ private:
     std::vector<char> to_utf8(
         _In_ const std::vector<string_type>& strings) const;
 
-    std::vector<bounding_box> _bounding_boxes;
+    std::vector<bounding_box_type> _bounding_boxes;
     std::shared_ptr<compression_meta_data_base> _compression;
     string_type _description;
     endian_type _endian;

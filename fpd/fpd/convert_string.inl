@@ -301,19 +301,17 @@ std::size_t FPD_NAMESPACE::convert_string(
     if (same_encoding(dst_code_page, encodings::utf16)) {
         // Convert from the source encoding to UTF-16, which is a task we can
         // also pass on to another, more effcient implementation.
-        assert(sizeof(TTo) == sizeof(utf16_type));
-        assert(sizeof(TFrom) == 1);
+        auto d = reinterpret_cast<utf16_type *>(dst);
         auto s = reinterpret_cast<const char *>(src);
-        return convert_string(dst, cnt_dst, s, cnt_src, src_code_page);
+        return convert_string(d, cnt_dst, s, cnt_src, src_code_page);
     }
 
     if (same_encoding(src_code_page, encodings::utf16)) {
         // Convert to UTF-16, which is a task we can also pass on to another,
         // more efficient implementation.
-        assert(sizeof(TTo) == 1);
-        assert(sizeof(TFrom) == sizeof(utf16_type));
         auto d = reinterpret_cast<char *>(dst);
-        return convert_string(d, cnt_dst, src, cnt_src, dst_code_page);
+        auto s = reinterpret_cast<const utf16_type *>(src);
+        return convert_string(d, cnt_dst, s, cnt_src, dst_code_page);
     }
 
     // Note: there is ucnv_convert which does *almost* the same pivot via UTF-16
