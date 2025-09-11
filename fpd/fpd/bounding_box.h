@@ -85,6 +85,30 @@ public:
     typedef FPD_NAMESPACE::format format_type;
 
     /// <summary>
+    /// Constructs a bounding box from the given positional data.
+    /// </summary>
+    /// <param name="data">A pointer to the positional data.</param>
+    /// <param name="cnt">The number of particles to read.</param>
+    /// <param name="stride">The distance between the positions in number
+    /// of bytes.</param>
+    /// <param name="format">The format of the positional data.</param>
+    /// <param name="endian">The endian of the data. This parameter defaults
+    /// to the system endian.</param>
+    /// <returns>A bounding box for the specified data.</returns>
+    /// <exception cref="std::invalid_argument">If <paramref name="data" />
+    /// is <c>nullptr</c> while <paramref name="cnt" /> is greater than zero;
+    /// or if <paramref name="format" /> is not a valid scalar or vector format
+    /// representing positions from 1-D to 3-D; or if the
+    /// <paramref name="stride" /> is less than the size of a single position.
+    /// </exception>
+    static basic_bounding_box from_data(
+        _In_reads_(cnt * stride) const void *data,
+        _In_ const std::size_t cnt,
+        _In_ const std::size_t stride,
+        _In_ const format_type format,
+        _In_ const endian endian = endian::system);
+
+    /// <summary>
     /// Initialises a new instance.
     /// </summary>
     inline basic_bounding_box(void) noexcept : _format(format_type::unknown) { }
@@ -459,6 +483,33 @@ public:
 /// Representation of a 3D bounding box.
 /// </summary>
 typedef basic_bounding_box<> bounding_box;
+
+
+/// <summary>
+/// Constructs a bounding box from the given positional data.
+/// </summary>
+/// <param name="data">A pointer to the positional data.</param>
+/// <param name="cnt">The number of particles to read.</param>
+/// <param name="stride">The distance between the positions in number
+/// of bytes.</param>
+/// <param name="format">The format of the positional data.</param>
+/// <param name="endian">The endian of the data. This parameter defaults
+/// to the system endian.</param>
+/// <returns>A bounding box for the specified data.</returns>
+/// <exception cref="std::invalid_argument">If <paramref name="data" />
+/// is <c>nullptr</c> while <paramref name="cnt" /> is greater than zero;
+/// or if <paramref name="format" /> is not a valid scalar or vector format
+/// representing positions from 1-D to 3-D; or if the
+/// <paramref name="stride" /> is less than the size of a single position.
+/// </exception>
+inline bounding_box make_bounding_box(
+        _In_reads_(cnt *stride) const void *data,
+        _In_ const std::size_t cnt,
+        _In_ const std::size_t stride,
+        _In_ const format format,
+        _In_ const endian endian = endian::system) {
+    return bounding_box::from_data(data, cnt, stride, format, endian);
+}
 
 FPD_NAMESPACE_END
 

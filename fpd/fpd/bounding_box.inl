@@ -5,6 +5,78 @@
 // <author>Christoph Müller</author>
 
 
+/*
+ * FPD_NAMESPACE::basic_bounding_box<TByte>::from_data
+ */
+template<class TByte>
+FPD_NAMESPACE::basic_bounding_box<TByte>
+FPD_NAMESPACE::basic_bounding_box<TByte>::from_data(
+        _In_reads_(cnt * stride) const void *data,
+        _In_ const std::size_t cnt,
+        _In_ const std::size_t stride,
+        _In_ const format_type format,
+        _In_ const endian endian) {
+    if ((data == nullptr) && (cnt > 0)) {
+        throw std::invalid_argument("A valid pointer to particle positions "
+            "must be provided.");
+    }
+
+    const auto comps = (std::min)(std::size_t(3), to_components(format));
+    const auto size = to_size(format);
+    if ((comps == 0) || (size == 0)) {
+        throw std::invalid_argument("The specified format of the positional "
+            "data is invalid.");
+    }
+
+    if (stride < size) {
+        throw std::invalid_argument("The stride must be at least the size of "
+            "a single position.");
+    }
+
+    return dispatch_format<basic_bounding_box>(format, [=](auto tag) {
+        typedef std::remove_pointer_t<std::decay_t<decltype(tag)>> tag_type;
+        typedef detail::format_reverse_traits<tag_type> traits;
+        typedef typename traits::scalar value_type;
+
+        // Initialise the bounding box empty on all axes.
+        std::array<value_type, 6> bounds;
+        std::fill(bounds.begin(), bounds.end(), static_cast<value_type>(0));
+
+        // Determine the range on all valid axes.
+        for (std::size_t c = 0; c < comps; ++c) {
+            bounds[c] = (std::numeric_limits<value_type>::max)();
+            bounds[c + 3] = (std::numeric_limits<value_type>::lowest)();
+        }
+
+        auto cur = static_cast<const byte_type *>(data);
+        for (std::size_t i = 0; i < cnt; ++i) {
+            const auto values = reinterpret_cast<const value_type *>(cur);
+
+            for (std::size_t c = 0; c < comps; ++c) {
+                const auto v = swap_endian_as<value_type>(values + c, endian);
+                if (v < bounds[c]) {
+                    bounds[c] = v;
+                }
+                if (v > bounds[c + 3]) {
+                    bounds[c + 3] = v;
+                }
+            }
+
+            cur += stride;
+        }
+
+        // Create the bounding box from the computed system-endian values and
+        // swap the endian if the data were different.
+        basic_bounding_box retval(detail::format_v<value_type>,
+            reinterpret_cast<const byte_type *>(bounds.data()),
+            bounds.size() * sizeof(value_type));
+        swap_endian(reinterpret_cast<value_type *>(retval._values.data()),
+            bounds.size(), endian);
+
+        return retval;
+    });
+}
+
 
 /*
  * FPD_NAMESPACE::basic_bounding_box<TByte>::basic_bounding_box

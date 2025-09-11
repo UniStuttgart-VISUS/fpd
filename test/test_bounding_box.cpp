@@ -120,5 +120,55 @@ namespace fpd {
             Assert::AreEqual(100.0f, bb1.get<float>(bounding_box::value::max_y), L"max_y", LINE_INFO());
             Assert::AreEqual(10.0f, bb1.get<float>(bounding_box::value::max_z), L"max_z", LINE_INFO());
         }
+
+        TEST_METHOD(make_1d) {
+            std::vector<float> data = { 1.0f, 2.0f, 3.0f, -4.0f, 5.0f };
+
+            auto bbox = make_bounding_box(data.data(), data.size(), sizeof(float), format::float32);
+            Assert::AreEqual(int(format::float32), int(bbox.format()), L"format", LINE_INFO());
+            Assert::IsTrue(bool(bbox), L"valid", LINE_INFO());
+            Assert::AreEqual(-4.0f, bbox.get<float>(bounding_box::value::min_x), L"min_x", LINE_INFO());
+            Assert::AreEqual(0.0f, bbox.get<float>(bounding_box::value::min_y), L"min_y", LINE_INFO());
+            Assert::AreEqual(0.0f, bbox.get<float>(bounding_box::value::min_z), L"min_z", LINE_INFO());
+            Assert::AreEqual(5.0f, bbox.get<float>(bounding_box::value::max_x), L"max_x", LINE_INFO());
+            Assert::AreEqual(0.0f, bbox.get<float>(bounding_box::value::max_y), L"max_y", LINE_INFO());
+            Assert::AreEqual(0.0f, bbox.get<float>(bounding_box::value::max_z), L"max_z", LINE_INFO());
+        }
+
+        TEST_METHOD(make_2d) {
+            std::vector<double> data = {
+                1.0, 2.0,
+                -3.0, -4.0,
+                5.0, -6.0,
+            };
+
+            auto bbox = make_bounding_box(data.data(), data.size() / 2, sizeof(double) * 2, format::float64xy);
+            Assert::AreEqual(int(format::float64), int(bbox.format()), L"format", LINE_INFO());
+            Assert::IsTrue(bool(bbox), L"valid", LINE_INFO());
+            Assert::AreEqual(-3.0, bbox.get<double>(bounding_box::value::min_x), L"min_x", LINE_INFO());
+            Assert::AreEqual(-6.0, bbox.get<double>(bounding_box::value::min_y), L"min_y", LINE_INFO());
+            Assert::AreEqual(0.0, bbox.get<double>(bounding_box::value::min_z), L"min_z", LINE_INFO());
+            Assert::AreEqual(5.0, bbox.get<double>(bounding_box::value::max_x), L"max_x", LINE_INFO());
+            Assert::AreEqual(2.0, bbox.get<double>(bounding_box::value::max_y), L"max_y", LINE_INFO());
+            Assert::AreEqual(0.0, bbox.get<double>(bounding_box::value::max_z), L"max_z", LINE_INFO());
+        }
+
+        TEST_METHOD(make_3d) {
+            std::vector<int> data = {
+                1, 2, -3,
+                -4, -5, 6,
+                7, -8, 9,
+            };
+
+            auto bbox = make_bounding_box(data.data(), data.size() / 3, sizeof(int) * 3, format::int32xyz);
+            Assert::AreEqual(int(format::int32), int(bbox.format()), L"format", LINE_INFO());
+            Assert::IsTrue(bool(bbox), L"valid", LINE_INFO());
+            Assert::AreEqual(-4, bbox.get<int>(bounding_box::value::min_x), L"min_x", LINE_INFO());
+            Assert::AreEqual(-8, bbox.get<int>(bounding_box::value::min_y), L"min_y", LINE_INFO());
+            Assert::AreEqual(-3, bbox.get<int>(bounding_box::value::min_z), L"min_z", LINE_INFO());
+            Assert::AreEqual(7, bbox.get<int>(bounding_box::value::max_x), L"max_x", LINE_INFO());
+            Assert::AreEqual(2, bbox.get<int>(bounding_box::value::max_y), L"max_y", LINE_INFO());
+            Assert::AreEqual(9, bbox.get<int>(bounding_box::value::max_z), L"max_z", LINE_INFO());
+        }
     };
 }
