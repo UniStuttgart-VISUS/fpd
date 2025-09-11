@@ -942,12 +942,25 @@ FPD_NAMESPACE::meta_data<TChar>::meta_data<TChar>::frame_size_gdeflate(
 
     const auto groups = this->_format_description.count_groups();
     const auto blocks = md->check(this->frames(), groups);
+    auto begin = frame * blocks;
+    auto end = (frame + 1) * blocks;
 
+    if ((group < groups) && (groups > 1)) {
+        // Only collect the blocks that correspond to 'group'.
+        assert(blocks % groups == 0);
+        const auto blocks_per_group = blocks / groups;
+        begin += group * blocks_per_group;
+        end = begin + (group + 1) * blocks_per_group;
+    }
 
+    assert(begin < md->blocks());
+    assert(end <= md->blocks());
+    size_type retval = 0;
+    for (std::size_t b = begin; b < end; ++b) {
+        retval += (*md)[b];
+    }
 
-    //md->blocks();
-
-    throw "TODO";
+    return retval;
 }
 
 
