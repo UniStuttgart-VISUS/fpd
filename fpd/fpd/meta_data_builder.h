@@ -76,9 +76,20 @@ public:
     typedef typename meta_data_type::version_type version_type;
 
     /// <summary>
-    /// Initialises a new version.
+    /// Initialises a new instance.
     /// </summary>
     meta_data_builder(void);
+
+    /// <summary>
+    /// Initialises a new instance for modifiyng existing meta data.
+    /// </summary>
+    /// <remarks>
+    /// Please note that the builder will not modify <paramref name="data" />,
+    /// but a new instance will be created that is initialised from it.
+    /// </remarks>
+    /// <param name="data">The meta data to initialise the builder from.
+    /// </param>
+    explicit meta_data_builder(_In_ const meta_data_type& data);
 
     /// <summary>
     /// Appends an element to the format description.
@@ -420,9 +431,9 @@ private:
     format_description_type _format;
     frame_table_type _frame_table;
     std::map<semantic, format_variant> _global_particle_properties;
+    bool _track_bbox;
     std::vector<string_type> _user_defined_semantics;
     version_type _version;
-    bool _track_bbox;
 };
 
 FPD_NAMESPACE_END

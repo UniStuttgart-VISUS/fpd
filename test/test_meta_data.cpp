@@ -330,6 +330,40 @@ namespace fpd {
             Assert::AreEqual("Test description.", actual.description().c_str(), L"description", LINE_INFO());
         }
 
+        TEST_METHOD(builder_from_data) {
+            meta_data_builder<wchar_t> builder;
+
+            const auto expected = builder.add_format_element(semantic::position_radius, nullptr, format::float32xyzw)
+                .add_format_element(semantic::intensity, format::float32, 1)
+                .with_uniform_frames(42, 10)
+                .with_description(L"Test description.")
+                .build();
+
+            builder = meta_data_builder<wchar_t>(expected);
+            const auto actual = builder.build();
+
+            Assert::AreEqual(expected.version().first, actual.version().first, L"major version", LINE_INFO());
+            Assert::AreEqual(expected.version().second, actual.version().second, L"minor version", LINE_INFO());
+            Assert::AreEqual(int(expected.endian()), int(actual.endian()), L"endian", LINE_INFO());
+            Assert::AreEqual(expected.frames(), actual.frames(), L"# of frames", LINE_INFO());
+            Assert::AreEqual(expected.frame_offset(0), actual.frame_offset(0), L"First frame after header", LINE_INFO());
+            Assert::AreEqual(expected.particles(0), actual.particles(0), L"particles in frame", LINE_INFO());
+            Assert::AreEqual(expected.frame_size(0), actual.frame_size(0), L"size of frame", LINE_INFO());
+            Assert::IsTrue(actual.global_particle_properties().empty(), L"No global properties", LINE_INFO());
+            Assert::AreEqual(expected.format_description().count_elements(), actual.format_description().count_elements(), L"# of format elements", LINE_INFO());
+            Assert::AreEqual(expected.format_description().count_groups(), actual.format_description().count_groups(), L"# of format groups", LINE_INFO());
+            Assert::AreEqual(int(expected.format_description(0, 0).semantic()), int(actual.format_description(0, 0).semantic()), L"semantic 0, 0", LINE_INFO());
+            Assert::AreEqual(int(expected.format_description(0, 0).format()), int(actual.format_description(0, 0).format()), L"format 0, 0", LINE_INFO());
+            Assert::AreEqual(int(expected.format_description(0, 0).offset()), int(actual.format_description(0, 0).offset()), L"offset 0, 0", LINE_INFO());
+            Assert::AreEqual(int(expected.format_description(0, 0).size()), int(actual.format_description(0, 0).size()), L"size 0, 0", LINE_INFO());
+            Assert::AreEqual(int(expected.format_description(1, 0).semantic()), int(actual.format_description(1, 0).semantic()), L"semantic 1, 0", LINE_INFO());
+            Assert::AreEqual(int(expected.format_description(1, 0).format()), int(actual.format_description(1, 0).format()), L"format 1, 0", LINE_INFO());
+            Assert::AreEqual(int(expected.format_description(1, 0).offset()), int(actual.format_description(1, 0).offset()), L"offset 1, 0", LINE_INFO());
+            Assert::AreEqual(int(expected.format_description(1, 0).size()), int(actual.format_description(1, 0).size()), L"size 1, 0", LINE_INFO());
+            Assert::AreEqual(expected.description().size(), actual.description().size(), L"length of description", LINE_INFO());
+            Assert::AreEqual(expected.description(), actual.description(), L"description", LINE_INFO());
+
+        }
 
     private:
 

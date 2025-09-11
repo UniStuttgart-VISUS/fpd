@@ -16,6 +16,34 @@ FPD_NAMESPACE::meta_data_builder<TChar>::meta_data_builder(void)
 
 
 /*
+ * FPD_NAMESPACE::meta_data_builder<TChar>::meta_data_builder
+ */
+template<class TChar>
+FPD_NAMESPACE::meta_data_builder<TChar>::meta_data_builder(
+        _In_ const meta_data_type& data)
+    : detail::with_encoding<TChar>(encodings::oem),
+        _bounding_boxes(data._bounding_boxes),
+        // compression
+        _description(data._description),
+        // endian
+        _format(data._format_description),
+        _frame_table(data._frame_table),
+        _global_particle_properties(data._global_particle_properties),
+        // hierarchy
+        _track_bbox(false),
+        _user_defined_semantics(data._user_defined_semantics),
+        _version(data._version) {
+    if ((this->_bounding_boxes.size() == 1) && !this->_bounding_boxes.front()) {
+        // If the data only had the invalid placeholder bounding box, we remove
+        // it in order to reset the builder in the initial state we would expect
+        // for this situation.
+        this->_bounding_boxes.clear();
+    }
+
+}
+
+
+/*
  * FPD_NAMESPACE::meta_data_builder<TChar>::add_frame
  */
 template<class TChar>
@@ -411,7 +439,7 @@ FPD_NAMESPACE::meta_data_builder<TChar>::operator bool(void) const noexcept {
         }
     }
 
-    if (!this->_bounding_boxes.empty()) {
+    if (this->_bounding_boxes.size() > 1) {
         // For more than one bounding box is given, all bounding boxes must have
         // the same format (for perfomance reasons, we check whether the bbox
         // is valid at the same time).

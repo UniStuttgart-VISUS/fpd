@@ -45,7 +45,7 @@ public:
     /// Sets the code page for narrow strings.
     /// </summary>
     /// <param name="code_page">The new code page for narrow strings.</param>
-    inline void code_page(_In_opt_ const encoding code_page) noexcept {
+    inline void code_page(_In_opt_z_ const encoding code_page) noexcept {
         this->_code_page = code_page;
     }
 
@@ -55,7 +55,7 @@ protected:
     /// Initialises a new instance.
     /// </summary>
     /// <param name="code_page">The initial value of the code page.</param>
-    inline with_encoding(_In_opt_ const encoding code_page) noexcept
+    inline with_encoding(_In_opt_z_ const encoding code_page) noexcept
         : _code_page(code_page) { }
 
 private:
@@ -91,7 +91,7 @@ public:
     /// <summary>
     /// Does nothing.
     /// </summary>
-    inline void code_page(_In_opt_ const encoding) noexcept { }
+    inline void code_page(_In_opt_z_ const encoding) noexcept { }
 
 protected:
 
@@ -99,7 +99,7 @@ protected:
     /// Initialises a new instance.
     /// </summary>
     /// <param name="code_page">The initial value of the code page.</param>
-    inline with_encoding(_In_ const encoding) noexcept { }
+    inline with_encoding(_In_opt_z_ const encoding) noexcept { }
 };
 
 
@@ -127,7 +127,7 @@ public:
     /// <summary>
     /// Does nothing.
     /// </summary>
-    inline void code_page(_In_opt_ const encoding) noexcept { }
+    inline void code_page(_In_opt_z_ const encoding) noexcept { }
 
 protected:
 
@@ -135,7 +135,7 @@ protected:
     /// Initialises a new instance.
     /// </summary>
     /// <param name="code_page">The initial value of the code page.</param>
-    inline with_encoding(_In_ const encoding) noexcept { }
+    inline with_encoding(_In_opt_z_ const encoding) noexcept { }
 };
 
 
@@ -163,7 +163,7 @@ public:
     /// <summary>
     /// Does nothing.
     /// </summary>
-    inline void code_page(_In_opt_ const encoding) noexcept { }
+    inline void code_page(_In_opt_z_ const encoding) noexcept { }
 
 protected:
 
@@ -171,7 +171,7 @@ protected:
     /// Initialises a new instance.
     /// </summary>
     /// <param name="code_page">The initial value of the code page.</param>
-    inline with_encoding(_In_ const encoding) noexcept { }
+    inline with_encoding(_In_opt_z_ const encoding) noexcept { }
 };
 
 FPD_DETAIL_NAMESPACE_END
