@@ -336,7 +336,7 @@ TReturn dispatch_format(_In_ const format format,
         _In_ const TCallback& callback,
         _In_ const format_list<Formats...>) {
     typedef std::function<TReturn()> dispatch_type;
-    static const std::array<dispatch_type, sizeof...(Formats)> Dispatchers = {
+    const std::array<dispatch_type, sizeof...(Formats)> Dispatchers = {
             ([&callback](void) {
                 typedef typename format_forward_traits<Formats>::type *tag;
                 return callback(static_cast<tag>(nullptr));
