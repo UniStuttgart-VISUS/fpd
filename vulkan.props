@@ -5,7 +5,7 @@
     <VulkanDir>$(VK_SDK_PATH)\</VulkanDir>
   </PropertyGroup>
   <PropertyGroup />
-  <ItemDefinitionGroup Condition="Exists('$(VulkanDir)')">
+  <ItemDefinitionGroup Condition="'$(VulkanDir)' != '\' And '$(VulkanDir)' != '\\' And Exists('$(VulkanDir)')">
     <ClCompile>
       <PreprocessorDefinitions>FPD_WITH_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(VulkanDir)Include</AdditionalIncludeDirectories>
