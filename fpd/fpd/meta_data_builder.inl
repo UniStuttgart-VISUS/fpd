@@ -11,6 +11,7 @@
 template<class TChar>
 FPD_NAMESPACE::meta_data_builder<TChar>::meta_data_builder(void)
     : detail::with_encoding<TChar>(encodings::oem),
+    _endian(endian::system),
     _track_bbox(false),
     _version(std::make_pair(FPD_FILE_MAJOR, FPD_FILE_MINOR)) { }
 
@@ -25,7 +26,7 @@ FPD_NAMESPACE::meta_data_builder<TChar>::meta_data_builder(
         _bounding_boxes(data._bounding_boxes),
         // compression
         _description(data._description),
-        // endian
+        _endian(data._endian),
         _format(data._format_description),
         _frame_table(data._frame_table),
         _global_particle_properties(data._global_particle_properties),
@@ -129,7 +130,8 @@ FPD_NAMESPACE::meta_data_builder<TChar>::build(void) {
     retval._description = std::move(this->_description);
     assert(this->_description.empty());
 
-    retval._endian = endian::system;
+    retval._endian = this->_endian;
+    this->_endian = endian::system;
 
     retval._format_description = std::move(this->_format);
     assert(!this->_format);

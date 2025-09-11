@@ -428,6 +428,7 @@ private:
 
     std::vector<bounding_box> _bounding_boxes;
     string_type _description;
+    endian _endian;
     format_description_type _format;
     frame_table_type _frame_table;
     std::map<semantic, format_variant> _global_particle_properties;
