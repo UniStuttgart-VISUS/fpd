@@ -216,9 +216,48 @@ FPD_NAMESPACE::meta_data<TChar>::frame_offset(
 template<class TChar>
 typename FPD_NAMESPACE::meta_data<TChar>::size_type
 FPD_NAMESPACE::meta_data<TChar>::frame_size(
-        _In_ const std::size_t frame) const {
+        _In_ const std::size_t frame,
+        _In_ const std::size_t group,
+        _In_ const bool decompressed) const {
     assert(this->_particle_size > 0);
-    return this->particles(frame) * this->_particle_size;
+    const auto calc_size = [this](const std::size_t f,
+            const std::size_t g,
+            const bool d,
+            const std::size_t p) {
+        if (d) {
+            // The decompressed size can be computed from the particle size and
+            // the number of particles in the frame.
+            return this->particles(f) * p;
+        }
+
+        switch (this->compression().method()) {
+            case compression::none:
+                // This is equivalent to decompressed data.
+                return this->particles(f) * p;
+
+            case compression::gdeflate:
+                // Pass on to specialised method using the compression meta data
+                // to compute the required size.
+                return this->frame_size_gdeflate(f, g);
+
+            default:
+                throw std::logic_error("The specified compression method is "
+                    "not supported.");
+        }
+    };
+
+    const auto groups = this->_format_description.count_groups();
+
+    if ((group >= groups) || (groups == 1)) {
+        // The size of the whole frame was requested.
+        return calc_size(frame, group, decompressed, this->_particle_size);
+
+    } else {
+        // Figure out how big the part of a particle in the specified element
+        // group is.
+        const auto particle_size = this->_format_description[group].size();
+        return calc_size(frame, group, decompressed, particle_size);
+    }
 }
 
 
@@ -352,10 +391,40 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::save(_In_ TFile& file) const {
     } /* if (this->_bounding_box) */
 
     // Write the spatial hierarchy meta data.
-    // TODO
+    switch (this->hierarchy().type()) {
+        case spatial_hierarchy::none:
+            // Nothing to do.
+            break;
+
+        case spatial_hierarchy::ospray_pkd_tree: {
+            auto md = std::dynamic_pointer_cast<hierarchy_meta_data<
+                spatial_hierarchy::ospray_pkd_tree>>(this->_hierarchy);
+            retval += detail::write_all(file, md->axis_component());
+            } break;
+
+        default:
+            throw std::logic_error("The specified type of spatial hierarchy "
+                "cannot be persisted to disk.");
+    }
 
     // Write the compression meta data.
-    // TODO
+    switch (this->compression().method()) {
+        case compression::none:
+            // Nothing to do.
+            break;
+
+        case compression::gdeflate: {
+            auto md = std::dynamic_pointer_cast<compression_meta_data<
+                compression::gdeflate>>(this->_compression);
+            auto& blocks = static_cast<const std::vector<std::uint32_t>&>(*md);
+            retval += write(file, md->method(), this->_endian);
+            retval += write(file, blocks, this->_endian);
+        } break;
+
+        default:
+            throw std::logic_error("The specified compression method cannot be "
+                "persisted to disk.");
+    }
 
     assert(retval == this->_header_size);
     return retval;
@@ -394,6 +463,7 @@ void FPD_NAMESPACE::meta_data<TChar>::calc_frame_offsets(
     assert(meta_data._frame_offsets.empty());
     assert(meta_data._header_size > 0);
     assert(meta_data._particle_size > 0);
+    assert(meta_data._compression->method() == compression::none);
 
     auto offset = meta_data._header_size;
     meta_data._frame_offsets.resize(meta_data._frame_table.size());
@@ -854,6 +924,30 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::write(_In_ TFile& file,
             values.data(),
             values.size() * sizeof(TValue));
     }
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data<TChar>::meta_data<TChar>::frame_size_gdeflate
+ */
+template<class TChar>
+typename FPD_NAMESPACE::meta_data<TChar>::size_type
+FPD_NAMESPACE::meta_data<TChar>::meta_data<TChar>::frame_size_gdeflate(
+        _In_ const std::size_t frame,
+        _In_ const std::size_t group) const {
+    assert(this->_compression->method() == compression::gdeflate);
+    auto md = std::dynamic_pointer_cast<compression_meta_data<
+        compression::gdeflate>>(this->_compression);
+    assert(md != nullptr);
+
+    const auto groups = this->_format_description.count_groups();
+    const auto blocks = md->check(this->frames(), groups);
+
+
+
+    //md->blocks();
+
+    throw "TODO";
 }
 
 

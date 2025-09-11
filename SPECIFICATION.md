@@ -142,6 +142,8 @@ The variable data is a list of four-bytes numbers that specify the size of the c
 | uint32 | 4 Bytes  | The length of each compressed block. There must be one for each frame. The total number of blocks must be divisible by the number of frames. |
 | ...    | 4 Bytes  | ...                                                                                                                                          |
 
+If the data comprises of more than one group of elements, there must be either one block per frame (the frame is compressed as a whole) or the number of blocks must be divisible by the number of element groups and the groups are compressed individually. The rationale behind this is that subdividing a frame usually means that it should be streamed progressively. In this case, users must be able to identify where the individual groups are located to decompress all data for matching particles.
+
 ## Frame data
 The frame data is a raw consecutive list of frames each of which is a list of consecutive particles as described in the format description header segment. The number of particles is determined by the size of the frame in bytes divided by the size of a single particle as described in the format description header segment.
 

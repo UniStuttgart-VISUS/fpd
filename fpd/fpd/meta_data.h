@@ -9,6 +9,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <limits>
 #include <map>
 #include <memory>
 
@@ -272,13 +273,23 @@ public:
     size_type frame_offset(_In_ const std::size_t frame) const;
 
     /// <summary>
-    /// Answer the size of the given frame in bytes.
+    /// Answer the size of the given frame in bytes on disk or optionally the
+    /// decompressed size.
     /// </summary>
     /// <param name="frame">The zero-based index of the frame.</param>
+    /// <param name="group">If this indicates a valid zero-based index of a
+    /// group, the method only considers this group of elements. Otherwise, that
+    /// is if the value is the number of groups or larger, the size of the whole
+    /// frame is computed.</param>
+    /// <param name="decompressed">If <c>true</c>, the method returns the size
+    /// of the frame after decompression (the in-memory size). Otherwise, the
+    /// size on disk is returned.</param>
     /// <returns>The number of bytes in the frame.</returns>
     /// <exception cref="std::range_error">If <paramref name="frame" /> is
     /// out of range of the <see cref="frame_table" />.</exception>
-    size_type frame_size(_In_ const std::size_t frame) const;
+    size_type frame_size(_In_ const std::size_t frame,
+        _In_ const std::size_t group = (std::numeric_limits<std::size_t>::max)(),
+        _In_ const bool decompressed = true) const;
 
     /// <summary>
     /// Gets the table of frame sizes (in number of particles).
@@ -402,6 +413,14 @@ private:
         _In_ const FPD_NAMESPACE::endian endian);
 
     template<class TFile>
+    static inline std::size_t write(_In_ TFile& file,
+            _In_ FPD_NAMESPACE::compression compression,
+            _In_ const FPD_NAMESPACE::endian endian) {
+        compression = swap_enum_endian(compression, endian);
+        return detail::write_all(file, compression);
+    }
+
+    template<class TFile>
     static std::size_t write(_In_ TFile& file,
         _In_ const element_type& element,
         _In_ std::uint16_t group,
@@ -421,10 +440,21 @@ private:
         _In_ const std::underlying_type_t<header_segment> size,
         _In_ const FPD_NAMESPACE::endian endian);
 
+    template<class TFile>
+    static inline std::size_t write(_In_ TFile& file,
+            _In_ spatial_hierarchy hierarchy,
+            _In_ const FPD_NAMESPACE::endian endian) {
+        hierarchy = swap_enum_endian(hierarchy, endian);
+        return detail::write_all(file, hierarchy);
+    }
+
     template<class TFile, class TValue>
     static std::size_t write(_In_ TFile& file,
         _In_ const std::vector<TValue>& values,
         _In_ const FPD_NAMESPACE::endian endian);
+
+    size_type frame_size_gdeflate(_In_ const std::size_t frame,
+        _In_ const std::size_t group) const;
 
     string_type to_string(_In_ const char *begin, _In_ const char *end) const;
 
