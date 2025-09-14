@@ -105,11 +105,9 @@ template<class TFile> std::size_t write_all(_In_ TFile& file,
 /// <typeparamref name="TType" />.</returns>
 template<class TFile, class TType>
 std::enable_if_t<std::is_standard_layout_v<TType>, std::size_t> write_all(
-        _In_ TFile&& file,
+        _In_ TFile& file,
         _In_ const TType& data) {
-    return write_all(std::forward<TFile>(file),
-        std::addressof(data),
-        sizeof(data));
+    return write_all(file, std::addressof(data), sizeof(data));
 }
 
 FPD_DETAIL_NAMESPACE_END

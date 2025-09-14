@@ -271,32 +271,6 @@ struct format_type_list<format_list<Formats ...>> final {
 
 
 /// <summary>
-/// Recursion stop for <see cref="index_of" />.
-/// </summary>
-constexpr inline std::size_t index_of(
-        _In_ const format,
-        _In_ format_list<>,
-        _In_ const std::size_t offset) noexcept {
-    return offset;
-}
-
-/// <summary>
-/// Find the position of <paramref name="format" /> in the given format list.
-/// </summary>
-template<format Format, format... Formats>
-constexpr inline std::size_t index_of(
-        _In_ const format format,
-        _In_ format_list<Format, Formats...>,
-        _In_ const std::size_t offset) noexcept {
-    if (format == Format) {
-        return offset;
-    } else {
-        return index_of(format, format_list<Formats...>(), offset + 1);
-    }
-}
-
-
-/// <summary>
 /// Checks whether <typeparamref name="Format" /> is in the given list of
 /// formats.
 /// </summary>
@@ -336,7 +310,7 @@ TReturn dispatch_format(_In_ const format format,
         _In_ const TCallback& callback,
         _In_ const format_list<Formats...>) {
     typedef std::function<TReturn()> dispatch_type;
-    static const std::array<dispatch_type, sizeof...(Formats)> Dispatchers = {
+    const std::array<dispatch_type, sizeof...(Formats)> Dispatchers = {
             ([&callback](void) {
                 typedef typename format_forward_traits<Formats>::type *tag;
                 return callback(static_cast<tag>(nullptr));

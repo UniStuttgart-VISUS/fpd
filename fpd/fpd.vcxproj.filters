@@ -138,6 +138,9 @@
     <ClInclude Include="fpd\hierarchy_meta_data.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fpd\enum_dispatch_list.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\semantic.inl">
@@ -180,6 +183,9 @@
       <Filter>Header Files</Filter>
     </None>
     <None Include="fpd\io_traits.inl">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="fpd\compression_meta_data.inl">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>

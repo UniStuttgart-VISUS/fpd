@@ -10,7 +10,7 @@
 
 #include <cinttypes>
 
-#include "fpd/abi.h"
+#include "fpd/enum_dispatch_list.h"
 
 
 FPD_NAMESPACE_BEGIN
@@ -288,7 +288,8 @@ enum class format : std::uint32_t {
 /// A compile-time list of <see cref="format" />s.
 /// </summary>
 /// <typeparam name="Formats">The formats in the list.</typeparam>
-template<format... Formats> struct format_list final { };
+template<format... Formats>
+using format_list = detail::enum_dispatch_list<format, Formats...>;
 
 
 /// <summary>

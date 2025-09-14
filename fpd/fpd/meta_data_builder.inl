@@ -24,13 +24,13 @@ FPD_NAMESPACE::meta_data_builder<TChar>::meta_data_builder(
         _In_ const meta_data_type& data)
     : detail::with_encoding<TChar>(encodings::oem),
         _bounding_boxes(data._bounding_boxes),
-        // compression
+        _compression(data._compression),
         _description(data._description),
         _endian(data._endian),
         _format(data._format_description),
         _frame_table(data._frame_table),
         _global_particle_properties(data._global_particle_properties),
-        // hierarchy
+        _hierarchy(data._hierarchy),
         _track_bbox(false),
         _user_defined_semantics(data._user_defined_semantics),
         _version(data._version) {
@@ -142,14 +142,49 @@ FPD_NAMESPACE::meta_data_builder<TChar>::build(void) {
         retval._bounding_boxes.emplace_back();
     }
 
+    if (this->_compression) {
+        retval._compression = std::move(this->_compression);
+        assert(this->_compression == nullptr);
+    } else {
+        typedef compression_meta_data<compression::none> none;
+        retval._compression = std::make_shared<none>();
+    }
+
     retval._frame_table = std::move(this->_frame_table);
     assert(this->_frame_table.empty());
-    meta_data_type::calc_frame_offsets(retval);
+    switch (retval._compression->method()) {
+        case compression::gdeflate: {
+            assert(retval._frame_offsets.empty());
+            auto& md = retval.compression_as<compression::gdeflate>();
+            retval._frame_offsets.reserve(retval._frame_table.size());
+            md.calc_frame_offsets(
+                std::back_inserter(retval._frame_offsets),
+                retval.frames(),
+                retval._header_size);
+            } break;
+
+        case compression::none:
+            meta_data_type::calc_frame_offsets(retval);
+            break;
+
+        default:
+            throw std::logic_error("The specified compression method is not "
+                "supported by the meta data builder, because it does not know "
+                "how to compute the offsets of the frames in the file.");
+    }
     assert(retval._frame_table.size() == retval._frame_offsets.size());
 
     retval._global_particle_properties = std::move(
         this->_global_particle_properties);
     assert(this->_global_particle_properties.empty());
+
+    if (this->_hierarchy) {
+        retval._hierarchy = std::move(this->_hierarchy);
+        assert(this->_hierarchy == nullptr);
+    } else {
+        typedef hierarchy_meta_data<spatial_hierarchy::none> hierarchy;
+        retval._hierarchy = std::make_shared<hierarchy>();
+    }
 
     retval._user_defined_semantics = std::move(this->_user_defined_semantics);
     assert(this->_user_defined_semantics.empty());
@@ -245,6 +280,18 @@ FPD_NAMESPACE::meta_data_builder<TChar>::size(void) const {
         }
     }
 
+    // Optional spatial hierarchy meta data (0x07).
+    if (this->_hierarchy) {
+        retval += sizeof(header_segment);
+        retval += meta_data_type::size_on_disk(this->_hierarchy);
+    }
+
+    // Optional compression meta data (0x08).
+    if (this->_compression) {
+        retval += sizeof(header_segment);
+        retval += meta_data_type::size_on_disk(this->_compression);
+    }
+
     return retval;
 }
 
@@ -292,10 +339,24 @@ FPD_NAMESPACE::meta_data_builder<TChar>::with_bounding_box(
 
 
 /*
+ * FPD_NAMESPACE::meta_data_builder<TChar>::with_compression
+ */
+template<class TChar>
+template<FPD_NAMESPACE::compression Compression, class... TArgs>
+FPD_NAMESPACE::meta_data_builder<TChar> &
+FPD_NAMESPACE::meta_data_builder<TChar>::with_compression(
+        _In_ TArgs&&... args) {
+    typedef compression_meta_data<Compression> type;
+    this->_compression = std::make_shared<type>(std::forward<TArgs>(args)...);
+    return *this;
+}
+
+
+/*
  * FPD_NAMESPACE::meta_data_builder<TChar>::with_description
  */
 template<class TChar>
-FPD_NAMESPACE::meta_data_builder<TChar> &
+FPD_NAMESPACE::meta_data_builder<TChar>&
 FPD_NAMESPACE::meta_data_builder<TChar>::with_description(
         _In_opt_z_ const char_type *description) {
     if (description == nullptr) {
@@ -313,7 +374,7 @@ FPD_NAMESPACE::meta_data_builder<TChar>::with_description(
  */
 template<class TChar>
 template<class TIterator>
-FPD_NAMESPACE::meta_data_builder<TChar> &
+FPD_NAMESPACE::meta_data_builder<TChar>&
 FPD_NAMESPACE::meta_data_builder<TChar>::with_frames(
         _In_ const TIterator begin,
         _In_ const TIterator end) {
@@ -370,6 +431,20 @@ FPD_NAMESPACE::meta_data_builder<TChar>::with_mmpld_format(
     return *this;
 }
 #endif /* defined(FPD_WITH_MMPLD) */
+
+
+/*
+ * FPD_NAMESPACE::meta_data_builder<TChar>::with_spatial_hierarchy
+ */
+template<class TChar>
+template<FPD_NAMESPACE::spatial_hierarchy Hierarchy, class... TArgs>
+FPD_NAMESPACE::meta_data_builder<TChar>&
+FPD_NAMESPACE::meta_data_builder<TChar>::with_spatial_hierarchy(
+        _In_ TArgs&&... args) {
+    typedef hierarchy_meta_data<Hierarchy> type;
+    this->_hierarchy = std::make_shared<type>(std::forward<TArgs>(args)...);
+    return *this;
+}
 
 
 /*
@@ -458,6 +533,34 @@ FPD_NAMESPACE::meta_data_builder<TChar>::operator bool(void) const noexcept {
         }
     }
 
+    if (this->_compression) {
+        switch (this->_compression->method()) {
+            case compression::gdeflate: {
+                // In case of a GDeflate compression, there must be a block for
+                // each frame and all frames must be subdivided into the same
+                // number of blocks. If the data comprise multiple
+                // groups/streams, the blocks also must be evenly distributed
+                // over those.
+                auto& md = this->compression<compression::gdeflate>();
+
+                if (md.blocks() < this->_frame_table.size()) {
+                    return false;
+                }
+
+                if ((md.blocks() % this->_format.count_groups()) != 0) {
+                    // Note that this will never fail if we have only one group
+                    // as division by one is always exact, so we do not need to
+                    // handle a special case here.
+                    return false;
+                }
+
+                if ((md.blocks() % this->_frame_table.size()) != 0) {
+                    return false;
+                }
+            } break;
+        }
+    }
+
     if (!this->_format) {
         // The format must contain something. We do not make any assumption of
         // what semantic there should be, but we want to have at least one.
@@ -499,4 +602,19 @@ void FPD_NAMESPACE::meta_data_builder<TChar>::add_user_defined_semantic(
 
         this->_user_defined_semantics[i] = d;
     }
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data_builder<TChar>::compression
+ */
+template<class TChar>
+template<FPD_NAMESPACE::compression Compression>
+const FPD_NAMESPACE::compression_meta_data<Compression>&
+FPD_NAMESPACE::meta_data_builder<TChar>::compression(void) const {
+    typedef compression_meta_data<Compression> return_type;
+    assert(this->_compression);
+    auto md = std::dynamic_pointer_cast<return_type>(this->_compression);
+    assert(md);
+    return *md;
 }

@@ -280,6 +280,18 @@ public:
     }
 
     /// <summary>
+    /// Configures the compression of the particle data.
+    /// </summary>
+    /// <typeparam name="Compression>The type of the meta data describing the
+    /// compression.</typeparam>
+    /// <typeparam name="TArgs">The arguments of the constructor of the
+    /// <see cref="compression_meta_data" /> to be constructed.</typeparam>
+    /// <param name="args">The arguments of the compression meta data.</param>
+    /// <returns>*<see langword="this" />.</returns>
+    template<compression Compression, class... TArgs>
+    meta_data_builder& with_compression(_In_ TArgs&&... args);
+
+    /// <summary>
     /// Sets a description of the file.
     /// </summary>
     /// <param name="description">The description of the file, which may be
@@ -367,6 +379,18 @@ public:
 #endif /* defined(FPD_WITH_MMPLD) */
 
     /// <summary>
+    /// Configures the spatial hierarchy used to organise the particles.
+    /// </summary>
+    /// <typeparam name="Hierarchy>The type of the meta data describing the
+    /// spatial hierarchy.</typeparam>
+    /// <typeparam name="TArgs">The arguments of the constructor of the
+    /// <see cref="hierarchy_meta_data" /> to be constructed.</typeparam>
+    /// <param name="args">The arguments of the hierarchy meta data.</param>
+    /// <returns>*<see langword="this" />.</returns>
+    template<spatial_hierarchy Hierarchy, class... TArgs>
+    meta_data_builder& with_spatial_hierarchy(_In_ TArgs&&... args);
+
+    /// <summary>
     /// Sets the number of frames in the file and initialises all of them with
     /// the specified uniform size.
     /// </summary>
@@ -426,12 +450,17 @@ private:
     void add_user_defined_semantic(_In_ const semantic s,
         _In_opt_z_ const char_type *d);
 
+    template<compression Compression>
+    const compression_meta_data<Compression>& compression(void) const;
+
     std::vector<bounding_box> _bounding_boxes;
+    std::shared_ptr<compression_meta_data_base> _compression;
     string_type _description;
     endian _endian;
     format_description_type _format;
     frame_table_type _frame_table;
     std::map<semantic, format_variant> _global_particle_properties;
+    std::shared_ptr< hierarchy_meta_data_base> _hierarchy;
     bool _track_bbox;
     std::vector<string_type> _user_defined_semantics;
     version_type _version;
