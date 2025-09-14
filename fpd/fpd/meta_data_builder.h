@@ -367,6 +367,18 @@ public:
     meta_data_builder& with_frames(_In_ const TIterator begin,
         _In_ const TIterator end);
 
+    /// <summary>
+    /// Sets the specified global particle property.
+    /// </summary>
+    /// <param name="semantic">The semantic to be set globally.</param>
+    /// <param name="value">The value of the semantic.</param>
+    /// <returns>*<see langword="this" />.</returns>
+    meta_data_builder& with_global_property(_In_ const semantic semantic,
+            _In_ const format_variant& value) {
+        this->_global_particle_properties[semantic] = value;
+        return *this;
+    }
+
 #if defined(FPD_WITH_MMPLD)
     /// <summary>
     /// Erases all format data and replaces them with something that describes
@@ -460,7 +472,7 @@ private:
     format_description_type _format;
     frame_table_type _frame_table;
     std::map<semantic, format_variant> _global_particle_properties;
-    std::shared_ptr< hierarchy_meta_data_base> _hierarchy;
+    std::shared_ptr<hierarchy_meta_data_base> _hierarchy;
     bool _track_bbox;
     std::vector<string_type> _user_defined_semantics;
     version_type _version;

@@ -22,7 +22,6 @@ FPD_DETAIL_NAMESPACE_BEGIN
 template<class TEnum, TEnum... Values> struct enum_dispatch_list final { };
 
 
-
 /// <summary>
 /// Recursion stop for <see cref="index_of" />.
 /// </summary>

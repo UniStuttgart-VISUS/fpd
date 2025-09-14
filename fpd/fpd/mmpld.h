@@ -25,6 +25,34 @@
 FPD_NAMESPACE_BEGIN
 
 /// <summary>
+/// Checks a range of MMPLD list headers for diverging global colours.
+/// </summary>
+/// <typeparam name="TIterator">An input iterator type over MMPLD list headers.
+/// </typeparam>
+/// <param name="begin">The begin of the range of MMPLD list headers.</param>
+/// <param name="end">The end of the range of MMPLD list headers.</param>
+/// <returns><see langword="true" /> if there are at least two lists with global
+/// colours that are different, <see langword="false" /> otherwise.</returns>
+template<class TIterator>
+bool mmpld_diverging_global_colour(_In_ const TIterator begin,
+    _In_ const TIterator end);
+
+
+/// <summary>
+/// Checks a range of MMPLD list headers for diverging global radii.
+/// </summary>
+/// <typeparam name="TIterator">An input iterator type over MMPLD list headers.
+/// </typeparam>
+/// <param name="begin">The begin of the range of MMPLD list headers.</param>
+/// <param name="end">The end of the range of MMPLD list headers.</param>
+/// <returns><see langword="true" /> if there are at least two lists with
+/// different global radii, <see langword="false" /> otherwise.</returns>
+template<class TIterator>
+bool mmpld_diverging_global_radii(_In_ const TIterator begin,
+    _In_ const TIterator end);
+
+
+/// <summary>
 /// Converts an MMPLD colour type to the corresponding FPD format.
 /// </summary>
 /// <param name="colour">The MMPLD colour type to convert.</param>

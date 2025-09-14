@@ -75,10 +75,10 @@ template<class TValue> struct format_reverse_traits {
 #define __FPD_CMP2(x, y, z, w) y
 #define __FPD_CMP3(x, y, z, w) z
 #define __FPD_CMP4(x, y, z, w) w
-#define __FPL_VEC_OPT(c, x, y, z, w)\
+#define __FPD_VEC_OPTS(c, x, y, z, w)\
     __FPD_MCAT(__FPD_VEC_OPT, __FPD_CMP ## c(x, y, z, w))
 #define __FPD_VEC(c, b, f, d, x, y, z, w)\
-    __FPL_VEC_OPT(c, x, y, z, w)(c, b, f, d)
+    __FPD_VEC_OPTS(c, x, y, z, w)(c, b, f, d)
 
 #if defined(_WIN32)
 #define __FPD_DXGI_FMT(c, b, f, x, y, z, w) __FPD_MCAT(DXGI_FORMAT_,\

@@ -6,6 +6,69 @@
 
 
 /*
+ * FPD_NAMESPACE::mmpld_diverging_global_colour
+ */
+template<class TIterator>
+bool FPD_NAMESPACE::mmpld_diverging_global_colour(
+        _In_ const TIterator begin,
+        _In_ const TIterator end) {
+    auto any = false;
+    float colour[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+    for (auto it = begin; it != end; ++it) {
+        if (it->colour_type == mmpld::colour_type::none) {
+            if (any) {
+                // This is the second time we see a global colour, so if this is
+                // not the same as 'colour', we have diverging global colours.
+                if (!std::equal(it->colour, it->colour + 4, colour)) {
+                    return true;
+                }
+
+            } else {
+                // This is the first time we see a global colour, which we
+                // remember in order to compare it to any subsequent data.
+                any = true;
+                std::copy(it->colour, it->colour + 4, colour);
+            }
+        }
+    }
+
+    return false;
+}
+
+
+/*
+ * FPD_NAMESPACE::mmpld_diverging_global_radii
+ */
+template<class TIterator>
+bool FPD_NAMESPACE::mmpld_diverging_global_radii(
+        _In_ const TIterator begin,
+        _In_ const TIterator end) {
+    auto any = false;
+    float radius = 0.0f;
+
+    for (auto it = begin; it != end; ++it) {
+        if (it->vertex_type == mmpld::vertex_type::none) {
+            if (any) {
+                // This is the second time we see a global radius, so if this is
+                // not the same as 'radius', we have diverging radii.
+                if (it->radius != radius) {
+                    return true;
+                }
+
+            } else {
+                // This is the first time we see a global radius, which we
+                // remember in order to compare it to any subsequent data.
+                any = true;
+                radius = it->radius;
+            }
+        }
+    }
+
+    return false;
+}
+
+/*
  * FPD_NAMESPACE::mmpld_format
  */
 FPD_NAMESPACE::format FPD_NAMESPACE::mmpld_format(

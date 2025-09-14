@@ -137,19 +137,53 @@ int _tmain(const int argc, const _TCHAR **argv) {
             }
         }
 
-        // Determine the particle format in the FPD file. From this format,
-        // which might be a superset of all lists in the MMPLD file, we derive
-        // the common MMPLD format that we will use to convert the data while
-        // reading.
+        // Determine the particle format in the FPD file.
         auto fpd_format = fpd::mmpld_format<_TCHAR>(list_headers.begin(),
             list_headers.end());
-        auto mmpld_format = fpd::mmpld_list(fpd_format);
 
         fpd::meta_data_builder<_TCHAR> builder;
+
+        if (!fpd_format.contains(fpd::semantic::intensity)) {
+            // If we do not have per-vertex colour/intensity, we need to make
+            // sure that all lists use the same value. Otherwise, we must
+            // transform the per-list colour to per-vertex colours. Otherwise,
+            // we can add the global colour from the first list, whic must be
+            // the same for all.
+            if (fpd::mmpld_diverging_global_colour(list_headers.begin(),
+                    list_headers.end())) {
+                fpd_format.add(fpd::semantic::colour, fpd::format::float32xyzw);
+
+            } else {
+                std::array<float, 4> colour;
+                std::copy(list_headers.front().colour,
+                    list_headers.front().colour + 4,
+                    colour.begin());
+                builder.with_global_property(fpd::semantic::colour, colour);
+            }
+        }
+
+        if (!fpd_format.contains(fpd::semantic::radius)) {
+            // Same as for the colour: if we have diverging global radii,
+            // convert them to per-vertex radii.
+            if (fpd::mmpld_diverging_global_radii(list_headers.begin(),
+                    list_headers.end())) {
+                fpd_format.add(fpd::semantic::radius, fpd::format::float32);
+
+            } else {
+                const auto radius = list_headers.front().radius;
+                builder.with_global_property(fpd::semantic::radius, radius);
+            }
+        }
+
         builder.with_format(fpd_format)
             .with_description(description)
             .with_frames(frame_sizes.begin(), frame_sizes.end());
         auto meta_data = builder.build();
+
+        // Use the FPD format, which might be a superset of all lists in the
+        // MMPLD file, to derive the common MMPLD format that we will use to
+        // convert the data while reading.
+        auto mmpld_format = fpd::mmpld_list(fpd_format);
 
         // Write the meta data to the FPD file.
 #if defined(_WIN32)
@@ -190,7 +224,7 @@ int _tmain(const int argc, const _TCHAR **argv) {
                     mmpld::skip_cluster_info(mmpld);
                 }
 
-                ::fpd::detail::write_all(fpd, buffer.data(), cnt);
+                fpd::detail::write_all(fpd, buffer.data(), cnt);
             } /* for (decltype(fh.lists) l = 0; l < fh.lists; ++l) */
         } /* for (decltype(file_header.frames) f = 0; ... */
 
