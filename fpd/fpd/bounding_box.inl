@@ -11,7 +11,7 @@
 template<class TByte>
 FPD_NAMESPACE::basic_bounding_box<TByte>
 FPD_NAMESPACE::basic_bounding_box<TByte>::from_data(
-        _In_reads_(cnt * stride) const void *data,
+        _In_reads_bytes_(cnt * stride) const void *data,
         _In_ const std::size_t cnt,
         _In_ const std::size_t stride,
         _In_ const format_type format,

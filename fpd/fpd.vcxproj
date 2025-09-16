@@ -145,6 +145,7 @@
   <ItemGroup>
     <ClInclude Include="fpd\abi.h" />
     <ClInclude Include="fpd\compression_meta_data.h" />
+    <ClInclude Include="fpd\enum_dispatch_list.h" />
     <ClInclude Include="fpd\hierarchy_meta_data.h" />
     <ClInclude Include="fpd\io_traits.h" />
     <ClInclude Include="fpd\nosal.h" />
@@ -187,6 +188,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="fpd\bounding_box.inl" />
+    <None Include="fpd\compression_meta_data.inl" />
     <None Include="fpd\convert_string.inl" />
     <None Include="fpd\element.inl" />
     <None Include="fpd\element_group.inl" />

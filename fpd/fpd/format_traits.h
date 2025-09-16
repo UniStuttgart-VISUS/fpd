@@ -75,10 +75,10 @@ template<class TValue> struct format_reverse_traits {
 #define __FPD_CMP2(x, y, z, w) y
 #define __FPD_CMP3(x, y, z, w) z
 #define __FPD_CMP4(x, y, z, w) w
-#define __FPL_VEC_OPT(c, x, y, z, w)\
+#define __FPD_VEC_OPTS(c, x, y, z, w)\
     __FPD_MCAT(__FPD_VEC_OPT, __FPD_CMP ## c(x, y, z, w))
 #define __FPD_VEC(c, b, f, d, x, y, z, w)\
-    __FPL_VEC_OPT(c, x, y, z, w)(c, b, f, d)
+    __FPD_VEC_OPTS(c, x, y, z, w)(c, b, f, d)
 
 #if defined(_WIN32)
 #define __FPD_DXGI_FMT(c, b, f, x, y, z, w) __FPD_MCAT(DXGI_FORMAT_,\
@@ -268,32 +268,6 @@ struct format_type_list<format_list<Formats ...>> final {
     template<format F> using traits = format_t<F>;
     typedef type_list<traits<Formats>...> type;
 };
-
-
-/// <summary>
-/// Recursion stop for <see cref="index_of" />.
-/// </summary>
-constexpr inline std::size_t index_of(
-        _In_ const format,
-        _In_ format_list<>,
-        _In_ const std::size_t offset) noexcept {
-    return offset;
-}
-
-/// <summary>
-/// Find the position of <paramref name="format" /> in the given format list.
-/// </summary>
-template<format Format, format... Formats>
-constexpr inline std::size_t index_of(
-        _In_ const format format,
-        _In_ format_list<Format, Formats...>,
-        _In_ const std::size_t offset) noexcept {
-    if (format == Format) {
-        return offset;
-    } else {
-        return index_of(format, format_list<Formats...>(), offset + 1);
-    }
-}
 
 
 /// <summary>

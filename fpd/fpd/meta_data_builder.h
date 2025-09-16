@@ -280,6 +280,18 @@ public:
     }
 
     /// <summary>
+    /// Configures the compression of the particle data.
+    /// </summary>
+    /// <typeparam name="Compression>The type of the meta data describing the
+    /// compression.</typeparam>
+    /// <typeparam name="TArgs">The arguments of the constructor of the
+    /// <see cref="compression_meta_data" /> to be constructed.</typeparam>
+    /// <param name="args">The arguments of the compression meta data.</param>
+    /// <returns>*<see langword="this" />.</returns>
+    template<compression Compression, class... TArgs>
+    meta_data_builder& with_compression(_In_ TArgs&&... args);
+
+    /// <summary>
     /// Sets a description of the file.
     /// </summary>
     /// <param name="description">The description of the file, which may be
@@ -355,6 +367,18 @@ public:
     meta_data_builder& with_frames(_In_ const TIterator begin,
         _In_ const TIterator end);
 
+    /// <summary>
+    /// Sets the specified global particle property.
+    /// </summary>
+    /// <param name="semantic">The semantic to be set globally.</param>
+    /// <param name="value">The value of the semantic.</param>
+    /// <returns>*<see langword="this" />.</returns>
+    meta_data_builder& with_global_property(_In_ const semantic semantic,
+            _In_ const format_variant& value) {
+        this->_global_particle_properties[semantic] = value;
+        return *this;
+    }
+
 #if defined(FPD_WITH_MMPLD)
     /// <summary>
     /// Erases all format data and replaces them with something that describes
@@ -365,6 +389,18 @@ public:
     /// <returns>*<see langword="this" />.</returns>
     meta_data_builder& with_mmpld_format(_In_ const mmpld::list_header& header);
 #endif /* defined(FPD_WITH_MMPLD) */
+
+    /// <summary>
+    /// Configures the spatial hierarchy used to organise the particles.
+    /// </summary>
+    /// <typeparam name="Hierarchy>The type of the meta data describing the
+    /// spatial hierarchy.</typeparam>
+    /// <typeparam name="TArgs">The arguments of the constructor of the
+    /// <see cref="hierarchy_meta_data" /> to be constructed.</typeparam>
+    /// <param name="args">The arguments of the hierarchy meta data.</param>
+    /// <returns>*<see langword="this" />.</returns>
+    template<spatial_hierarchy Hierarchy, class... TArgs>
+    meta_data_builder& with_spatial_hierarchy(_In_ TArgs&&... args);
 
     /// <summary>
     /// Sets the number of frames in the file and initialises all of them with
@@ -426,12 +462,17 @@ private:
     void add_user_defined_semantic(_In_ const semantic s,
         _In_opt_z_ const char_type *d);
 
+    template<compression Compression>
+    const compression_meta_data<Compression>& compression(void) const;
+
     std::vector<bounding_box> _bounding_boxes;
+    std::shared_ptr<compression_meta_data_base> _compression;
     string_type _description;
     endian _endian;
     format_description_type _format;
     frame_table_type _frame_table;
     std::map<semantic, format_variant> _global_particle_properties;
+    std::shared_ptr<hierarchy_meta_data_base> _hierarchy;
     bool _track_bbox;
     std::vector<string_type> _user_defined_semantics;
     version_type _version;

@@ -211,6 +211,18 @@ public:
     }
 
     /// <summary>
+    /// Answer the compression meta data assuming the specified compile-time
+    /// type.
+    /// </summary>
+    /// <typeparam name="Compression">The assumed compression type.</typeparam>
+    /// <returns>The compression meta data.</returns>
+    /// <exception cref="std::runtime_error">If the assumed type is not correct.
+    /// Use <see cref="compression" /> to find out the actual method.
+    /// </exception>
+    template<FPD_NAMESPACE::compression Compression>
+    const compression_meta_data<Compression>& compression_as(void) const;
+
+    /// <summary>
     /// Gets, if available a human-readable description of the file.
     /// </summary>
     /// <returns>The description of the file.</returns>
@@ -343,6 +355,18 @@ public:
     }
 
     /// <summary>
+    /// Answer the spatial hierarchy meta data assuming the specified compile-time
+    /// type.
+    /// </summary>
+    /// <typeparam name="Hierarchy">The assumed type of the hierarchy.</typeparam>
+    /// <returns>The hierarchy meta data.</returns>
+    /// <exception cref="std::runtime_error">If the assumed type is not correct.
+    /// Use <see cref="hierarchy" /> to find out the actual method.
+    /// </exception>
+    template<spatial_hierarchy Hierarchy>
+    const hierarchy_meta_data<Hierarchy>& hierarchy_as(void) const;
+
+    /// <summary>
     /// Answer the number of particles in the given frame.
     /// </summary>
     /// <param name="frame">The zero-based index of the frame to compute the
@@ -381,9 +405,19 @@ public:
 
 private:
 
+    typedef std::shared_ptr<compression_meta_data_base> compression_type;
+
+    typedef compression_meta_data<FPD_NAMESPACE::compression::gdeflate>
+        gdeflate_compression_type;
+
+    typedef std::shared_ptr<hierarchy_meta_data_base> hierarchy_type;
+
+    typedef hierarchy_meta_data<spatial_hierarchy::ospray_pkd_tree>
+        ospray_pkd_tree_hierarchy_type;
+
     static void calc_frame_offsets(_Inout_ meta_data& meta_data);
 
-    static void parse_bounding_box(_Inout_ meta_data &meta_data,
+    static void parse_bounding_box(_Inout_ meta_data& meta_data,
         _In_ const void *data, _In_ const std::size_t cnt);
 
     static void parse_compression(_Inout_ meta_data& meta_data,
@@ -407,29 +441,96 @@ private:
     static void parse_user_semantics(_Inout_ meta_data& meta_data,
         _In_ const void *data, _In_ const std::size_t cnt);
 
+    template<class TEnum, template<TEnum> class TDerived, class TBase,
+        TEnum... Es>
+    static std::size_t size_on_disk(_In_ const TEnum type,
+        _In_ const TBase& meta_data,
+        _In_ const detail::enum_dispatch_list<TEnum, Es...>) noexcept;
+
+    static inline std::size_t size_on_disk(
+            _In_ const gdeflate_compression_type& compression) noexcept {
+        typedef gdeflate_compression_type::value_type block_size;
+        return sizeof(FPD_NAMESPACE::compression)
+            + compression._blocks.size() * sizeof(block_size);
+    }
+
+    template<FPD_NAMESPACE::compression Compression>
+    static inline std::size_t size_on_disk(
+            _In_ const compression_meta_data<Compression>&) noexcept {
+        return 0;
+    }
+
+    static std::size_t size_on_disk(
+        _In_ const compression_type& compression) noexcept;
+
+    static inline std::size_t size_on_disk(
+            _In_ const ospray_pkd_tree_hierarchy_type& hierarchy) noexcept {
+        return sizeof(FPD_NAMESPACE::spatial_hierarchy)
+            + sizeof(hierarchy._axis_component);
+    }
+
+    template<FPD_NAMESPACE::spatial_hierarchy Hierarchy>
+    static inline std::size_t size_on_disk(
+            _In_ const hierarchy_meta_data<Hierarchy>&) noexcept {
+        return 0;
+    }
+
+    static std::size_t size_on_disk(
+        _In_ const hierarchy_type& hierarchy) noexcept;
+
     template<class TFile, class TByte>
     static std::size_t write(_In_ TFile& file,
         _In_ const basic_bounding_box<TByte>& bbox,
-        _In_ const FPD_NAMESPACE::endian endian);
+        _In_ const endian_type endian);
 
     template<class TFile>
     static inline std::size_t write(_In_ TFile& file,
             _In_ FPD_NAMESPACE::compression compression,
-            _In_ const FPD_NAMESPACE::endian endian) {
+            _In_ const endian_type endian) {
         compression = swap_enum_endian(compression, endian);
         return detail::write_all(file, compression);
+    }
+
+    template<class TFile>
+    static inline std::size_t write(_In_ TFile&,
+            _In_ compression_meta_data<FPD_NAMESPACE::compression::none>&,
+            _In_ const endian_type) {
+        return 0;
+    }
+
+    template<class TFile>
+    static inline std::size_t write(_In_ TFile& file,
+            _In_ const gdeflate_compression_type& compression,
+            _In_ const endian_type endian) {
+        typedef std::vector<std::uint32_t> block_list;
+        auto& blocks = static_cast<const block_list&>(compression);
+        std::size_t retval = 0;
+        retval += write(file, header_segment::compression,
+            size_on_disk(compression), endian);
+        retval += write(file, compression.method(), endian);
+        retval += write(file, blocks, endian);
+        return retval;
+    }
+
+    template<class TFile, FPD_NAMESPACE::compression Compression>
+    static inline std::size_t write(_In_ TFile&,
+            _In_ const compression_meta_data<Compression>&,
+            _In_ const endian_type) {
+        throw std::logic_error("The specified compression method cannot be "
+            "persisted to disk. Make sure to provide an overload of "
+            "meta_data::write for any new method.");
     }
 
     template<class TFile>
     static std::size_t write(_In_ TFile& file,
         _In_ const element_type& element,
         _In_ std::uint16_t group,
-        _In_ const FPD_NAMESPACE::endian endian);
+        _In_ const endian_type endian);
 
     template<class TFile>
     static inline std::size_t write(_In_ TFile& file,
             _In_ format format,
-            _In_ const FPD_NAMESPACE::endian endian) {
+            _In_ const endian_type endian) {
         format = swap_enum_endian(format, endian);
         return detail::write_all(file, format);
     }
@@ -438,22 +539,71 @@ private:
     static std::size_t write(_In_ TFile& file,
         _In_ const header_segment segment,
         _In_ const std::underlying_type_t<header_segment> size,
-        _In_ const FPD_NAMESPACE::endian endian);
+        _In_ const endian_type endian);
+
+    template<class TFile>
+    static inline std::size_t write(_In_ TFile& file,
+            _In_ const header_segment segment,
+            _In_ const std::size_t size,
+            _In_ const endian_type endian) {
+        typedef std::underlying_type_t<header_segment> t;
+        assert(size <= (std::numeric_limits<t>::max)());
+        return write(file, segment,static_cast<t>(size), endian);
+    }
+
+    template<class TEnum, template<TEnum> class TDerived, class TFile,
+        class TBase, TEnum... Es>
+    static std::size_t write(_In_ TFile& file,
+        _In_ const TEnum type,
+        _In_ const TBase& meta_data,
+        _In_ const endian_type endian,
+        _In_ const detail::enum_dispatch_list<TEnum, Es...>);
 
     template<class TFile>
     static inline std::size_t write(_In_ TFile& file,
             _In_ spatial_hierarchy hierarchy,
-            _In_ const FPD_NAMESPACE::endian endian) {
+            _In_ const endian_type endian) {
         hierarchy = swap_enum_endian(hierarchy, endian);
         return detail::write_all(file, hierarchy);
+    }
+
+    template<class TFile>
+    static inline std::size_t write(_In_ TFile&,
+            _In_ hierarchy_meta_data<spatial_hierarchy::none>&,
+            _In_ const endian_type) {
+        return 0;
+    }
+
+    template<class TFile>
+    static inline std::size_t write(_In_ TFile& file,
+            _In_ const ospray_pkd_tree_hierarchy_type& hierarchy,
+            _In_ const endian_type endian) {
+        std::size_t retval = 0;
+        retval += write(file, header_segment::spatial_hierarchy,
+            size_on_disk(hierarchy), endian);
+        retval += write(file, hierarchy.type(), endian);
+        retval += detail::write_all(file, hierarchy.axis_component());
+        return retval;
+    }
+
+    template<class TFile, FPD_NAMESPACE::spatial_hierarchy Hierarchy>
+    static inline std::size_t write(_In_ TFile&,
+            _In_ const hierarchy_meta_data<Hierarchy>&,
+            _In_ const endian_type) {
+        throw std::logic_error("The specified spatial hierarchy cannot be "
+            "persisted to disk. Make sure to provide an overload of "
+            "meta_data::write for any new kind of hierarchy.");
     }
 
     template<class TFile, class TValue>
     static std::size_t write(_In_ TFile& file,
         _In_ const std::vector<TValue>& values,
-        _In_ const FPD_NAMESPACE::endian endian);
+        _In_ const endian_type endian);
 
-    size_type frame_size_gdeflate(_In_ const std::size_t frame,
+    template<FPD_NAMESPACE::compression C, class S>
+    size_type frame_size(
+        _In_ const detail::uniform_block_compression_meta_data<C, S>& md,
+        _In_ const std::size_t frame,
         _In_ const std::size_t group) const;
 
     string_type to_string(_In_ const char *begin, _In_ const char *end) const;
@@ -468,7 +618,7 @@ private:
         _In_ const std::vector<string_type>& strings) const;
 
     std::vector<bounding_box_type> _bounding_boxes;
-    std::shared_ptr<compression_meta_data_base> _compression;
+    compression_type _compression;
     string_type _description;
     endian_type _endian;
     format_description_type _format_description;
@@ -476,7 +626,7 @@ private:
     frame_table_type _frame_table;
     std::map<semantic, format_variant> _global_particle_properties;
     size_type _header_size;
-    std::shared_ptr<hierarchy_meta_data_base> _hierarchy;
+    hierarchy_type _hierarchy;
     size_type _particle_size;
     std::vector<string_type> _user_defined_semantics;
     version_type _version;

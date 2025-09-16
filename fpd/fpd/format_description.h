@@ -134,7 +134,7 @@ public:
     /// <param name="initialiser">The initialiser for the new element.</param>
     /// <param name="eval_offset">If <c>true</c>, add an explicit offset to the
     /// element based on the current content of the group.</param>
-    /// <returns><c>*this</c>.</returns>
+    /// <returns>*<see langword="this" />.</returns>
     format_description& add(_In_ const initialiser_type& initialiser,
         _In_ const bool eval_offset = false);
 
@@ -145,6 +145,14 @@ public:
     inline typename std::vector<group_type>::const_iterator begin(void) const {
         return this->_groups.begin();
     }
+
+    /// <summary>
+    /// Tests whether the format contains the specified semantic.
+    /// </summary>
+    /// <param name="semantic">The semantic to look for.</param>
+    /// <returns><see langword="true" /> if the semantic was found in any
+    /// element, <see langword="false" /> otherwise.</returns>
+    bool contains(_In_ const semantic_type semantic) const noexcept;
 
     /// <summary>
     /// Gets the total number of elements over all groups.

@@ -102,7 +102,7 @@ public:
     /// <paramref name="stride" /> is less than the size of a single position.
     /// </exception>
     static basic_bounding_box from_data(
-        _In_reads_(cnt * stride) const void *data,
+        _In_reads_bytes_(cnt * stride) const void *data,
         _In_ const std::size_t cnt,
         _In_ const std::size_t stride,
         _In_ const format_type format,
@@ -136,8 +136,6 @@ public:
     /// <param name="max_x">The maximum value on the x-axis.</param>
     /// <param name="max_y">The maximum value on the y-axis.</param>
     /// <param name="max_z">The maximum value on the z-axis.</param>
-    /// <exception cref="std::logic_error">If <typeparamref name="TValue" />
-    /// is not a valid scalar arithmetic type.</exception>
     template<class TValue> basic_bounding_box(
         _In_ const TValue min_x, _In_ const TValue min_y,
         _In_ const TValue min_z, _In_ const TValue max_x,
@@ -516,7 +514,7 @@ typedef basic_bounding_box<> bounding_box;
 /// <paramref name="stride" /> is less than the size of a single position.
 /// </exception>
 inline bounding_box make_bounding_box(
-        _In_reads_(cnt *stride) const void *data,
+        _In_reads_bytes_(cnt *stride) const void *data,
         _In_ const std::size_t cnt,
         _In_ const std::size_t stride,
         _In_ const format format,

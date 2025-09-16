@@ -59,6 +59,22 @@ FPD_NAMESPACE::format_description<TChar>::add(
 
 
 /*
+ * FPD_NAMESPACE::format_description<TChar>::contains
+ */
+template<class TChar>
+bool FPD_NAMESPACE::format_description<TChar>::contains(
+        _In_ const semantic_type semantic) const noexcept {
+    for (auto& g : this->_groups) {
+        if (g.contains(semantic)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+/*
  * FPD_NAMESPACE::format_description<TChar>::operator ()
  */
 template<class TChar>

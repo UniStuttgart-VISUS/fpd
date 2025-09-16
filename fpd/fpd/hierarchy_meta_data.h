@@ -77,6 +77,15 @@ public:
         : _axis_component((std::numeric_limits<std::uint8_t>::max)()) { }
 
     /// <summary>
+    /// Initialises a new instance.
+    /// </summary>
+    /// <param name="axis_component">The zero-based index of the component
+    /// holding the split axis.</param>
+    explicit inline hierarchy_meta_data(
+            _In_ const std::uint8_t axis_component) noexcept
+        : _axis_component(axis_component) { }
+
+    /// <summary>
     /// Answer the axis where the splits are embedded. If this number is larger
     /// than the number of components of the position, the splits are performed
     /// round-robin starting at the x-axis.

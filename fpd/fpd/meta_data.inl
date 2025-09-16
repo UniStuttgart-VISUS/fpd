@@ -196,6 +196,26 @@ FPD_NAMESPACE::meta_data<TChar>::bounding_box(
 
 
 /*
+ * FPD_NAMESPACE::meta_data<TChar>::compression_as
+ */
+template<class TChar>
+template<FPD_NAMESPACE::compression Compression>
+const FPD_NAMESPACE::compression_meta_data<Compression>&
+FPD_NAMESPACE::meta_data<TChar>::compression_as(void) const {
+    assert(this->_compression);
+    typedef compression_meta_data<Compression> return_type;
+    auto retval = std::dynamic_pointer_cast<return_type>(this->_compression);
+
+    if (retval == nullptr) {
+        throw std::runtime_error("The actual compression method does not match "
+            "the expected one.");
+    }
+
+    return *retval;
+}
+
+
+/*
  * FPD_NAMESPACE::meta_data<TChar>::frame_offset
  */
 template<class TChar>
@@ -236,9 +256,10 @@ FPD_NAMESPACE::meta_data<TChar>::frame_size(
                 return this->particles(f) * p;
 
             case compression::gdeflate:
-                // Pass on to specialised method using the compression meta data
-                // to compute the required size.
-                return this->frame_size_gdeflate(f, g);
+                return this->frame_size(
+                    this->compression_as<compression::gdeflate>(),
+                    f,
+                    g);
 
             default:
                 throw std::logic_error("The specified compression method is "
@@ -280,6 +301,26 @@ FPD_NAMESPACE::meta_data<TChar>::group_offset(_In_ const std::size_t frame,
     }
 
     return retval;
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data<TChar>::hierarchy_as
+ */
+template<class TChar>
+template<FPD_NAMESPACE::spatial_hierarchy Hierarchy>
+const FPD_NAMESPACE::hierarchy_meta_data<Hierarchy>&
+FPD_NAMESPACE::meta_data<TChar>::hierarchy_as(void) const {
+    assert(this->_hierarchy);
+    typedef hierarchy_meta_data<Hierarchy> return_type;
+    auto retval = std::dynamic_pointer_cast<return_type>(this->_hierarchy);
+
+    if (retval == nullptr) {
+        throw std::runtime_error("The actual type of the spatial hierarchy "
+            "does not match the expected one.");
+    }
+
+    return *retval;
 }
 
 
@@ -391,39 +432,23 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::save(_In_ TFile& file) const {
     } /* if (this->_bounding_box) */
 
     // Write the spatial hierarchy meta data.
-    switch (this->hierarchy().type()) {
-        case spatial_hierarchy::none:
-            // Nothing to do.
-            break;
-
-        case spatial_hierarchy::ospray_pkd_tree: {
-            auto md = std::dynamic_pointer_cast<hierarchy_meta_data<
-                spatial_hierarchy::ospray_pkd_tree>>(this->_hierarchy);
-            retval += detail::write_all(file, md->axis_component());
-            } break;
-
-        default:
-            throw std::logic_error("The specified type of spatial hierarchy "
-                "cannot be persisted to disk.");
+    if (this->_hierarchy != nullptr) {
+        retval += meta_data::write<spatial_hierarchy, hierarchy_meta_data>(
+            file,
+            this->_hierarchy->type(),
+            this->_hierarchy,
+            this->_endian,
+            detail::spatial_hierarchies());
     }
 
     // Write the compression meta data.
-    switch (this->compression().method()) {
-        case compression::none:
-            // Nothing to do.
-            break;
-
-        case compression::gdeflate: {
-            auto md = std::dynamic_pointer_cast<compression_meta_data<
-                compression::gdeflate>>(this->_compression);
-            auto& blocks = static_cast<const std::vector<std::uint32_t>&>(*md);
-            retval += write(file, md->method(), this->_endian);
-            retval += write(file, blocks, this->_endian);
-        } break;
-
-        default:
-            throw std::logic_error("The specified compression method cannot be "
-                "persisted to disk.");
+    if (this->_compression != nullptr) {
+        retval += write<FPD_NAMESPACE::compression, compression_meta_data>(
+            file,
+            this->_compression->method(),
+            this->_compression,
+            this->_endian,
+            detail::compressions());
     }
 
     assert(retval == this->_header_size);
@@ -572,18 +597,10 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_compression(
 
             // At this point, we can compute the frame offsets.
             assert(meta_data._header_size > fixed_header_size);
-            const auto blocks = md->_blocks.size() / meta_data.frames();
-            auto offset = meta_data._header_size;
             meta_data._frame_offsets.clear();
-            meta_data._frame_offsets.resize(meta_data._frame_table.size());
-
-            for (std::size_t i = 0; i < meta_data._frame_table.size(); ++i) {
-                meta_data._frame_offsets[i] = offset;
-                for (std::size_t b = 0; b < blocks; ++b) {
-                    offset += md->_blocks[i * blocks + b];
-                }
-            }
-
+            meta_data._frame_offsets.reserve(meta_data._frame_table.size());
+            md->calc_frame_offsets(std::back_inserter(meta_data._frame_offsets),
+                meta_data.frames(), meta_data._header_size);
             } break;
 
         default:
@@ -828,6 +845,68 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_user_semantics(
 
 
 /*
+ * FPD_NAMESPACE::meta_data<TChar>::size_on_disk
+ */
+template<class TChar>
+template<class TEnum, template<TEnum> class TDerived, class TBase, TEnum... Es>
+std::size_t FPD_NAMESPACE::meta_data<TChar>::size_on_disk(
+        _In_ const TEnum type,
+        _In_ const TBase& meta_data,
+        _In_ const detail::enum_dispatch_list<TEnum, Es...>) noexcept {
+    typedef std::function<std::size_t(const TBase&)> dispatcher;
+    typedef detail::enum_dispatch_list<TEnum, Es...> dispatch_list;
+
+    // Note: this can be static, because the lambda has no capture.
+    static const std::array<dispatcher, sizeof...(Es)> Dispatchers = {
+        ([](const TBase& md) {
+            typedef TDerived<Es> derived;
+            auto m = std::dynamic_pointer_cast<derived>(md);
+            assert(m != nullptr);
+            return size_on_disk(*m);
+        })...
+    };
+
+    const auto idx = index_of(type, dispatch_list(), 0);
+    if (idx < Dispatchers.size()) {
+        assert(meta_data != nullptr);
+        return Dispatchers[idx](meta_data);
+    }
+
+    return 0;
+}
+
+
+/*
+ *  FPD_NAMESPACE::meta_data<TChar>::size_on_disk
+ */
+template<class TChar>
+std::size_t FPD_NAMESPACE::meta_data<TChar>::size_on_disk(
+        _In_ const compression_type& compression) noexcept {
+    if (compression == nullptr) {
+        return 0;
+    }
+
+    return size_on_disk<FPD_NAMESPACE::compression, compression_meta_data>(
+        compression->method(), compression, detail::compressions());
+}
+
+
+/*
+ *  FPD_NAMESPACE::meta_data<TChar>::size_on_disk
+ */
+template<class TChar>
+std::size_t FPD_NAMESPACE::meta_data<TChar>::size_on_disk(
+        _In_ const hierarchy_type& hierarchy) noexcept {
+    if (hierarchy == nullptr) {
+        return 0;
+    }
+
+    return size_on_disk<spatial_hierarchy, hierarchy_meta_data>(
+        hierarchy->type(), hierarchy, detail::spatial_hierarchies());
+}
+
+
+/*
  * FPD_NAMESPACE::meta_data<TChar>::write
  */
 template<class TChar>
@@ -835,7 +914,7 @@ template<class TFile, class TByte>
 std::size_t FPD_NAMESPACE::meta_data<TChar>::write(
         _In_ TFile& file,
         _In_ const basic_bounding_box<TByte>& bbox,
-        _In_ const FPD_NAMESPACE::endian endian) {
+        _In_ const endian_type endian) {
     assert(bbox);
 
     if (requires_conversion(endian)) {
@@ -861,7 +940,7 @@ template<class TFile>
 std::size_t FPD_NAMESPACE::meta_data<TChar>::write(_In_ TFile& file,
         _In_ const element_type& element,
         _In_ std::uint16_t group,
-        _In_ const FPD_NAMESPACE::endian endian) {
+        _In_ const endian_type endian) {
     std::size_t retval = 0;
 
     auto semantic = swap_enum_endian(element.semantic(), endian);
@@ -892,7 +971,7 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::write(
         _In_ TFile& file,
         _In_ const header_segment segment,
         _In_ const std::underlying_type_t<header_segment> size,
-        _In_ const FPD_NAMESPACE::endian endian) {
+        _In_ const endian_type endian) {
     constexpr const decltype(size) size_mask = 0x00FFFFFF;
     assert(size < size_mask);
     auto value = static_cast<decltype(size)>(segment);
@@ -906,10 +985,45 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::write(
  * FPD_NAMESPACE::meta_data<TChar>::write
  */
 template<class TChar>
+template<class TEnum, template<TEnum> class TDerived, class TFile,
+        class TBase, TEnum... Es>
+std::size_t FPD_NAMESPACE::meta_data<TChar>::write(_In_ TFile& file,
+        _In_ const TEnum type,
+        _In_ const TBase& meta_data,
+        _In_ const endian_type endian,
+        _In_ const detail::enum_dispatch_list<TEnum, Es...>) {
+    typedef std::function<std::size_t(TFile&, const TBase&,
+        const endian_type)> dispatcher;
+    typedef detail::enum_dispatch_list<TEnum, Es...> dispatch_list;
+
+    // Note: this can be static, because the lambda has no capture.
+    static const std::array<dispatcher, sizeof...(Es)> Dispatchers = {
+        ([](TFile& f, const TBase& md, const endian_type e) {
+            typedef TDerived<Es> derived;
+            auto m = std::dynamic_pointer_cast<derived>(md);
+            assert(m != nullptr);
+            return meta_data::write(f, *m, e);
+        })...
+    };
+
+    const auto idx = index_of(type, dispatch_list(), 0);
+    if (idx < Dispatchers.size()) {
+        assert(meta_data != nullptr);
+        return Dispatchers[idx](file, meta_data, endian);
+    }
+
+    return 0;
+}
+
+
+/*
+ * FPD_NAMESPACE::meta_data<TChar>::write
+ */
+template<class TChar>
 template<class TFile, class TValue>
 std::size_t FPD_NAMESPACE::meta_data<TChar>::write(_In_ TFile& file,
         _In_ const std::vector<TValue>& values,
-        _In_ const FPD_NAMESPACE::endian endian) {
+        _In_ const endian_type endian) {
     static_assert(std::is_arithmetic_v<TValue>, "This method is only intended "
         "for arrays of numbers.");
     if (requires_conversion(endian)) {
@@ -928,20 +1042,17 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::write(_In_ TFile& file,
 
 
 /*
- * FPD_NAMESPACE::meta_data<TChar>::meta_data<TChar>::frame_size_gdeflate
+ * FPD_NAMESPACE::meta_data<TChar>::frame_size
  */
 template<class TChar>
+template<FPD_NAMESPACE::compression C, class S>
 typename FPD_NAMESPACE::meta_data<TChar>::size_type
-FPD_NAMESPACE::meta_data<TChar>::meta_data<TChar>::frame_size_gdeflate(
+FPD_NAMESPACE::meta_data<TChar>::frame_size(
+        _In_ const detail::uniform_block_compression_meta_data<C, S>& md,
         _In_ const std::size_t frame,
         _In_ const std::size_t group) const {
-    assert(this->_compression->method() == compression::gdeflate);
-    auto md = std::dynamic_pointer_cast<compression_meta_data<
-        compression::gdeflate>>(this->_compression);
-    assert(md != nullptr);
-
     const auto groups = this->_format_description.count_groups();
-    const auto blocks = md->check(this->frames(), groups);
+    const auto blocks = md.check(this->frames(), groups);
     auto begin = frame * blocks;
     auto end = (frame + 1) * blocks;
 
@@ -953,11 +1064,11 @@ FPD_NAMESPACE::meta_data<TChar>::meta_data<TChar>::frame_size_gdeflate(
         end = begin + (group + 1) * blocks_per_group;
     }
 
-    assert(begin < md->blocks());
-    assert(end <= md->blocks());
+    assert(begin < md.blocks());
+    assert(end <= md.blocks());
     size_type retval = 0;
     for (std::size_t b = begin; b < end; ++b) {
-        retval += (*md)[b];
+        retval += md[b];
     }
 
     return retval;

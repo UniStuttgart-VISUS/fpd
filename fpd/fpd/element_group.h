@@ -139,6 +139,14 @@ public:
     }
 
     /// <summary>
+    /// Tests whether the element group contains the specified semantic.
+    /// </summary>
+    /// <param name="semantic">The semantic to look for.</param>
+    /// <returns><see langword="true" /> if the semantic was found in any
+    /// element, <see langword="false" /> otherwise.</returns>
+    bool contains(_In_ const semantic_type semantic) const noexcept;
+
+    /// <summary>
     /// Gets the number of consecutive elements in the stream that belong to
     /// a single particle.
     /// </summary>

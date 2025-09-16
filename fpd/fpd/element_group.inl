@@ -20,6 +20,26 @@ inline void FPD_NAMESPACE::element_group<TChar>::add(
 
 
 /*
+ * FPD_NAMESPACE::element_group<TChar>::contains
+ */
+template<class TChar>
+bool FPD_NAMESPACE::element_group<TChar>::contains(
+        _In_ const semantic_type semantic) const noexcept {
+    typedef std::underlying_type_t<semantic_type> value_type;
+    const auto needle = static_cast<value_type>(semantic);
+
+    for (auto& e : this->_elements) {
+        const auto haystack = static_cast<value_type>(e.semantic());
+        if ((needle & haystack) == needle) {
+            return true;
+        }
+    }
+
+    return true;
+}
+
+
+/*
  * FPD_NAMESPACE::element_group<TChar>::offset
  */
 template<class TChar>

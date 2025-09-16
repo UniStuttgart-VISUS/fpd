@@ -273,6 +273,8 @@ namespace fpd {
             builder.add_format_element(semantic::position_radius, nullptr, format::float32xyzw)
                 .add_format_element(semantic::intensity, format::float32, 1)
                 .with_uniform_frames(42, 10)
+                .with_compression<compression::gdeflate>(std::size_t(42), 17)
+                .with_spatial_hierarchy<spatial_hierarchy::ospray_pkd_tree>()
                 .with_description(description);
 
             const auto size_on_disk = decltype(builder)::meta_data_type::fixed_header_size
@@ -282,6 +284,14 @@ namespace fpd {
                 // Frame table.
                 + sizeof(header_segment)
                 + 42 * sizeof(std::uint64_t)
+                // Compression sizes
+                + sizeof(header_segment)
+                + sizeof(compression)
+                + 42 * sizeof(std::uint32_t)
+                // PKD tree: type and split axis
+                + sizeof(header_segment)
+                + sizeof(spatial_hierarchy)
+                + sizeof(std::uint8_t)
                 // Description
                 + sizeof(header_segment)
                 + ::wcslen(description);
@@ -311,6 +321,7 @@ namespace fpd {
             Assert::AreEqual(expected.version().first, actual.version().first, L"major version", LINE_INFO());
             Assert::AreEqual(expected.version().second, actual.version().second, L"minor version", LINE_INFO());
             Assert::AreEqual(int(expected.endian()), int(actual.endian()), L"endian", LINE_INFO());
+            Assert::AreEqual(int(expected.compression().method()), int(actual.compression().method()), L"compression method", LINE_INFO());
             Assert::AreEqual(expected.frames(), actual.frames(), L"# of frames", LINE_INFO());
             Assert::AreEqual(expected.frame_offset(0), actual.frame_offset(0), L"First frame after header", LINE_INFO());
             Assert::AreEqual(expected.particles(0), actual.particles(0), L"particles in frame", LINE_INFO());
@@ -328,6 +339,7 @@ namespace fpd {
             Assert::AreEqual(int(expected.format_description(1, 0).size()), int(actual.format_description(1, 0).size()), L"size 1, 0", LINE_INFO());
             Assert::AreEqual(expected.description().size(), actual.description().size(), L"length of description", LINE_INFO());
             Assert::AreEqual("Test description.", actual.description().c_str(), L"description", LINE_INFO());
+            Assert::AreEqual(int(expected.hierarchy().type()), int(actual.hierarchy().type()), L"hierarchy type", LINE_INFO());
         }
 
         TEST_METHOD(builder_from_data) {
@@ -337,6 +349,8 @@ namespace fpd {
                 .add_format_element(semantic::intensity, format::float32, 1)
                 .with_uniform_frames(42, 10)
                 .with_description(L"Test description.")
+                .with_compression<compression::gdeflate>(std::size_t(42), 17)
+                .with_spatial_hierarchy<spatial_hierarchy::ospray_pkd_tree>()
                 .build();
 
             builder = meta_data_builder<wchar_t>(expected);
@@ -344,6 +358,7 @@ namespace fpd {
 
             Assert::AreEqual(expected.version().first, actual.version().first, L"major version", LINE_INFO());
             Assert::AreEqual(expected.version().second, actual.version().second, L"minor version", LINE_INFO());
+            Assert::AreEqual(int(expected.compression().method()), int(actual.compression().method()), L"compression method", LINE_INFO());
             Assert::AreEqual(int(expected.endian()), int(actual.endian()), L"endian", LINE_INFO());
             Assert::AreEqual(expected.frames(), actual.frames(), L"# of frames", LINE_INFO());
             Assert::AreEqual(expected.frame_offset(0), actual.frame_offset(0), L"First frame after header", LINE_INFO());
@@ -362,7 +377,7 @@ namespace fpd {
             Assert::AreEqual(int(expected.format_description(1, 0).size()), int(actual.format_description(1, 0).size()), L"size 1, 0", LINE_INFO());
             Assert::AreEqual(expected.description().size(), actual.description().size(), L"length of description", LINE_INFO());
             Assert::AreEqual(expected.description(), actual.description(), L"description", LINE_INFO());
-
+            Assert::AreEqual(int(expected.hierarchy().type()), int(actual.hierarchy().type()), L"hierarchy type", LINE_INFO());
         }
 
     private:

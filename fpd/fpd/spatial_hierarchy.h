@@ -10,7 +10,7 @@
 
 #include <cinttypes>
 
-#include "fpd/abi.h"
+#include "fpd/enum_dispatch_list.h"
 
 
 FPD_NAMESPACE_BEGIN
@@ -19,10 +19,15 @@ FPD_NAMESPACE_BEGIN
 /// Possible kinds of spatial hierarchies that can be present in the data.
 /// </summary>
 /// <remarks>
-/// The raw particles are always stored without additional data attached. If a
-/// hierarchy requires additional meta data to interpret these data (locations
-/// of the boundaries of the hierarchy, for instance), these are stored in the
-/// header along with the type of the hierarchy.
+/// <para>The raw particles are always stored without additional data attached.
+/// If a hierarchy requires additional meta data to interpret these data
+/// (locations of the boundaries of the hierarchy, for instance), these are
+/// stored in the header along with the type of the hierarchy.</para>
+/// <para>Adding a new kind of hierarchy involves several steps: add it to the
+/// enumeration with a unique value; add it to the dispatch list
+/// <see cref="spatial_hierarchies" /> below the enum; add a specialisation of
+/// the <see cref="hierarchy_meta_data" /> template; add support for measuring,
+/// reading and writing the specialisation in <see cref="meta_data" />.</para>
 /// </remarks>
 enum class spatial_hierarchy : std::uint32_t {
 
@@ -52,5 +57,28 @@ enum class spatial_hierarchy : std::uint32_t {
 };
 
 FPD_NAMESPACE_END
+
+
+FPD_DETAIL_NAMESPACE_BEGIN
+
+/// <summary>
+/// A specialised <see cref="enum_dispatch_list" /> for types of
+/// <see cref="spatial_hierarchy" />.
+/// </summary>
+/// <typeparam name="Hierarchies">The possible types of spatial hierarchy that
+/// can be dispatched.</typeparam>
+template<spatial_hierarchy... Hierarchies>
+using spatial_hierarchy_dispatch_list = enum_dispatch_list<spatial_hierarchy,
+    Hierarchies...>;
+
+
+/// <summary>
+/// A dispatching list for <see spatial_hierarchy /> values.
+/// </summary>
+typedef spatial_hierarchy_dispatch_list<
+    spatial_hierarchy::none,
+    spatial_hierarchy::ospray_pkd_tree> spatial_hierarchies;
+
+FPD_DETAIL_NAMESPACE_END
 
 #endif /* !defined(_FPD_SPATIAL_HIERARCHY_H) */
