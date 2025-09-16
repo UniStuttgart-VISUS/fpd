@@ -228,6 +228,12 @@ public:
     template<class TValue> TValue get(_In_ const value v) const;
 
     /// <summary>
+    /// Answer the zero-based index of the longest axis of the bounding box.
+    /// </summary>
+    /// <returns>The index of the longest axis of the bounding box.</returns>
+    std::size_t longest_axis(void) const noexcept;
+
+    /// <summary>
     /// Answer the maximum coordinate along the given axis.
     /// </summary>
     /// <typeparam name="TValue">The type of the coordinate, which must be the
@@ -393,7 +399,14 @@ public:
     /// <paramref name="other" />.</typeparam>
     /// <param name="other">Another bounding box with the same format.</param>
     template<class TOther>
-    inline void merge(_In_ const basic_bounding_box<TOther>& other);
+    void merge(_In_ const basic_bounding_box<TOther>& other);
+
+    /// <summary>
+    /// Assignment.
+    /// </summary>
+    /// <param name="rhs">The right-hand-side operand.</param>
+    /// <returns>*<see langword="this" />.</returns>
+    basic_bounding_box& operator =(_In_ const basic_bounding_box& rhs);
 
     /// <summary>
     /// Assignment.

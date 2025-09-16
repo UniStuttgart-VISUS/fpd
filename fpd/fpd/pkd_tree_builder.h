@@ -38,6 +38,16 @@ public:
     typedef format_description<TChar> format_description_type;
 
     /// <summary>
+    /// Extracts the zero-based index of the axis embedded in the least
+    /// significant bits of the given scalar.
+    /// </summary>
+    /// <typeparam name="TScalar"></typeparam>
+    /// <param name="position"></param>
+    /// <returns></returns>
+    template<class TScalar>
+    static std::size_t embedded_axis(_In_ const TScalar position) noexcept;
+
+    /// <summary>
     /// Initialises a new instance.
     /// </summary>
     pkd_tree_builder(void) noexcept;
@@ -100,6 +110,7 @@ public:
     inline pkd_tree_builder& within_bounding_box(
             _In_ const bounding_box& bbox) {
         this->_bbox = bbox;
+        return *this;
     }
 
     /// <summary>
@@ -108,7 +119,7 @@ public:
     /// </summary>
     /// <returns></returns>
     inline pkd_tree_builder& with_round_robin_splits(void) noexcept {
-        this->_axis_dimension = (std::numeric_limits<std::size_t>::max)();
+        this->_axis_component = (std::numeric_limits<std::size_t>::max)();
         return *this;
     }
 
@@ -128,7 +139,7 @@ public:
     /// <returns>*<see langword="this" />.</returns>
     inline pkd_tree_builder& with_splits_embedded_in(
             _In_ const std::size_t dimension) noexcept {
-        this->_axis_dimension = dimension;
+        this->_axis_component = dimension;
         return *this;
     }
 
@@ -194,7 +205,7 @@ private:
 
     /// <summary>
     /// Embeds the given <paramref name="axis" /> in the three least significant
-    /// bits of the <see cref="_axis_dimension" />th component of
+    /// bits of the <see cref="_axis_component" />th component of
     /// <paramref name="position" />.
     /// </summary>
     template<class TScalar> void embed_axis(_In_ TScalar *position,

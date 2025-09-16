@@ -166,6 +166,36 @@ TValue FPD_NAMESPACE::basic_bounding_box<TByte>::get(_In_ const value v) const {
 
 
 /*
+ * FPD_NAMESPACE::basic_bounding_box<TByte>::longest_axis
+ */
+template<class TByte>
+std::size_t FPD_NAMESPACE::basic_bounding_box<TByte>::longest_axis(
+        void) const noexcept {
+    if (this->_format == format::unknown) {
+        return 0;
+    }
+
+    return detail::dispatch_format<std::size_t>(this->_format, [this](auto t) {
+        typedef std::remove_pointer_t<std::decay_t<decltype(t)>> type;
+        std::size_t retval = 0;
+        assert(this->max<type>(retval) >= this->min<type>(retval));
+        auto len = this->max<type>(retval) - this->min<type>(retval);
+
+        for (std::size_t i = 1; i < 3; ++i) {
+            assert(this->max<type>(i) >= this->min<type>(i));
+            const auto l = this->max<type>(i) - this->min<type>(i);
+            if (l > len) {
+                len = l;
+                retval = i;
+            }
+        }
+
+        return retval;
+    }, scalar_formats());
+}
+
+
+/*
  * FPD_NAMESPACE::basic_bounding_box<TByte>::max
  */
 template<class TByte>
@@ -292,6 +322,22 @@ void FPD_NAMESPACE::basic_bounding_box<TByte>::merge(
             }
         }
     }, scalar_formats());
+}
+
+
+/*
+ * FPD_NAMESPACE::basic_bounding_box<TByte>::operator =
+ */
+template<class TByte>
+FPD_NAMESPACE::basic_bounding_box<TByte>&
+FPD_NAMESPACE::basic_bounding_box<TByte>::operator =(
+        _In_ const basic_bounding_box& rhs) {
+    if (this != std::addressof(rhs)) {
+        this->_format = rhs._format;
+        this->_values = rhs._values;
+    }
+
+    return *this;
 }
 
 

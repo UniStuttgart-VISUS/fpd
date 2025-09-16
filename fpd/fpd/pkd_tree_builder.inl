@@ -154,9 +154,26 @@ FPD_DETAIL_NAMESPACE_END
 
 
 /*
+ * FPD_NAMESPACE::pkd_tree_builder<TChar>::embedded_axis
+ */
+template<class TChar>
+template<class TScalar>
+std::size_t FPD_NAMESPACE::pkd_tree_builder<TChar>::embedded_axis(
+        _In_ const TScalar position) noexcept {
+    typedef detail::make_unsigned_t<TScalar> mask_type;
+    constexpr auto three = static_cast<mask_type>(3);
+
+    auto axis = *reinterpret_cast<const mask_type *>(std::addressof(position));
+    axis &= three;
+
+    return static_cast<std::size_t>(axis);
+}
+
+
+/*
  * FPD_NAMESPACE::pkd_tree_builder<TChar>::pkd_tree_builder
  */
-    template<class TChar>
+template<class TChar>
 FPD_NAMESPACE::pkd_tree_builder<TChar>::pkd_tree_builder(void) noexcept
     : _axis_component((std::numeric_limits<std::size_t>::max)()),
     _components(0),
@@ -317,10 +334,10 @@ void FPD_NAMESPACE::pkd_tree_builder<TChar>::build_ospray(
     }
 
     const auto position = this->position<TScalar>(node);
-    const auto split = depth % this->_dimensions;
+    const auto split = (this->_axis_component < this->_dimensions)
+        ? bounds.longest_axis()
+        : depth % this->_dimensions;
     const auto node_pos = position[split];
-    // TODO: select dimension based on bounding box
-    // const size_t dim = maxDim(bounds.size());
 
     auto right = detail::ospray_pkd_right_child(node);
     if (detail::ospray_pkd_invalid_node(left, this->_particles)) {
@@ -430,6 +447,9 @@ void FPD_NAMESPACE::pkd_tree_builder<TChar>::build_ospray(
     if (bounds) {
         (left_bounds.max)(split, node_pos);
         (right_bounds.min)(split, node_pos);
+
+        auto x = left_bounds.get<TScalar>(split);
+        auto y = left_bounds.get<TScalar>(split);
     }
 
     if ((this->_levels - depth) > this->_parallel_threshold) {
@@ -477,49 +497,6 @@ void FPD_NAMESPACE::pkd_tree_builder<TChar>::embed_axis(_In_ TScalar *position,
         *a = (*a & ~three) | static_cast<mask_type>(axis);
     }
 }
-
-
-//inline void PartiKD::swap(const size_t a, const size_t b) const
-//{
-//    std::swap(model->position[a], model->position[b]);
-//    for (size_t i = 0; i < model->attribute.size(); i++)
-//        std::swap(model->attribute[i]->value[a], model->attribute[i]->value[b]);
-//    if (!model->type.empty())
-//        std::swap(model->type[a], model->type[b]);
-//}
-
-
-///*
-// * FPD_NAMESPACE::pkd_tree_builder<TChar>::resolve_compare_as
-// */
-//template<class TChar>
-//template<FPD_NAMESPACE::format Format, FPD_NAMESPACE::format... Formats>
-//void FPD_NAMESPACE::pkd_tree_builder<TChar>::resolve_compare_as(
-//        _In_ format_list<Format, Formats...>, _In_ const format format) {
-//    if (format == Format) {
-//        typedef typename format_forward_traits<Format>::scalar value_type;
-//        this->_eq = compare_as< value_type>::eq;
-//        this->_ge = compare_as< value_type>::ge;
-//        this->_gt = compare_as< value_type>::gt;
-//        this->_le = compare_as< value_type>::le;
-//        this->_lt = compare_as< value_type>::lt;
-//        this->_ne = compare_as< value_type>::ne;
-//
-//    } else {
-//        this->resolve_compare_as(format_list<Formats...>(), format);
-//    }
-//}
-//
-//
-///*
-// * FPD_NAMESPACE::pkd_tree_builder<TChar>::resolve_compare_as
-// */
-//template<class TChar>
-//void FPD_NAMESPACE::pkd_tree_builder<TChar>::resolve_compare_as(
-//        _In_ format_list<>, _In_ const format format) {
-//    throw std::logic_error("The specified format of particle coordinates "
-//        "cannot be compared.");
-//}
 
 
 /*

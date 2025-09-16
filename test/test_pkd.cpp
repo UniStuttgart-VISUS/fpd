@@ -83,7 +83,7 @@ namespace fpd {
             }
         }
 
-        TEST_METHOD(build) {
+        TEST_METHOD(build_round_robin) {
             pkd_tree_builder<wchar_t> builder;
 
             Assert::ExpectException<std::invalid_argument>([&builder](void) {
@@ -94,16 +94,71 @@ namespace fpd {
                 builder.for_format(format_description<wchar_t>({ { semantic::radius, format::float32x, 0, 0 } }));
             }, L"invalid format", LINE_INFO());
 
-            builder.for_format(format_description<wchar_t>({ { semantic::position_radius, format::float32xyzw, 0, 0 } }));
+            builder.for_format(format_description<wchar_t>({ { semantic::position_radius, format::float32xyzw, 0, 0 } }))
+                .with_round_robin_splits();
 
-            std::vector<float> particles = {
-                2.0f, 2.0f, 2.0f, 0.1f,
-                1.0f, 1.0f, 1.0f, 0.2f,
-                4.0f, 4.0f, 4.0f, 0.3f,
-                3.0f, 3.0f, 3.0f, 0.4f,
+            std::vector<std::array<float, 4>> particles = {
+                { 2.0f, 2.0f, 2.0f, 0.1f },
+                { 1.0f, 1.0f, 1.0f, 0.2f },
+                { 4.0f, 4.0f, 4.0f, 0.3f },
+                { 3.0f, 3.0f, 3.0f, 0.4f },
+                { 1.0f, 4.0f, 2.0f, 0.5f },
+                { 5.0f, 2.0f, 1.0f, 0.6f },
+                { 6.0f, 6.0f, 1.0f, 0.7f },
+                { 1.0f, 4.0f, 7.0f, 0.8f },
             };
 
             builder.build(particles.data(), 4);
+
+            Assert::IsTrue(particles[2 * 0 + 1][0] <= particles[0][0], L"[2 * 0 + 1].x <= [0].x", LINE_INFO());
+            Assert::IsTrue(particles[2 * 0 + 2][0] >= particles[0][0], L"[2 * 0 + 2].x >= [0].x", LINE_INFO());
+
+            Assert::IsTrue(particles[2 * 1 + 1][1] <= particles[1][1], L"[2 * 1 + 1].y <= [1].y", LINE_INFO());
+            Assert::IsTrue(particles[2 * 1 + 2][1] >= particles[1][1], L"[2 * 1 + 2].y >= [1].y", LINE_INFO());
+
+            Assert::IsTrue(particles[2 * 2 + 1][1] <= particles[2][1], L"[2 * 2 + 1].y <= [2].y", LINE_INFO());
+            Assert::IsTrue(particles[2 * 2 + 2][1] >= particles[2][1], L"[2 * 2 + 2].y >= [2].y", LINE_INFO());
+        }
+
+        TEST_METHOD(build_embedded) {
+            pkd_tree_builder<wchar_t> builder;
+
+            builder.for_format(format_description<wchar_t>({ { semantic::position_radius, format::float32xyzw, 0, 0 } }))
+                .with_splits_embedded_in(0);
+
+            std::vector<std::array<float, 4>> particles = {
+                { 2.0f, 2.0f, 2.0f, 0.1f },
+                { 1.0f, 0.0f, 1.0f, 0.2f },
+                { 4.0f, 4.0f, 4.0f, 0.3f },
+                { 3.0f, 3.0f, 3.0f, 0.4f },
+                { 1.0f, 4.0f, 2.0f, 0.5f },
+                { 5.0f, 2.0f, 1.0f, 0.6f },
+                { 6.0f, 6.0f, 1.0f, 0.7f },
+                { 1.0f, 4.0f, 7.0f, 0.8f },
+            };
+
+            const auto bbox = make_bounding_box(particles.data(), particles.size(), 4 * sizeof(float), format::float32xyzw);
+            Assert::AreEqual(int(format::float32), int(bbox.format()), L"bbox format", LINE_INFO());
+            Assert::AreEqual(1.0f, bbox.min_x<float>(), L"min_x", LINE_INFO());
+            Assert::AreEqual(0.0f, bbox.min_y<float>(), L"min_y", LINE_INFO());
+            Assert::AreEqual(1.0f, bbox.min_z<float>(), L"min_z", LINE_INFO());
+            Assert::AreEqual(6.0f, bbox.max_x<float>(), L"max_x", LINE_INFO());
+            Assert::AreEqual(6.0f, bbox.max_y<float>(), L"max_y", LINE_INFO());
+            Assert::AreEqual(7.0f, bbox.max_z<float>(), L"max_z", LINE_INFO());
+
+            builder.within_bounding_box(bbox).build(particles.data(), 4);
+            Assert::AreEqual(std::size_t(1), decltype(builder)::embedded_axis(particles[0][0]), L"embedded axis of [0]", LINE_INFO());
+            Assert::AreEqual(std::size_t(2), decltype(builder)::embedded_axis(particles[1][0]), L"embedded axis of [1]", LINE_INFO());
+            Assert::AreEqual(std::size_t(2), decltype(builder)::embedded_axis(particles[2][0]), L"embedded axis of [2]", LINE_INFO());
+
+            //Assert::IsTrue(particles[2 * 0 + 1][0] <= particles[0][0], L"[2 * 0 + 1].x <= [0].x", LINE_INFO());
+            //Assert::IsTrue(particles[2 * 0 + 2][0] >= particles[0][0], L"[2 * 0 + 2].x >= [0].x", LINE_INFO());
+
+            //Assert::IsTrue(particles[2 * 1 + 1][1] <= particles[1][1], L"[2 * 1 + 1].y <= [1].y", LINE_INFO());
+            //Assert::IsTrue(particles[2 * 1 + 2][1] >= particles[1][1], L"[2 * 1 + 2].y >= [1].y", LINE_INFO());
+
+            //Assert::IsTrue(particles[2 * 2 + 1][1] <= particles[2][1], L"[2 * 2 + 1].y <= [2].y", LINE_INFO());
+            //Assert::IsTrue(particles[2 * 2 + 2][1] >= particles[2][1], L"[2 * 2 + 2].y >= [2].y", LINE_INFO());
         }
 
     };
