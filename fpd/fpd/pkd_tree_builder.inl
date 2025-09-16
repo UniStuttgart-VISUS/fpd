@@ -416,7 +416,7 @@ void FPD_NAMESPACE::pkd_tree_builder<TChar>::build_ospray(
         } /* if (left_mismatch && right_mismatch) */
     } /* while (true) */
 
-#if defined(FPD_CHECK_PDK)
+#if defined(FPD_CHECK_PKD)
     {
         detail::ospray_pkd_iterator ll(detail::ospray_pkd_left_child(node));
         detail::ospray_pkd_iterator rr(detail::ospray_pkd_right_child(node));
@@ -437,7 +437,7 @@ void FPD_NAMESPACE::pkd_tree_builder<TChar>::build_ospray(
             ++rr;
         }
     }
-#endif /* defined(FPD_CHECK_PDK) */
+#endif /* defined(FPD_CHECK_PKD) */
 
     this->embed_axis(static_cast<TScalar *>(position), split);
 
