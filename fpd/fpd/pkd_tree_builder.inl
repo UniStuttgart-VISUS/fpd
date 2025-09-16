@@ -445,11 +445,10 @@ void FPD_NAMESPACE::pkd_tree_builder<TChar>::build_ospray(
     auto right_bounds = bounds;
 
     if (bounds) {
+        assert(left_bounds);
+        assert(right_bounds);
         (left_bounds.max)(split, node_pos);
         (right_bounds.min)(split, node_pos);
-
-        auto x = left_bounds.get<TScalar>(split);
-        auto y = left_bounds.get<TScalar>(split);
     }
 
     if ((this->_levels - depth) > this->_parallel_threshold) {
