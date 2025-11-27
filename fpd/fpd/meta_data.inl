@@ -180,30 +180,6 @@ std::uint64_t FPD_NAMESPACE::meta_data<TChar>::parse(
 }
 
 
-///*
-// * FPD_NAMESPACE::meta_data meta_data<TChar>::parse
-// */
-//template<class TChar>
-//FPD_NAMESPACE::meta_data<TChar> FPD_NAMESPACE::meta_data<TChar>::parse(
-//        _In_reads_bytes_(cnt) const void *data, _In_ const std::size_t cnt) {
-//    meta_data retval;
-//
-//    // Find out how many bytes of header segments are in the file and check
-//    // whether the caller provided at least this amount of data.
-//    const auto required = check_header_size(retval, data, cnt);
-//    retval._header_size = required + fixed_header_size;
-//
-//    if (retval._header_size > cnt) {
-//        throw std::invalid_argument("Insufficient header data have been "
-//            "provided to parse all header segments.");
-//    }
-//
-//    return parse(retval,
-//        static_cast<const std::uint8_t *>(data) + fixed_header_size,
-//        retval._header_size);
-//}
-
-
 /*
  * FPD_NAMESPACE::meta_data<TChar>::bounding_box
  */

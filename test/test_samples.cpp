@@ -50,7 +50,27 @@ namespace fpd {
 
             // Parse the variable-size header segments, which completes parsing of
             // the meta data.
-            meta_data::parse(md, data.data(), data.size());
+            auto footer_offset = meta_data::parse(md, data.data(), data.size());
+
+            // If there is a footer, we must read it as well and parse again.
+            // Files without a footer will return zero for the offset here.
+            if (footer_offset > 0) {
+                std::vector<std::uint8_t> footer(128);
+                auto footer_size = 0;
+                auto read = 0;
+
+                ::_lseek(fh, static_cast<long>(footer_offset), SEEK_SET);
+
+                do {
+                    read = ::_read(fh,
+                        footer.data() + footer_size,
+                        data.size() - footer_size);
+                    footer_size += read;
+                } while (read > 0);
+
+                meta_data::parse(md, data.data(), data.size(),
+                    footer.data(), footer_size);
+            }
 
             // Seek to the start of the first frame.
             ::_lseek(fh, static_cast<long>(md.frame_offset(0)), SEEK_SET);

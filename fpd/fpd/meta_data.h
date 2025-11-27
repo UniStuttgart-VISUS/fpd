@@ -121,7 +121,8 @@ public:
     /// <param name="meta_data">The static meta data (file version and endian)
     /// as obtained by <see cref="check_header_size" />. On exit, this object
     /// has received all header segments the parser understands.</param>
-    /// <param name="header">A pointer to the flexible header segments.</param>
+    /// <param name="header">A pointer to the <i>flexible header</c> segments.
+    /// </param>
     /// <param name="cnt_header">The number of bytes in
     /// <paramref name="header" />, which form the header segments. This must
     /// the amount of bytes returned by <see cref="check_header_size" />.
@@ -146,18 +147,6 @@ public:
         _In_ const std::size_t cnt_header,
         _In_reads_bytes_opt_(cnt_footer) const void *footer = nullptr,
         _In_ const std::size_t cnt_footer = 0);
-
-    ///// <summary>
-    ///// Parses the meta data from the given header block.
-    ///// </summary>
-    ///// <param name="data">A pointer to the begin of the file header.</param>
-    ///// <param name="cnt">The length of the file header in bytes.</param>
-    ///// <returns>The meta data parsed from the given bytes.</returns>
-    ///// <exception cref="std::invalid_argument">If <pararmef name="data" /> is
-    ///// <c>nullptr</c>, or if <paramref name="cnt" /> does not comprise a full
-    ///// FPD header, or if the given data are obviously invalid.</exception>
-    //static meta_data parse(_In_reads_bytes_(cnt) const void *data,
-    //    _In_ const std::size_t cnt);
 
     /// <summary>
     /// The size if the fixed file header, which is the minimum of data that
