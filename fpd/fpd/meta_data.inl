@@ -11,7 +11,7 @@
 template<class TChar>
 std::size_t FPD_NAMESPACE::meta_data<TChar>::check_header_size(
         _Out_ meta_data& output,
-        _In_ const void *data,
+        _In_reads_bytes_(cnt) const void *data,
         _In_ const std::size_t cnt) {
     if (data == nullptr) {
         throw std::invalid_argument("The header data must be valid.");
@@ -54,84 +54,110 @@ std::size_t FPD_NAMESPACE::meta_data<TChar>::check_header_size(
  * FPD_NAMESPACE::meta_data<TChar>::parse
  */
 template<class TChar>
-FPD_NAMESPACE::meta_data<TChar>& FPD_NAMESPACE::meta_data<TChar>::parse(
+std::uint64_t FPD_NAMESPACE::meta_data<TChar>::parse(
         _Inout_ meta_data& meta_data,
-        _In_ const void *data,
-        _In_ const std::size_t cnt) {
+        _In_reads_bytes_(cnt_header) const void *header,
+        _In_ const std::size_t cnt_header,
+        _In_reads_bytes_opt_(cnt_footer) const void *footer,
+        _In_ const std::size_t cnt_footer) {
     assert(meta_data._endian != endian::undefined);
-    assert((data != nullptr) || (cnt == 0));
-    auto cur = static_cast<const std::uint8_t * >(data);
-    const auto end = cur + cnt;
+    assert((header != nullptr) || (cnt_header == 0));
+    assert((footer != nullptr) || (cnt_footer == 0));
+    std::array<std::pair<const std::uint8_t *, const std::uint8_t *>, 2> data {
+        std::make_pair(static_cast<const std::uint8_t *>(header), nullptr),
+        std::make_pair(static_cast<const std::uint8_t *>(footer), nullptr)
+    };
+    data[0].second = data[0].first + cnt_header;
+    if (data[1].first != nullptr) {
+        data[1].second = data[1].first + cnt_footer;
+    }
     auto deferred_compression = std::make_pair(
         static_cast<const void *>(nullptr),
         static_cast<std::size_t>(0));
     auto deferred_format = std::make_pair(
         static_cast<const void *>(nullptr),
         static_cast<std::size_t>(0));
+    std::uint64_t retval = 0;
 
-    while (cur + sizeof(header_segment) < end) {
-        // Interpret the 32-bit header of the header segment.
-        auto header = swap_endian_as<std::uint32_t>(cur, meta_data._endian);
-        cur += sizeof(header);
+    for (auto& d : data) {
+        auto cur = d.first;
 
-        // Split the header_segments and the length of the segment.
-        constexpr const decltype(header) header_segment_mask = (0xFFu << 24);
-        const auto segment = header_segment_mask & header;
-        const auto length = ~header_segment_mask & header;
+        while (cur + sizeof(header_segment) < d.second) {
+            // Interpret the 32-bit header of the header segment.
+            auto h = swap_endian_as<std::uint32_t>(cur, meta_data._endian);
+            cur += sizeof(h);
 
-        // Parse the segment as the recognised type or ignore it allthogether.
-        switch (static_cast<header_segment>(segment)) {
-            case header_segment::frame_table:
-                parse_frame_table(meta_data, cur, length);
-                break;
+            // Split the header_segments and the length of the segment.
+            constexpr const decltype(h) header_segment_mask = (0xFFu << 24);
+            const auto segment = header_segment_mask & h;
+            const auto length = ~header_segment_mask & h;
 
-            case header_segment::format_description:
-                try {
-                    parse_format_description(meta_data, cur, length);
-                } catch (...) {
-                    // The format will fail if there are user-defined semantics
-                    // and we have not yet seen these. Therefore, we postpone
-                    // parsing it again until the end.
-                    deferred_format.first = cur;
-                    deferred_format.second = length;
-                }
-                break;
+            // Parse the segment as the recognised type or ignore it
+            // allthogether.
+            switch (static_cast<header_segment>(segment)) {
+                case header_segment::frame_table:
+                    parse_frame_table(meta_data, cur, length);
+                    break;
 
-            case header_segment::user_semantics:
-                parse_user_semantics(meta_data, cur, length);
-                break;
+                case header_segment::format_description:
+                    try {
+                        parse_format_description(meta_data, cur, length);
+                    } catch (...) {
+                        // The format will fail if there are user-defined
+                        // semantics and we have not yet seen these. Therefore,
+                        // we postpone parsing it again until the end.
+                        deferred_format.first = cur;
+                        deferred_format.second = length;
+                    }
+                    break;
 
-            case header_segment::description:
-                parse_description(meta_data, cur, length);
-                break;
+                case header_segment::user_semantics:
+                    parse_user_semantics(meta_data, cur, length);
+                    break;
 
-            case header_segment::bounding_box:
-                parse_bounding_box(meta_data, cur, length);
-                break;
+                case header_segment::description:
+                    parse_description(meta_data, cur, length);
+                    break;
 
-            case header_segment::global_particle_properties:
-                parse_global_particle_properties(meta_data, cur, length);
-                break;
+                case header_segment::bounding_box:
+                    parse_bounding_box(meta_data, cur, length);
+                    break;
 
-            case header_segment::spatial_hierarchy:
-                parse_spatial_hierarchy(meta_data, cur, length);
-                break;
+                case header_segment::global_particle_properties:
+                    parse_global_particle_properties(meta_data, cur, length);
+                    break;
 
-            case header_segment::compression:
-                try {
-                    parse_compression(meta_data, cur, length);
-                } catch (...) {
-                    // The compression might depend on the frame table already
-                    // being processed. Therefore, we schedule a "second chance"
-                    // in case this information might still come later on.
-                    deferred_compression.first = cur;
-                    deferred_compression.second = length;
-                }
-                break;
-        }
+                case header_segment::spatial_hierarchy:
+                    parse_spatial_hierarchy(meta_data, cur, length);
+                    break;
 
-        cur += length;
-    }
+                case header_segment::compression:
+                    try {
+                        parse_compression(meta_data, cur, length);
+                    } catch (...) {
+                        // The compression might depend on the frame table
+                        // already being processed. Therefore, we schedule a
+                        // "second chance" in case this information might still
+                        // come later on.
+                        deferred_compression.first = cur;
+                        deferred_compression.second = length;
+                    }
+                    break;
+
+                case header_segment::footer:
+                    retval = parse_footer(cur, length);
+                    if ((retval > 0) && (cnt_footer == 0)) {
+                        // If we have a footer, we can bail out immediately as
+                        // it might not be possible to complete parsing the
+                        // header segments without access to the footer as well.
+                        return retval;
+                    }
+                    break;
+            }
+
+            cur += length;
+        } /* while (cur + sizeof(header_segment) < d.second) */
+    } /* for (auto& d : data) */
 
     // If we have postponed parsing the format, do it now. If it fails again,
     // the input is invalid.
@@ -149,33 +175,33 @@ FPD_NAMESPACE::meta_data<TChar>& FPD_NAMESPACE::meta_data<TChar>::parse(
             deferred_compression.second);
     }
 
-
-    return meta_data;
+    assert(retval == 0);
+    return retval;
 }
 
 
-/*
- * FPD_NAMESPACE::meta_data meta_data<TChar>::parse
- */
-template<class TChar>
-FPD_NAMESPACE::meta_data<TChar> FPD_NAMESPACE::meta_data<TChar>::parse(
-        _In_ const void *data, _In_ const std::size_t cnt) {
-    meta_data retval;
-
-    // Find out how many bytes of header segments are in the file and check
-    // whether the caller provided at least this amount of data.
-    const auto required = check_header_size(retval, data, cnt);
-    retval._header_size = required + fixed_header_size;
-
-    if (retval._header_size > cnt) {
-        throw std::invalid_argument("Insufficient header data have been "
-            "provided to parse all header segments.");
-    }
-
-    return parse(retval,
-        static_cast<const std::uint8_t *>(data) + fixed_header_size,
-        retval._header_size);
-}
+///*
+// * FPD_NAMESPACE::meta_data meta_data<TChar>::parse
+// */
+//template<class TChar>
+//FPD_NAMESPACE::meta_data<TChar> FPD_NAMESPACE::meta_data<TChar>::parse(
+//        _In_reads_bytes_(cnt) const void *data, _In_ const std::size_t cnt) {
+//    meta_data retval;
+//
+//    // Find out how many bytes of header segments are in the file and check
+//    // whether the caller provided at least this amount of data.
+//    const auto required = check_header_size(retval, data, cnt);
+//    retval._header_size = required + fixed_header_size;
+//
+//    if (retval._header_size > cnt) {
+//        throw std::invalid_argument("Insufficient header data have been "
+//            "provided to parse all header segments.");
+//    }
+//
+//    return parse(retval,
+//        static_cast<const std::uint8_t *>(data) + fixed_header_size,
+//        retval._header_size);
+//}
 
 
 /*
@@ -506,7 +532,7 @@ void FPD_NAMESPACE::meta_data<TChar>::calc_frame_offsets(
 template<class TChar>
 void FPD_NAMESPACE::meta_data<TChar>::parse_bounding_box(
         _Inout_ meta_data& meta_data,
-        _In_ const void *data,
+        _In_reads_bytes_(cnt) const void *data,
         _In_ const std::size_t cnt) {
     if (cnt < sizeof(format)) {
         throw std::invalid_argument("The bounding boxes must contain a format "
@@ -551,7 +577,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_bounding_box(
 template<class TChar>
 void FPD_NAMESPACE::meta_data<TChar>::parse_compression(
         _Inout_ meta_data& meta_data,
-        _In_ const void *data,
+        _In_reads_bytes_(cnt) const void *data,
         _In_ const std::size_t cnt) {
     typedef FPD_NAMESPACE::compression enum_type;
     typedef compression_meta_data<enum_type::gdeflate> gdeflate_type;
@@ -616,7 +642,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_compression(
 template<class TChar>
 void FPD_NAMESPACE::meta_data<TChar>::parse_description(
         _Inout_ meta_data& meta_data,
-        _In_ const void *data,
+        _In_reads_bytes_(cnt) const void *data,
         _In_ const std::size_t cnt) {
     if (!meta_data._description.empty()) {
         throw std::invalid_argument("The file description has already been "
@@ -632,7 +658,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_description(
 template<class TChar>
 void FPD_NAMESPACE::meta_data<TChar>::parse_format_description(
         _Inout_ meta_data& meta_data,
-        _In_ const void *data,
+        _In_reads_bytes_(cnt) const void *data,
         _In_ const std::size_t cnt) {
 #define _FPD_THROW_IF_INCOMPLETE(req) \
     if ((end - cur) < req) { \
@@ -713,12 +739,28 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_format_description(
 
 
 /*
+ * FPD_NAMESPACE::meta_data<TChar>::parse_footer
+ */
+template<class TChar>
+std::uint64_t FPD_NAMESPACE::meta_data<TChar>::parse_footer(
+        _In_reads_bytes_(cnt) const void *data,
+        _In_ const std::size_t cnt) {
+    if (cnt != sizeof(std::uint64_t)) {
+        throw std::invalid_argument("The footer sigment has an unexpected "
+            "size.");
+    }
+
+    return *static_cast<const std::uint64_t *>(data);
+}
+
+
+/*
  * FPD_NAMESPACE::meta_data<TChar>::parse_frame_table
  */
 template<class TChar>
 void FPD_NAMESPACE::meta_data<TChar>::parse_frame_table(
         _Inout_ meta_data& meta_data,
-        _In_ const void *data,
+        _In_reads_bytes_(cnt) const void *data,
         _In_ const std::size_t cnt) {
     if (!meta_data._frame_table.empty()) {
         throw std::invalid_argument("The frame table has already been parsed.");
@@ -744,7 +786,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_frame_table(
 template<class TChar>
 void FPD_NAMESPACE::meta_data<TChar>::parse_global_particle_properties(
         _Inout_ meta_data& meta_data,
-        _In_ const void *data,
+        _In_reads_bytes_(cnt) const void *data,
         _In_ const std::size_t cnt) {
 #define _FPD_THROW_IF_INCOMPLETE(req) \
     if (static_cast<std::size_t>(end - cur) < req) { \
@@ -786,7 +828,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_global_particle_properties(
 template<class TChar>
 void FPD_NAMESPACE::meta_data<TChar>::parse_spatial_hierarchy(
         _Inout_ meta_data& meta_data,
-        _In_ const void *data,
+        _In_reads_bytes_(cnt) const void *data,
         _In_ const std::size_t cnt) {
 #define _FPD_THROW_IF_INCOMPLETE(req) \
     if ((end - cur) < req) { \
@@ -829,7 +871,7 @@ void FPD_NAMESPACE::meta_data<TChar>::parse_spatial_hierarchy(
 template<class TChar>
 void FPD_NAMESPACE::meta_data<TChar>::parse_user_semantics(
         _Inout_ meta_data& meta_data,
-        _In_ const void *data,
+        _In_reads_bytes_(cnt) const void *data,
         _In_ const std::size_t cnt) {
     auto cur = static_cast<const char *>(data);
     const auto end = cur + cnt;

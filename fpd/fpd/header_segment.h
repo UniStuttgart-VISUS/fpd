@@ -74,7 +74,16 @@ enum class header_segment : std::uint32_t {
     /// <summary>
     /// Specifies whether the particle data are compressed.
     /// </summary>
-    compression = 0x08 << 24
+    compression = 0x08 << 24,
+
+    /// <summary>
+    /// Specifies the offset of a footer segment from the begin of the file.
+    /// </summary>
+    /// <remarks>
+    /// The segment contains a single 64-bit value, which is the offset of the
+    /// first footer block from the begin of the file.
+    /// </remarks>
+    footer = 0x09 << 24
 };
 
 FPD_NAMESPACE_END

@@ -111,7 +111,7 @@ public:
     /// sufficient header data, or if the given data are obviously invalid.
     /// </exception>
     static std::size_t check_header_size(_Out_ meta_data& output,
-        _In_ const void *data,
+        _In_reads_bytes_(cnt) const void *data,
         _In_ const std::size_t cnt);
 
     /// <summary>
@@ -121,25 +121,43 @@ public:
     /// <param name="meta_data">The static meta data (file version and endian)
     /// as obtained by <see cref="check_header_size" />. On exit, this object
     /// has received all header segments the parser understands.</param>
-    /// <param name="data">A pointer to the flexible header segments.</param>
-    /// <param name="cnt">The number of bytes in <paramref name="data" />, which
-    /// form the header segments. This must the amount of bytes returned by
-    /// <see cref="check_header_size" />. Note that <paramref name="cnt" /> must
-    /// not exceed the actual number of bytes in header segments!</param>
-    /// <returns><paramref name="meta_data" />.</returns>
-    static meta_data& parse(_Inout_ meta_data& meta_data, _In_ const void *data,
-        _In_ const std::size_t cnt);
+    /// <param name="header">A pointer to the flexible header segments.</param>
+    /// <param name="cnt_header">The number of bytes in
+    /// <paramref name="header" />, which form the header segments. This must
+    /// the amount of bytes returned by <see cref="check_header_size" />.
+    /// Note that <paramref name="cnt_header" /> must not exceed the actual
+    /// number of bytes in header segments!</param>
+    /// <param name="footer">An optional pointer to the footer segment. This can
+    /// be <see langword="nullptr" /> if the caller does not yet know whether
+    /// there is a footer segment or not. If the method detects the presence of
+    /// a footer segment in the flexible <paramref name="header" />s, its offset
+    /// is returned and the method must be called again with header and footer
+    /// data.</param>
+    /// <param name="cnt_footer">The number of bytes in the
+    /// <see cref="footer" /> segment.</param>
+    /// <returns>The offset of the footer from the begin of the file. If the
+    /// caller passed <see langword="nullptr" /> for <paramref name="footer" />
+    /// and this value is non-zero, read the footer starting at this offset to
+    /// the end of the file and call the method again. Meta data are incomplete
+    /// if the file contains a footer and it was not provided to the parser.
+    /// </returns>
+    static std::uint64_t parse(_Inout_ meta_data& meta_data,
+        _In_reads_bytes_(cnt_header) const void *header,
+        _In_ const std::size_t cnt_header,
+        _In_reads_bytes_opt_(cnt_footer) const void *footer = nullptr,
+        _In_ const std::size_t cnt_footer = 0);
 
-    /// <summary>
-    /// Parses the meta data from the given header block.
-    /// </summary>
-    /// <param name="data">A pointer to the begin of the file header.</param>
-    /// <param name="cnt">The length of the file header in bytes.</param>
-    /// <returns>The meta data parsed from the given bytes.</returns>
-    /// <exception cref="std::invalid_argument">If <pararmef name="data" /> is
-    /// <c>nullptr</c>, or if <paramref name="cnt" /> does not comprise a full
-    /// FPD header, or if the given data are obviously invalid.</exception>
-    static meta_data parse(_In_ const void *data, _In_ const std::size_t cnt);
+    ///// <summary>
+    ///// Parses the meta data from the given header block.
+    ///// </summary>
+    ///// <param name="data">A pointer to the begin of the file header.</param>
+    ///// <param name="cnt">The length of the file header in bytes.</param>
+    ///// <returns>The meta data parsed from the given bytes.</returns>
+    ///// <exception cref="std::invalid_argument">If <pararmef name="data" /> is
+    ///// <c>nullptr</c>, or if <paramref name="cnt" /> does not comprise a full
+    ///// FPD header, or if the given data are obviously invalid.</exception>
+    //static meta_data parse(_In_reads_bytes_(cnt) const void *data,
+    //    _In_ const std::size_t cnt);
 
     /// <summary>
     /// The size if the fixed file header, which is the minimum of data that
@@ -421,25 +439,36 @@ private:
         _In_ const void *data, _In_ const std::size_t cnt);
 
     static void parse_compression(_Inout_ meta_data& meta_data,
-        _In_ const void *data, _In_ const std::size_t cnt);
+        _In_reads_bytes_(cnt) const void *data,
+        _In_ const std::size_t cnt);
 
     static void parse_description(_Inout_ meta_data& meta_data,
-        _In_ const void *data, _In_ const std::size_t cnt);
+        _In_reads_bytes_(cnt) const void *data,
+        _In_ const std::size_t cnt);
+
+    static std::uint64_t parse_footer(
+        _In_reads_bytes_(cnt) const void *data,
+        _In_ const std::size_t cnt);
 
     static void parse_format_description(_Inout_ meta_data& meta_data,
-        _In_ const void *data, _In_ const std::size_t cnt);
+        _In_reads_bytes_(cnt) const void *data,
+        _In_ const std::size_t cnt);
 
     static void parse_frame_table(_Inout_ meta_data& meta_data,
-        _In_ const void *data, _In_ const std::size_t cnt);
+        _In_reads_bytes_(cnt) const void *data,
+        _In_ const std::size_t cnt);
 
     static void parse_global_particle_properties(_Inout_ meta_data& meta_data,
-        _In_ const void *data, _In_ const std::size_t cnt);
+        _In_reads_bytes_(cnt) const void *data,
+        _In_ const std::size_t cnt);
 
     static void parse_spatial_hierarchy(_Inout_ meta_data& meta_data,
-        _In_ const void *data, _In_ const std::size_t cnt);
+        _In_reads_bytes_(cnt) const void *data,
+        _In_ const std::size_t cnt);
 
     static void parse_user_semantics(_Inout_ meta_data& meta_data,
-        _In_ const void *data, _In_ const std::size_t cnt);
+        _In_reads_bytes_(cnt)
+        const void *data, _In_ const std::size_t cnt);
 
     template<class TEnum, template<TEnum> class TDerived, class TBase,
         TEnum... Es>

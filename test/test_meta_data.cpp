@@ -312,10 +312,11 @@ namespace fpd {
                 std::vector<std::uint8_t> buffer(size_on_disk);
                 detail::read_all(buffer.data(), buffer.size(), io);
 
-                const auto variable_header = size_on_disk - decltype(builder)::meta_data_type::fixed_header_size;
+                constexpr auto fixed_header = decltype(builder)::meta_data_type::fixed_header_size;
+                const auto variable_header = size_on_disk - fixed_header;
                 Assert::AreEqual(variable_header, meta_data<char>::check_header_size(actual, buffer.data(), buffer.size()), L"check header", LINE_INFO());
 
-                actual = meta_data<char>::parse(buffer.data(), buffer.size());
+                Assert::AreEqual(std::uint64_t(0), meta_data<char>::parse(actual, buffer.data() + fixed_header, buffer.size() - fixed_header), L"No footer", LINE_INFO());
             }
 
             Assert::AreEqual(expected.version().first, actual.version().first, L"major version", LINE_INFO());
