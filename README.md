@@ -67,6 +67,36 @@ data.resize(md.frame_size(0));
 ::_close(fh);
 ```
 
+Processing the different kinds of meta data might be cumbersome, specifically handling the footers. For that reason, the library provides its own convenience I/O methods. The following is equivalent to the sample above:
+```c++
+typedef fpd::meta_data<char> meta_data;
+
+// Open the input file for binary I/O.
+int fh = ::_open(path.c_str(), _O_BINARY | _O_RDONLY);
+if (read <= 0) { /* Handle error. */ }
+
+// Use the read method to read header and footer (if any).
+auto md = meta_data::read(fh);
+```
+
+You can use any kind of file handle for which a specialisation of the `io_traits` template exists. For instance, the following example uses native Win32 handles:
+```c++
+typedef fpd::meta_data<char> meta_data;
+
+// Open the input file for binary I/O.
+auto handle = ::CreateFileA(path.c_str(),
+    GENERIC_READ,
+    FILE_SHARE_READ,
+    nullptr,
+    OPEN_EXISTING,
+    FILE_ATTRIBUTE_NORMAL,
+    nullptr);
+if (handle == INVALID_HANDLE_VALUE) { /* Handle error. */ }
+
+// Use the read method to read header and footer (if any).
+auto md = meta_data::read(handle);
+```
+
 ### Build in-memory meta data to create a new file
 ```c++
 typedef fpd::meta_data_builder<wchar_t> meta_data_builder;
@@ -101,36 +131,6 @@ auto file = ::CreateFileA("demo.fpd",
     FILE_ATTRIBUTE_NORMAL,
     nullptr);
 const auto size = md.save(file);
-```
-
-Processing the different kinds of meta data might be cumbersome, specifically handling the footers. For that reason, the library provides its own convenience I/O methods. The following is equivalent to the sample above:
-```c++
-typedef fpd::meta_data<char> meta_data;
-
-// Open the input file for binary I/O.
-int fh = ::_open(path.c_str(), _O_BINARY | _O_RDONLY);
-if (read <= 0) { /* Handle error. */ }
-
-// Use the read method to read header and footer (if any).
-auto md = meta_data::read(fh);
-```
-
-You can use any kind of file handle for which a specialisation of the `io_traits` template exists. For instance, the following example uses native Win32 handles:
-```c++
-typedef fpd::meta_data<char> meta_data;
-
-// Open the input file for binary I/O.
-auto handle = ::CreateFileA(path.c_str(),
-    GENERIC_READ,
-    FILE_SHARE_READ,
-    nullptr,
-    OPEN_EXISTING,
-    FILE_ATTRIBUTE_NORMAL,
-    nullptr);
-if (handle == INVALID_HANDLE_VALUE) { /* Handle error. */ }
-
-// Use the read method to read header and footer (if any).
-auto md = meta_data::read(handle);
 ```
 
 ## Design goals
