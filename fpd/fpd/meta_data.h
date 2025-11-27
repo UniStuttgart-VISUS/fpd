@@ -149,6 +149,21 @@ public:
         _In_ const std::size_t cnt_footer = 0);
 
     /// <summary>
+    /// Reads the meta data from the given file handle.
+    /// </summary>
+    /// <typeparam name="THandle">The type of the file handle. I/O traits must
+    /// exist for this type.</typeparam>
+    /// <param name="handle">A file handle that is open for reading. The caller
+    /// should not make any assumptions about the location of the file pointer
+    /// of this handle once the method returns.</param>
+    /// <param name="buffer_size">The initial size of the buffer used to read
+    /// the footer.</param>
+    /// <returns>The meta data read from the file.</returns>
+    template<class THandle> static meta_data read(_In_ THandle& handle,
+        _In_opt_ const FPD_NAMESPACE::encoding encoding = encodings::oem,
+        _In_ const std::size_t buffer_size = 1024);
+
+    /// <summary>
     /// The size if the fixed file header, which is the minimum of data that
     /// needs to be provided to <see cref="check_header_size" />.
     /// </summary>

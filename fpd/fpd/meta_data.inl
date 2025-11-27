@@ -181,6 +181,72 @@ std::uint64_t FPD_NAMESPACE::meta_data<TChar>::parse(
 
 
 /*
+ * FPD_NAMESPACE::meta_data<TChar>::read
+ */
+template<class TChar>
+template<class THandle>
+FPD_NAMESPACE::meta_data<TChar> FPD_NAMESPACE::meta_data<TChar>::read(
+        _In_ THandle& handle,
+        _In_opt_ const FPD_NAMESPACE::encoding encoding,
+        _In_ const std::size_t buffer_size) {
+    typedef detail::io_traits<THandle> traits;
+    constexpr auto min_buffer_size = static_cast<std::size_t>(1);
+    meta_data retval(encoding);
+
+    // Seek to the begin of the file and read the fixed-size header.
+    traits::seek(handle, 0);
+
+    std::vector<std::uint8_t> header(fixed_header_size);
+    detail::read_all(header.data(), header.size(), handle);
+
+    // Next, find out how much variable-size header data we have to read. As
+    // we do not need the fixed-size header anymore, we can reuse its buffer.
+    const auto header_size = check_header_size(retval, header.data(),
+        header.size());
+    header.resize(header_size);
+    detail::read_all(header.data(), header.size(), handle);
+
+    auto footer_offset = meta_data::parse(retval, header.data(), header.size());
+    if (footer_offset == 0) {
+        return retval;
+    }
+
+    // At this point, we need the footer, so seek to its begin and read it. The
+    // 'footer_size' will accumulate the actual size of the footer, because we
+    // read until EOF in this case.
+    traits::seek(handle, footer_offset);
+
+    std::vector<std::uint8_t> footer((std::max)(min_buffer_size, buffer_size));
+    auto footer_size = static_cast<std::size_t>(0);
+    {
+        auto rem = footer.size();
+        auto read = static_cast<std::size_t>(0);
+
+        do {
+            footer_size += read = traits::read(
+                footer.data() + footer_size, rem,
+                handle);
+            rem -= read;
+
+            if ((read > 0) && (rem == 0)) {
+                // We did not reach EOF yet, but have no buffer left, so we
+                // double its size.
+                footer.resize(footer.size() * 2);
+                rem = footer.size() - footer_size;
+            }
+        } while (read > 0);
+    }
+
+    // Parse again, this time with the footer.
+    meta_data::parse(retval,
+        header.data(), header.size(),
+        footer.data(), footer_size);
+
+    return retval;
+}
+
+
+/*
  * FPD_NAMESPACE::meta_data<TChar>::bounding_box
  */
 template<class TChar>

@@ -81,6 +81,36 @@ namespace fpd {
             ::_close(fh);
         }
 
+        TEST_METHOD(simple_read_meta_posix) {
+            const auto path = make_meta();
+            typedef fpd::meta_data<char> meta_data;
+
+            // Open the input file for binary I/O.
+            int fh = ::_open(path.c_str(), _O_BINARY | _O_RDONLY);
+            Assert::AreNotEqual(-1, fh, L"file opened", LINE_INFO());
+
+            // Use the read method to read header and footer (if any).
+            auto md = meta_data::read(fh);
+        }
+
+        TEST_METHOD(simple_read_meta_win32) {
+            const auto path = make_meta();
+            typedef fpd::meta_data<char> meta_data;
+
+            // Open the input file for binary I/O.
+            auto handle = ::CreateFileA(path.c_str(),
+                GENERIC_READ,
+                FILE_SHARE_READ,
+                nullptr,
+                OPEN_EXISTING,
+                FILE_ATTRIBUTE_NORMAL,
+                nullptr);
+            Assert::AreNotEqual(INVALID_HANDLE_VALUE, handle, L"file opened", LINE_INFO());
+
+            // Use the read method to read header and footer (if any).
+            auto md = meta_data::read(handle);
+        }
+
         TEST_METHOD(write_meta) {
             typedef fpd::meta_data_builder<wchar_t> meta_data_builder;
 
