@@ -10,6 +10,7 @@
 | uint32         | 4 Bytes  | Overall size of the header segments in bytes                                           |
 | Header segment | Variable | Sequence of previously announced header segments                                       |
 | Frame data     | Variable | Sequence of frames announced in header segments                                        |
+| Footer segment | Variable | If a footer segment is present in the header, until the end of the file                |
 
 
 ## Magic ID
@@ -132,7 +133,7 @@ This segment specifies whether and how the particle data are compressed. The seg
 | compression | 4 Bytes  | The type of the compression algorithm used, which must be one of the built-in `compression`s.                         |
 | uint8       | Variable | Additional data that descibe how to decompress the data. This can be empty if the compression is `compression::none`. |
 
-### None (0x00000000)
+#### None (0x00000000)
 No additional data are present.
 
 #### GDeflate (0x00000001)
