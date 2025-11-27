@@ -49,11 +49,13 @@ if (footer_offset > 0) {
     ::_lseek(fh, static_cast<long>(footer_offset), SEEK_SET);
 
     do {
-        read = ::_read(fh, footer.data() + footer_size, data.size() - footer_size);
+        read = ::_read(fh, footer.data() + footer_size,
+            data.size() - footer_size);
         footer_size += read;
     } while (read > 0);
 
-    meta_data::parse(md, data.data(), data.size(), footer.data(), footer_size);
+    meta_data::parse(md, data.data(), data.size(),
+        footer.data(), footer_size);
 }
 
 // Seek to the start of the first frame.
