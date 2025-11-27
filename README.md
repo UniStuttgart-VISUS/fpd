@@ -77,6 +77,8 @@ if (read <= 0) { /* Handle error. */ }
 
 // Use the read method to read header and footer (if any).
 auto md = meta_data::read(fh);
+
+// Same as above ...
 ```
 
 You can use any kind of file handle for which a specialisation of the `io_traits` template exists. For instance, the following example uses native Win32 handles:
@@ -84,7 +86,7 @@ You can use any kind of file handle for which a specialisation of the `io_traits
 typedef fpd::meta_data<char> meta_data;
 
 // Open the input file for binary I/O.
-auto handle = ::CreateFileA(path.c_str(),
+auto handle = ::CreateFile(path.c_str(),
     GENERIC_READ,
     FILE_SHARE_READ,
     nullptr,
@@ -95,6 +97,8 @@ if (handle == INVALID_HANDLE_VALUE) { /* Handle error. */ }
 
 // Use the read method to read header and footer (if any).
 auto md = meta_data::read(handle);
+
+// Same as above ...
 ```
 
 ### Build in-memory meta data to create a new file
